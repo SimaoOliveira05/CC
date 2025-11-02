@@ -1,56 +1,67 @@
-package main    
+package main
 
 import (
     "fmt"
-    "src/internal/ml"
     "net"
-    "time"
+    "src/config"
+    "src/internal/ml"
 )
 
 func main() {
-    // Endereço da Nave-Mãe
-    serverAddr, err := net.ResolveUDPAddr("udp", "127.0.0.1:9999")
+    // Inicializa configuração (isRover = true)
+    config.InitConfig(true)
+    config.PrintConfig()
+
+    // Obtém o endereço da mothership
+    mothershipAddr := config.GetMothershipAddr()
+
+    // Resolve endereço UDP
+    addr, err := net.ResolveUDPAddr("udp", mothershipAddr)
     if err != nil {
-        panic(err)
-    }
-
-    // Socket UDP
-    conn, err := net.DialUDP("udp", nil, serverAddr)
-    if err != nil {
-        panic(err)
-    }
-    defer conn.Close()
-
-    fmt.Println("🚀 Rover iniciado — a pedir missão à Nave-Mãe...")
-
-    seq := uint16(0)
-    req := ml.Packet{
-        MsgType:  ml.MSG_REQUEST,
-        SeqNum:   seq,
-        AckNum:   0,
-        Checksum: 0,
-        Payload:  []byte("REQUEST MISSION"),
-    }
-
-    
-    req.Checksum = ml.Checksum(req.Payload)
-
-    conn.Write(req.ToBytes())
-    fmt.Println("📡 REQUEST enviado.")
-
-    buf := make([]byte, 1024)
-    conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-
-    n, _, err := conn.ReadFromUDP(buf)
-    if err != nil {
-        fmt.Println("❌ Timeout ou erro a receber resposta:", err)
+        fmt.Println("❌ Erro ao resolver endereço:", err)
         return
     }
 
-    resp := ml.FromBytes(buf[:n])
-    if resp.MsgType == ml.MSG_MISSION {
-        fmt.Println("✅ Missão recebida:", ml.DataFromBytes(resp.Payload).String())
-    } else {
-        fmt.Println("❌ Mensagem inesperada:", resp.MsgType)
+    // Conecta à mothership
+    conn, err := net.DialUDP("udp", nil, addr)
+    if err != nil {
+        fmt.Println("❌ Erro ao conectar:", err)
+        return
+    }
+    defer conn.Close()
+
+    fmt.Printf("🤖 Rover conectado à Mothership em %s\n", mothershipAddr)
+
+    // Cria e envia pedido de missão
+    requestPacket := ml.Packet{
+        MsgType: ml.MSG_REQUEST,
+        SeqNum:  1,
+        AckNum:  0,
+        Payload: []byte{},
+    }
+    requestPacket.Checksum = ml.Checksum(requestPacket.Payload)
+
+    _, err = conn.Write(requestPacket.ToBytes())
+    if err != nil {
+        fmt.Println("❌ Erro ao enviar pedido:", err)
+        return
+    }
+
+    fmt.Println("📤 Pedido de missão enviado!")
+
+    // Aguarda resposta
+    buf := make([]byte, 1024)
+    n, err := conn.Read(buf)
+    if err != nil {
+        fmt.Println("❌ Erro ao receber resposta:", err)
+        return
+    }
+
+    response := ml.FromBytes(buf[:n])
+    fmt.Printf("📥 Resposta recebida: MsgType=%d\n", response.MsgType)
+
+    if response.MsgType == ml.MSG_MISSION {
+        missionData := ml.DataFromBytes(response.Payload)
+        fmt.Printf("📍 Missão recebida:\n%s\n", missionData.String())
     }
 }

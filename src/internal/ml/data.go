@@ -1,10 +1,10 @@
 package ml
 
 import (
+	"src/utils"
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"src/utils"
 )
 
 const (
