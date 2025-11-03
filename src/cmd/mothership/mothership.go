@@ -14,7 +14,7 @@ func main() {
     config.InitConfig(false)
     config.PrintConfig()
 
-    addr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", config.GetMothershipPort()))
+    addr, _ := net.ResolveUDPAddr("udp",config.GetMotherIP()+":9999")
     conn, _ := net.ListenUDP("udp", addr)
     defer conn.Close()
 
@@ -99,7 +99,7 @@ func handlePacket(p ml.Packet, clientAddr *net.UDPAddr, conn *net.UDPConn, mm *m
         fmt.Printf("✅ Missão %d enviada para %s\n", missionID, clientAddr)
 
         // Inicia tracking da missão
-        go trackMissionProgress(mm, missionID)
+        // go trackMissionProgress(mm, missionID)
 
     case ml.MSG_ACK:
         fmt.Printf("✅ ACK recebido de %s (SeqNum: %d)\n", clientAddr, p.SeqNum)

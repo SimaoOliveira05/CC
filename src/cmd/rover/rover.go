@@ -13,10 +13,10 @@ func main() {
     config.PrintConfig()
 
     // Obtém o endereço da mothership
-    mothershipAddr := config.GetMothershipAddr()
+    mothershipAddr := config.GetMotherIP()
 
     // Resolve endereço UDP
-    addr, err := net.ResolveUDPAddr("udp", mothershipAddr)
+    addr, err := net.ResolveUDPAddr("udp", mothershipAddr+":9999")
     if err != nil {
         fmt.Println("❌ Erro ao resolver endereço:", err)
         return

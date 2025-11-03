@@ -4,8 +4,6 @@ import (
 	"fmt"
 )
 
-// Raio médio da Terra em metros
-const EarthRadius = 6371e3 // 6371 km
 
 // Coordinate representa um ponto geográfico em graus decimais.
 type Coordinate struct {

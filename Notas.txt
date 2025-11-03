@@ -1,0 +1,6 @@
+Fiz com que os endreços default sejam 127.0.0.1 (para correr em 2 terminais localmente)
+Caso quiserem corre na topologia tem que meter uma flag:
+
+go run mothership.go --mother-ip *ip da nave mãe*
+
+go run rover.go --mother-ip *ip da nave mãe* --rover-ip *ip do rover*

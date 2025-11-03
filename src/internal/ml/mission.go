@@ -37,7 +37,7 @@ func (mm *MissionManager) AddMission(mission *MissionState) {
     mm.missions[mission.ID] = mission
 }
 
-// UpdateMission updates a mission stat and last update time
+// UpdateMission updates a mission state and last update time
 func (mm *MissionManager) UpdateMission(id uint32, state string) {
     mm.mu.Lock()
     defer mm.mu.Unlock()

@@ -5,52 +5,41 @@ import (
 	"fmt"
 )
 
+// Config guarda a configuração de IPs usados pelo sistema MissionLink.
 type Config struct {
-	MothershipIP   string
-	MothershipPort int
-	RoverIP        string
+	MotherIP string
+	RoverIP  string
 }
 
-// Global configuration instance
+// GlobalConfig é a instância global acessível em qualquer package.
 var GlobalConfig Config
 
-// Initialize flags and populate the global config
-func InitConfig(isAgent bool) {
-	// Define flags
-	flag.StringVar(&GlobalConfig.MothershipIP, "mothership-ip", "10.0.0.10", "Mothership IP address")
-	flag.IntVar(&GlobalConfig.MothershipPort, "mothership-port", 9999, "Mothership port")
-	if isAgent {
-		flag.StringVar(&GlobalConfig.RoverIP, "rover-ip", "10.0.1.20", "Rover IP address")
+// InitConfig inicializa a configuração com flags.
+// Se isRover = true, lê também o IP do rover (para debug).
+func InitConfig(isRover bool) {
+	flag.StringVar(&GlobalConfig.MotherIP, "mother-ip", "127.0.0.1", "Endereço IP da Nave Mãe")
+
+	if isRover {
+		flag.StringVar(&GlobalConfig.RoverIP, "rover-ip", "127.0.0.1", "Endereço IP do Rover (debug)")
 	}
 
-	// Parse flags
 	flag.Parse()
 }
 
-// Debug function to print the current configuration
+// PrintConfig mostra os IPs configurados (debug).
 func PrintConfig() {
-	fmt.Printf("Mothership: %s:%d\n", GlobalConfig.MothershipIP, GlobalConfig.MothershipPort)
+	fmt.Printf("🛰️ Nave Mãe IP: %s\n", GlobalConfig.MotherIP)
 	if GlobalConfig.RoverIP != "" {
-		fmt.Printf("Rover IP: %s\n", GlobalConfig.RoverIP)
+		fmt.Printf("🤖 Rover IP: %s\n", GlobalConfig.RoverIP)
 	}
 }
 
-// GetMothershipAddr returns the full mothership address (IP:Port)
-func GetMothershipAddr() string {
-	return fmt.Sprintf("%s:%d", GlobalConfig.MothershipIP, GlobalConfig.MothershipPort)
+// GetMotherIP devolve o IP da Nave Mãe.
+func GetMotherIP() string {
+	return GlobalConfig.MotherIP
 }
 
-// GetMothershipIP returns the mothership IP address
-func GetMothershipIP() string {
-	return GlobalConfig.MothershipIP
-}
-
-// GetMothershipPort returns the mothership port
-func GetMothershipPort() int {
-	return GlobalConfig.MothershipPort
-}
-
-// GetRoverIP returns the rover IP address
+// GetRoverIP devolve o IP do Rover (opcional).
 func GetRoverIP() string {
 	return GlobalConfig.RoverIP
 }
