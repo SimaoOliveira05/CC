@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-func main() {
 
+func main() {
 	config.InitConfig(false)
 	config.PrintConfig()
 
@@ -20,139 +20,146 @@ func main() {
 
 	fmt.Println("🛰️ Nave-Mãe à escuta...")
 
-	// Creates the Mission Manager
-	missionManager := ml.NewMissionManager() // ← MUDA de mission para ml
+	// Cria o Mission Manager
+	missionManager := ml.NewMissionManager()
 
-	// Goroutine (thread) para ler pacotes UDP
+	// Goroutine para ler pacotes UDP
 	go mlListener(conn, missionManager)
 
-	// infinite loop :)
+	// Loop infinito
 	select {}
 }
 
-// udpListener - thread que lê continuamente da porta UDP
-func mlListener(conn *net.UDPConn, mm *ml.MissionManager) { // ← MUDA de mission para ml
+// mlListener lê continuamente pacotes UDP
+func mlListener(conn *net.UDPConn, mm *ml.MissionManager) {
 	buf := make([]byte, 1024)
 
 	for {
+		// n é o número de bytes lidos
 		n, clientAddr, err := conn.ReadFromUDP(buf)
 		if err != nil {
 			fmt.Println("❌ Erro ao ler UDP:", err)
 			continue
 		}
 
+		// buf[:n] contém os bytes lidos :n descarta o resto do buffer
 		p := ml.FromBytes(buf[:n])
-
 		go handlePacket(p, clientAddr, conn, mm)
 
 		fmt.Println("📨 Recebido pacote do tipo:", p.MsgType, "de", clientAddr)
 	}
 }
 
-// handlePacket - processa cada pacote recebido numa thread separada
-func handlePacket(p ml.Packet, clientAddr *net.UDPAddr, conn *net.UDPConn, mm *ml.MissionManager) { // ← MUDA
-
+// handlePacket processa cada pacote numa goroutine separada
+func handlePacket(p ml.Packet, clientAddr *net.UDPAddr, conn *net.UDPConn, mm *ml.MissionManager) {
 	switch p.MsgType {
-
 	case ml.MSG_REQUEST:
-		// Gera um ID único para a missão
-		missionID := uint32(time.Now().Unix())
-
-		// Cria dados da missão
-		payload := ml.MissionData{
-			MsgID:           uint16(missionID),
-			Coordinate:      utils.Coordinate{Latitude: 32, Longitude: 25},
-			TaskType:        ml.Rescue,
-			Duration:        300,
-			UpdateFrequency: 20,
-			Priority:        0,
-		}
-
-		// Cria o estado da missão e adiciona ao gestor
-		missionState := &ml.MissionState{ // ← MUDA de mission para ml
-			ID:              missionID,
-			IDRover:         0,
-			TaskType:        payload.TaskType,
-			Duration:        time.Duration(payload.Duration) * time.Second,
-			UpdateFrequency: time.Duration(payload.UpdateFrequency) * time.Second,
-			LastUpdate:      time.Now(),
-			CreatedAt:       time.Now(),
-			Priority:        payload.Priority,
-			State:           "Pending",
-		}
-
-		// Adiciona missão ao gestor
-		mm.AddMission(missionState)
-		fmt.Printf("📝 Missão %d registada no gestor\n", missionID)
-
-		// Envia a missão ao cliente
-		missionPacket := ml.Packet{
-			MsgType: ml.MSG_MISSION,
-			SeqNum:  0,
-			AckNum:  p.SeqNum + 1,
-			Payload: payload.ToBytes(),
-		}
-
-		missionPacket.Checksum = ml.Checksum(missionPacket.Payload)
-
-		_, err := conn.WriteToUDP(missionPacket.ToBytes(), clientAddr)
-		if err != nil {
-			fmt.Println("❌ Erro ao enviar missão:", err)
-			return
-		}
-
-		fmt.Printf("✅ Missão %d enviada para %s\n", missionID, clientAddr)
-
-		// Inicia tracking da missão
-		// go trackMissionProgress(mm, missionID)
-
+		handleMissionRequest(p, clientAddr, conn, mm)
 	case ml.MSG_ACK:
-		fmt.Printf("✅ ACK recebido de %s (SeqNum: %d)\n", clientAddr, p.SeqNum)
-
+		handleACK(p, clientAddr)
 	case ml.MSG_REPORT:
-		fmt.Printf("📊 Relatório recebido de %s\n", clientAddr)
-
-		if len(p.Payload) < 1 {
-			fmt.Println("❌ Payload vazio")
-			return
-		}
-
-		taskType := p.Payload[0]
-		fmt.Printf("🔍 TaskType detectado: %d\n", taskType)
-
-		// Map de constructores para cada tipo de report
-		reportTypes := map[uint8]struct {
-			name   string
-			report ml.Report
-		}{
-			ml.TASK_SAMPLE_COLLECTION: {"[Amostra]", &ml.SampleReport{}},
-			ml.TASK_IMAGE_CAPTURE:     {"[Imagem]", &ml.ImageReport{}},
-			ml.TASK_ENV_ANALYSIS:      {"[Ambiente]", &ml.EnvReport{}},
-			ml.TASK_REPAIR_RESCUE:     {"[Reparação]", &ml.RepairReport{}},
-			ml.TASK_TOPO_MAPPING:      {"[Topografia]", &ml.TopoReport{}},
-			ml.TASK_INSTALLATION:      {"[Instalação]", &ml.InstallReport{}},
-		}
-
-		reportInfo, exists := reportTypes[taskType]
-		if !exists {
-			fmt.Printf("⚠️ TaskType desconhecido: %d\n", taskType)
-			return
-		}
-
-		// Desserializa o report genérico
-		err := reportInfo.report.FromBytes(p.Payload)
-		if err != nil {
-			fmt.Printf("❌ Erro ao desserializar %s: %v\n", reportInfo.name, err)
-			return
-		}
-
-		fmt.Printf("✅ %s %s\n", reportInfo.name, reportInfo.report.String())
-
+		handleReport(p, clientAddr)
 	case ml.MSG_MISSION_END:
-		fmt.Printf("🏁 Fim de missão recebido de %s\n", clientAddr)
-		// TODO: atualizar estado da missão no gestor
-
+		handleMissionEnd(p, clientAddr)
 	default:
 		fmt.Printf("⚠️ Tipo de pacote desconhecido: %d\n", p.MsgType)
 	}
+}
+
+// handleMissionRequest processa pedidos de missão do rover
+func handleMissionRequest(p ml.Packet, clientAddr *net.UDPAddr, conn *net.UDPConn, mm *ml.MissionManager) {
+	// Gera um ID único para a missão
+	missionID := uint32(time.Now().Unix())
+
+	// Cria payload da missão
+	payload := ml.MissionData{
+		MsgID:           uint16(missionID),
+		Coordinate:      utils.Coordinate{Latitude: 32, Longitude: 25},
+		TaskType:        ml.TASK_REPAIR_RESCUE,
+		Duration:        10,
+		UpdateFrequency: 1,
+		Priority:        0,
+	}
+
+	// Cria estado da missão
+	missionState := &ml.MissionState{
+		ID:              missionID,
+		IDRover:         0,
+		TaskType:        payload.TaskType,
+		Duration:        time.Duration(payload.Duration) * time.Second,
+		UpdateFrequency: time.Duration(payload.UpdateFrequency) * time.Second,
+		LastUpdate:      time.Now(),
+		CreatedAt:       time.Now(),
+		Priority:        payload.Priority,
+		State:           "Pending",
+	}
+
+	// Adiciona missão ao gestor
+	mm.AddMission(missionState)
+	fmt.Printf("📝 Missão %d registada no gestor\n", missionID)
+
+	// Envia a missão ao cliente
+	missionPacket := ml.Packet{
+		MsgType: ml.MSG_MISSION,
+		SeqNum:  0,
+		AckNum:  p.SeqNum + 1,
+		Payload: payload.ToBytes(),
+	}
+
+	missionPacket.Checksum = ml.Checksum(missionPacket.Payload)
+
+	if _, err := conn.WriteToUDP(missionPacket.ToBytes(), clientAddr); err != nil {
+		fmt.Println("❌ Erro ao enviar missão:", err)
+		return
+	}
+
+	fmt.Printf("✅ Missão %d enviada para %s\n", missionID, clientAddr)
+}
+
+// handleACK processa confirmações de entrega
+func handleACK(p ml.Packet, clientAddr *net.UDPAddr) {
+	fmt.Printf("✅ ACK recebido de %s (SeqNum: %d)\n", clientAddr, p.SeqNum)
+}
+
+// handleReport processa relatórios dos rovers
+func handleReport(p ml.Packet, clientAddr *net.UDPAddr) {
+	fmt.Printf("📊 Relatório recebido de %s\n", clientAddr)
+
+	if len(p.Payload) < 1 {
+		fmt.Println("❌ Payload vazio")
+		return
+	}
+
+	taskType := p.Payload[0]
+	fmt.Printf("🔍 TaskType detectado: %d\n", taskType)
+
+	reportTypes := map[uint8]struct {
+		name   string
+		report ml.Report
+	}{
+		ml.TASK_SAMPLE_COLLECTION: {"[Amostra]", &ml.SampleReport{}},
+		ml.TASK_IMAGE_CAPTURE:     {"[Imagem]", &ml.ImageReport{}},
+		ml.TASK_ENV_ANALYSIS:      {"[Ambiente]", &ml.EnvReport{}},
+		ml.TASK_REPAIR_RESCUE:     {"[Reparação]", &ml.RepairReport{}},
+		ml.TASK_TOPO_MAPPING:      {"[Topografia]", &ml.TopoReport{}},
+		ml.TASK_INSTALLATION:      {"[Instalação]", &ml.InstallReport{}},
+	}
+
+	reportInfo, exists := reportTypes[taskType]
+	if !exists {
+		fmt.Printf("⚠️ TaskType desconhecido: %d\n", taskType)
+		return
+	}
+
+	if err := reportInfo.report.FromBytes(p.Payload); err != nil {
+		fmt.Printf("❌ Erro ao desserializar %s: %v\n", reportInfo.name, err)
+		return
+	}
+
+	fmt.Printf("✅ %s %s\n", reportInfo.name, reportInfo.report.String())
+}
+
+// handleMissionEnd processa notificações de fim de missão
+func handleMissionEnd(p ml.Packet, clientAddr *net.UDPAddr) {
+	fmt.Printf("🏁 Fim de missão recebido de %s\n", clientAddr)
 }

@@ -7,16 +7,7 @@ import (
 	"fmt"
 )
 
-const (
-	Image_Capture          = 0
-	Object_Sample          = 1
-	Environmental_Analysis = 2
-	Rescue                 = 3
-	Mapping                = 4
-	Object_Installation    = 5
-)
-
-type Data struct {
+type MissionData struct {
 	MsgID           uint16
 	Coordinate      utils.Coordinate
 	TaskType        uint8
@@ -25,8 +16,9 @@ type Data struct {
 	Priority        uint8
 }
 
+
 // ToBytes serializa a estrutura Data em bytes (BigEndian).
-func (d *Data) ToBytes() []byte {
+func (d *MissionData) ToBytes() []byte {
 	buf := new(bytes.Buffer)
 	// MsgID
 	_ = binary.Write(buf, binary.BigEndian, d.MsgID)
@@ -45,8 +37,8 @@ func (d *Data) ToBytes() []byte {
 }
 
 // FromBytes desserializa bytes em Data (espera BigEndian e a mesma ordem usada em ToBytes).
-func DataFromBytes(data []byte) Data {
-	var d Data
+func DataFromBytes(data []byte) MissionData {
+	var d MissionData
 	buf := bytes.NewReader(data)
 	_ = binary.Read(buf, binary.BigEndian, &d.MsgID)
 	_ = binary.Read(buf, binary.BigEndian, &d.Coordinate.Latitude)
@@ -60,17 +52,17 @@ func DataFromBytes(data []byte) Data {
 
 func taskTypeName(t uint8) string {
 	switch t {
-	case Image_Capture:
+	case TASK_IMAGE_CAPTURE:
 		return "Image_Capture"
-	case Object_Sample:
+	case TASK_SAMPLE_COLLECTION:
 		return "Object_Sample"
-	case Environmental_Analysis:
+	case TASK_ENV_ANALYSIS:
 		return "Environmental_Analysis"
-	case Rescue:
+	case TASK_REPAIR_RESCUE:
 		return "Rescue"
-	case Mapping:
+	case TASK_TOPO_MAPPING:
 		return "Mapping"
-	case Object_Installation:
+	case TASK_INSTALLATION:
 		return "Object_Installation"
 	default:
 		return "Unknown"
@@ -78,7 +70,13 @@ func taskTypeName(t uint8) string {
 }
 
 // String devolve uma representação legível do Data.
-func (d Data) String() string {
+func (d MissionData) String() string {
 	return fmt.Sprintf("Data{MsgID:%d, Coordinate:%s, TaskType:%s(%d), Duration:%d, UpdateFreq:%d, Priority:%d}",
 		d.MsgID, d.Coordinate.String(), taskTypeName(d.TaskType), d.TaskType, d.Duration, d.UpdateFrequency, d.Priority)
 }
+
+type ReportData struct {
+	EndMission bool
+	ReportInfo Report
+}
+
