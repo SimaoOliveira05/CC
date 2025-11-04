@@ -1,66 +1,178 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"src/config"
 	"src/internal/ml"
 	"time"
+	"os"
+	"sync"
 )
 
+type Rover struct {
+    id           string
+    conn         *net.UDPConn
+    addrMother   *net.UDPAddr
+    seqNum       uint32
+    window       map[uint32]*OutgoingMessage // pacotes enviados mas ainda não ACKed
+    sendChan     chan ml.Packet
+	activeMission uint8
+	mu 			sync.Mutex
+	cond 	  *sync.Cond
+	waiting 	bool
+    //ackChan      chan uint32
+    //timeout      time.Duration
+}
+
+type OutgoingMessage struct {
+    Packet   ml.Packet
+    SentAt   time.Time
+    Acked    bool
+}
+
 func main() {
+
+	// Verifica se o argumento do id foi passado
+    if len(os.Args) < 2 {
+        fmt.Println("Uso: ./rover1 <id_do_rover>")
+        return
+    }
+    roverID := os.Args[1]
+
 	// Inicializa configuração (isRover = true)
 	config.InitConfig(true)
 	config.PrintConfig()
 
-	runMissionUDP(context.Background())
-
-	fmt.Printf("🤖 Rover conectado à Mothership em %s\n", config.GetMotherIP())
-}
-
-func runMissionUDP(ctx context.Context) {
-
 	mothershipAddr := config.GetMotherIP()
-	
-	addr, err := net.ResolveUDPAddr("udp", mothershipAddr+":9999")
+	udpAddr, err := net.ResolveUDPAddr("udp", mothershipAddr+":9999")
+
 	if err != nil {
-		fmt.Println("❌ Erro ao resolver endereço:", err)
+		fmt.Println("Erro ao resolver endereço UDP da nave-mãe:", err)
 		return
 	}
 
-	// Conecta à mothership
-	conn, err := net.DialUDP("udp", nil, addr)
+	roverConn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
 		fmt.Println("❌ Erro ao conectar:", err)
 		return
 	}
-	defer conn.Close()
+	defer roverConn.Close()
 
-	// 1) Pedir missão
-	req := ml.Packet{MsgType: ml.MSG_REQUEST, SeqNum: 1, AckNum: 0, Payload: []byte{}}
-	req.Checksum = ml.Checksum(req.Payload)
-	conn.Write(req.ToBytes())
+	rover := Rover{
+		id:         roverID,
+		conn:       roverConn, // Inicialize com uma conexão UDP real se necessário
+		addrMother: udpAddr, // Inicialize com o endereço da mãe resolvido
+		seqNum:     0,
+		window:     make(map[uint32]*OutgoingMessage),
+		sendChan:   make(chan ml.Packet, 100), // buffer de 100, ajuste conforme necessário
+		activeMission: 0,
+		mu:         sync.Mutex{},
+		cond:    sync.NewCond(&sync.Mutex{}),
+		waiting:  false,
+	}
 
-	// 2) Esperar resposta de missão
 
+	go sender(&rover)
+	go receiver(&rover)
+
+
+	for{
+		rover.cond.L.Lock()
+		for rover.GetActiveMission() != 0 {
+			rover.cond.Wait() // Espera até todas as missões acabarem
+		}
+		rover.cond.L.Unlock()
+		
+		if(!rover.waiting){
+			sendRequest(rover.sendChan)
+			rover.waiting = true
+		} else {
+			time.Sleep(1 * time.Second) // Espera um pouco antes de verificar novamente
+		}
+	}
+}
+
+// Para alterar a flag:
+func (r *Rover) IncrementActiveMission() {
+    r.mu.Lock()
+    defer r.mu.Unlock()
+    r.activeMission++
+	r.waiting = false
+}
+
+// Para ler a flag:
+func (r *Rover) GetActiveMission() uint8 {
+    r.mu.Lock()
+    defer r.mu.Unlock()
+    return r.activeMission
+}
+
+// Para decrementar a flag:
+func (r *Rover) DecrementActiveMission() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.activeMission > 0 {
+		r.activeMission--
+		if r.activeMission == 0 {
+			r.cond.L.Lock()
+			r.cond.Signal()
+			r.cond.L.Unlock()
+		}
+	}
+}
+
+
+func sender(rover *Rover) {
+    for pkt := range rover.sendChan {
+        // Centraliza o SeqNum
+        pkt.SeqNum = uint16(rover.seqNum)
+		rover.seqNum++
+
+        // Atualiza checksum após encriptação
+        pkt.Checksum = ml.Checksum(pkt.Payload)
+
+        // Envia para a nave-mãe
+        _, err := rover.conn.Write(pkt.ToBytes())
+        if err != nil {
+            fmt.Println("Erro ao enviar pacote:", err)
+            continue
+        }
+
+        // Regista na window
+        rover.window[rover.seqNum] = &OutgoingMessage{
+            Packet: pkt,
+            SentAt: time.Now(),
+            Acked:  false,
+        }
+        fmt.Printf("Pacote %d enviado e encriptado\n", pkt.SeqNum)
+    }
+}
+
+func receiver(rover *Rover) {
 	buf := make([]byte, 2048)
-	_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-	n, _, err := conn.ReadFromUDP(buf)
-	if err != nil {
-		fmt.Println("❌ Timeout missão:", err)
-		return
-	}
+	for {
+		n, _, err := rover.conn.ReadFromUDP(buf)
+		if err != nil {
+			fmt.Println("Erro ao ler pacote UDP:", err)
+			continue
+		}
+		
+		pkt := ml.FromBytes(buf[:n])
+		fmt.Printf("📨 Pacote recebido do tipo: %d\n", pkt.MsgType)
+	
+		switch pkt.MsgType {
 
-	resp := ml.FromBytes(buf[:n])
-	if resp.MsgType != ml.MSG_MISSION {
-		fmt.Println("⚠️ Mensagem inesperada:", resp.MsgType)
-		return
+			case ml.MSG_MISSION:
+				go generate(ml.DataFromBytes(pkt.Payload), rover)
+		}
 	}
-	mission := ml.DataFromBytes(resp.Payload)
-	fmt.Println("📝 Missão recebida:", mission.String())
+}
 
-	// 3) Executar: enviar reports (periódicos ou apenas final)
+func generate(mission ml.MissionData, rover *Rover){
+
+	rover.IncrementActiveMission()
+	defer rover.DecrementActiveMission()
 
 	deadline := time.NewTimer(time.Duration(mission.Duration) * time.Second)
 	defer deadline.Stop()
@@ -72,32 +184,28 @@ func runMissionUDP(ctx context.Context) {
 
 		for {
 			select {
-			case <-ctx.Done():
-				return
+
 			case <-deadline.C:
 				// Termina quando Duration expirar
-				sendFinalReport(conn, mission)
+				sendReport(mission,true, rover.sendChan)
 				return
 			case <-ticker.C:
 				// Enviar report periódico
-				sendReport(conn, mission,false)
+				sendReport(mission,false, rover.sendChan)
 			}
 		}
 	} else {
 		// Modo sem updates: apenas espera Duration e envia um report final
-		select {
-		case <-ctx.Done():
-			return
-		case <-deadline.C:
-			// Termina quando Duration expirar
-			sendFinalReport(conn, mission)
-			return
-		}
+		<-deadline.C
+		// Termina quando Duration expirar
+		sendReport(mission,true, rover.sendChan)
+		return
 	}
 }
 
+
 // sendReport serializa e envia um report para a mothership
-func sendReport(conn *net.UDPConn, mission ml.MissionData, final bool) {
+func sendReport(mission ml.MissionData, final bool, channel chan ml.Packet) {
 	payload := buildReportPayload(mission, final)
 	if payload == nil {
 		return
@@ -105,20 +213,21 @@ func sendReport(conn *net.UDPConn, mission ml.MissionData, final bool) {
 
 	pkt := ml.Packet{
 		MsgType: ml.MSG_REPORT,
-		SeqNum:  uint16(time.Now().Unix() & 0xFFFF),
+		SeqNum:  0,
 		AckNum:  0,
+		Checksum: 0,
 		Payload: payload,
 	}
-	pkt.Checksum = ml.Checksum(pkt.Payload)
-	conn.Write(pkt.ToBytes())
+
+	channel <- pkt
 	fmt.Printf("📤 Report enviado (Missão %d)\n", mission.MsgID)
 }
 
-// sendFinalReport envia o report final antes de terminar a missão
-func sendFinalReport(conn *net.UDPConn, mission ml.MissionData) {
-	fmt.Println("📤 Enviando report final...")
-	sendReport(conn, mission,true)
+func sendRequest(channel chan ml.Packet){
+	req := ml.Packet{MsgType: ml.MSG_REQUEST, SeqNum: 0, AckNum: 0, Checksum: 0, Payload: []byte{}}
+	channel <- req
 }
+
 
 
 // buildReportPayload cria o payload correto conforme o TaskType
