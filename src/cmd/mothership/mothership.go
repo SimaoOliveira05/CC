@@ -58,9 +58,7 @@ func handlePacket(p ml.Packet, clientAddr *net.UDPAddr, conn *net.UDPConn, mm *m
 	case ml.MSG_ACK:
 		handleACK(p, clientAddr)
 	case ml.MSG_REPORT:
-		handleReport(p, clientAddr)
-	case ml.MSG_MISSION_END:
-		handleMissionEnd(p, clientAddr)
+		handleReport(p, clientAddr,mm)
 	default:
 		fmt.Printf("⚠️ Tipo de pacote desconhecido: %d\n", p.MsgType)
 	}
@@ -69,15 +67,15 @@ func handlePacket(p ml.Packet, clientAddr *net.UDPAddr, conn *net.UDPConn, mm *m
 // handleMissionRequest processa pedidos de missão do rover
 func handleMissionRequest(p ml.Packet, clientAddr *net.UDPAddr, conn *net.UDPConn, mm *ml.MissionManager) {
 	// Gera um ID único para a missão
-	missionID := uint32(time.Now().Unix())
+	missionID := uint16(time.Now().Unix())
 
 	// Cria payload da missão
 	payload := ml.MissionData{
 		MsgID:           uint16(missionID),
 		Coordinate:      utils.Coordinate{Latitude: 32, Longitude: 25},
-		TaskType:        ml.TASK_REPAIR_RESCUE,
-		Duration:        10,
-		UpdateFrequency: 1,
+		TaskType:        ml.TASK_ENV_ANALYSIS,
+		Duration:        20,
+		UpdateFrequency: 5,
 		Priority:        0,
 	}
 
@@ -91,6 +89,7 @@ func handleMissionRequest(p ml.Packet, clientAddr *net.UDPAddr, conn *net.UDPCon
 		LastUpdate:      time.Now(),
 		CreatedAt:       time.Now(),
 		Priority:        payload.Priority,
+        Report:          nil,
 		State:           "Pending",
 	}
 
@@ -122,7 +121,7 @@ func handleACK(p ml.Packet, clientAddr *net.UDPAddr) {
 }
 
 // handleReport processa relatórios dos rovers
-func handleReport(p ml.Packet, clientAddr *net.UDPAddr) {
+func handleReport(p ml.Packet, clientAddr *net.UDPAddr, mm *ml.MissionManager) {
 	fmt.Printf("📊 Relatório recebido de %s\n", clientAddr)
 
 	if len(p.Payload) < 1 {
@@ -156,10 +155,17 @@ func handleReport(p ml.Packet, clientAddr *net.UDPAddr) {
 		return
 	}
 
+	if reportInfo.report.IsLast() {
+		fmt.Printf("🏁 Último relatório recebido.\n")
+	}
+    
 	fmt.Printf("✅ %s %s\n", reportInfo.name, reportInfo.report.String())
+
+
+
+	// Atualiza o estado da missão no Mission Manager
+	ml.UpdateMission(mm, reportInfo.report)
+
+    mm.PrintMissions()
 }
 
-// handleMissionEnd processa notificações de fim de missão
-func handleMissionEnd(p ml.Packet, clientAddr *net.UDPAddr) {
-	fmt.Printf("🏁 Fim de missão recebido de %s\n", clientAddr)
-}

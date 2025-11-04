@@ -4,3 +4,6 @@ Caso quiserem corre na topologia tem que meter uma flag:
 go run mothership.go --mother-ip *ip da nave mãe*
 
 go run rover.go --mother-ip *ip da nave mãe* --rover-ip *ip do rover*
+
+Meti uma flag nos pacotes do tipo Report que indicam se é o ultimo report, é basicamente a mesma 
+coise que ter um pacote MISSION_END

@@ -3,11 +3,12 @@ package ml
 import (
 	"sync"
 	"time"
+	"fmt"
 )
 
 // MissionState represents the last updated state of a mission.
 type MissionState struct {
-	ID              uint32
+	ID              uint16
 	IDRover         uint16
 	TaskType        uint8
 	Duration        time.Duration
@@ -15,18 +16,19 @@ type MissionState struct {
 	LastUpdate      time.Time
 	CreatedAt       time.Time
 	Priority        uint8
+	Report          Report
 	State           string // e.g, "Pending", "In Progress", "Completed"
 }
 
 // MissionManager will manage all the active missions.
 type MissionManager struct {
-	missions map[uint32]*MissionState
+	ActiveMissions map[uint16]*MissionState
 	mu       sync.RWMutex
 }
 
 func NewMissionManager() *MissionManager {
 	return &MissionManager{
-		missions: make(map[uint32]*MissionState),
+		ActiveMissions: make(map[uint16]*MissionState),
 	}
 }
 
@@ -34,65 +36,52 @@ func NewMissionManager() *MissionManager {
 func (mm *MissionManager) AddMission(mission *MissionState) {
 	mm.mu.Lock()
 	defer mm.mu.Unlock()
-	mm.missions[mission.ID] = mission
+	mm.ActiveMissions[mission.ID] = mission
 }
 
-// UpdateMission updates a mission state and last update time
-func (mm *MissionManager) UpdateMission(id uint32, state string) {
-	mm.mu.Lock()
-	defer mm.mu.Unlock()
-	if m, exists := mm.missions[id]; exists {
-		m.State = state
-		m.LastUpdate = time.Now()
+func UpdateMission(mm *MissionManager, report Report) {
+
+
+	mission := mm.GetMission(report.GetMissionID())
+    if mission == nil {
+        return
+    }
+
+    // Atualiza o estado genérico
+	mission.Report = report
+    mission.LastUpdate = time.Now()
+	if report.IsLast() {
+		mission.State = "Completed"
+	} else {
+		mission.State = "In Progress"
 	}
+
+    // Aqui podes adicionar lógica para atualizar outros campos conforme o tipo de report
+    // Exemplo: mission.TaskType, mission.Priority, etc.
 }
 
 // DeleteMission removes a mission from the manager
-func (mm *MissionManager) DeleteMission(id uint32) {
+func (mm *MissionManager) DeleteMission(id uint16) {
 	mm.mu.Lock()
 	defer mm.mu.Unlock() // When the function ends, unlock the mutex even in case of panic
-	delete(mm.missions, id)
+	delete(mm.ActiveMissions, id)
 }
 
 // GetMission gets a mission by ID
-func (mm *MissionManager) GetMission(id uint32) *MissionState {
+func (mm *MissionManager) GetMission(id uint16) *MissionState {
 	mm.mu.RLock()
 	defer mm.mu.RUnlock() // When the function ends, unlock the mutex even in case of panic
-	return mm.missions[id]
+	return mm.ActiveMissions[id]
 }
 
-// PopulateWithDemoMissions seeds the MissionManager with a few demo missions
-// using different task types, durations and priorities. It returns the created
-// mission IDs so callers can reference them in tests.
-func PopulateWithDemoMissions(mm *MissionManager) []uint32 {
-	now := time.Now()
-	ids := make([]uint32, 0, 5)
-
-	// small helper to add one mission
-	add := func(offsetSec int, roverID uint16, taskType uint8, durSec, freqSec int, priority uint8, state string) {
-		id := uint32(now.Unix()) + uint32(offsetSec)
-		m := &MissionState{
-			ID:              id,
-			IDRover:         roverID,
-			TaskType:        taskType,
-			Duration:        time.Duration(durSec) * time.Second,
-			UpdateFrequency: time.Duration(freqSec) * time.Second,
-			LastUpdate:      now,
-			CreatedAt:       now,
-			Priority:        priority,
-			State:           state,
-		}
-		mm.AddMission(m)
-		ids = append(ids, id)
+// PrintMissions imprime todas as missões e seus estados
+func (mm *MissionManager) PrintMissions() {
+	mm.mu.RLock()
+	defer mm.mu.RUnlock()
+	fmt.Println("===== Missões Ativas =====")
+	for id, m := range mm.ActiveMissions {
+		fmt.Printf("ID: %d | Rover: %d | TaskType: %d | Estado: %s | Duração: %v | Última atualização: %v | Detalhes: %s\n",
+			id, m.IDRover, m.TaskType, m.State, m.Duration, m.LastUpdate, m.Report.String())
 	}
-
-	// Add a few varied demo missions (task types from data.go)
-	add(1, 101, TASK_IMAGE_CAPTURE, 180, 10, 2, "Pending")
-	add(2, 101, TASK_SAMPLE_COLLECTION, 240, 15, 1, "Pending")
-	//add(3, 101, TASK_ENV_ANALYSIS, 300, 20, 3, "In Progress")
-	add(4, 101, TASK_REPAIR_RESCUE, 120, 5, 0, "Pending")
-	add(5, 101, TASK_TOPO_MAPPING, 600, 30, 2, "Pending")
-	add(6, 101, TASK_INSTALLATION, 420, 20, 1, "Pending")
-
-	return ids
+	fmt.Println("==========================")
 }
