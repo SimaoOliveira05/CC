@@ -80,8 +80,13 @@ func (mm *MissionManager) PrintMissions() {
 	defer mm.mu.RUnlock()
 	fmt.Println("===== Missões Ativas =====")
 	for id, m := range mm.ActiveMissions {
-		fmt.Printf("ID: %d | Rover: %d | TaskType: %d | Estado: %s | Duração: %v | Última atualização: %v | Detalhes: %s\n",
-			id, m.IDRover, m.TaskType, m.State, m.Duration, m.LastUpdate, m.Report.String())
+		if (m.Report == nil) {
+			fmt.Printf("ID: %d | Rover: %d | TaskType: %d | Estado: %s | Duração: %v | Última atualização: %v | Detalhes: Nenhum relatório recebido\n",
+				id, m.IDRover, m.TaskType, m.State, m.Duration, m.LastUpdate)
+		} else {
+			fmt.Printf("ID: %d | Rover: %d | TaskType: %d | Estado: %s | Duração: %v | Última atualização: %v | Detalhes: %s\n",
+				id, m.IDRover, m.TaskType, m.State, m.Duration, m.LastUpdate, m.Report.String())
+		}
 	}
 	fmt.Println("==========================")
 }

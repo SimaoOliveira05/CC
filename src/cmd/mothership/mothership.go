@@ -74,8 +74,8 @@ func handleMissionRequest(p ml.Packet, clientAddr *net.UDPAddr, conn *net.UDPCon
 		MsgID:           uint16(missionID),
 		Coordinate:      utils.Coordinate{Latitude: 32, Longitude: 25},
 		TaskType:        ml.TASK_ENV_ANALYSIS,
-		Duration:        20,
-		UpdateFrequency: 5,
+		Duration:        10,
+		UpdateFrequency: 2,
 		Priority:        0,
 	}
 

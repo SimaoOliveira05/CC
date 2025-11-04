@@ -7,3 +7,15 @@ go run rover.go --mother-ip *ip da nave mãe* --rover-ip *ip do rover*
 
 Meti uma flag nos pacotes do tipo Report que indicam se é o ultimo report, é basicamente a mesma 
 coise que ter um pacote MISSION_END
+
+
+PERGUNTAS AO BRO LOST:
+
+
+Struct rover ou variáveis globais?
+
+Na cena do wait antes de 
+
+ID do rover pode ser passado como argumento? Mothership é que atribui?
+
+Não é preciso fazer seq += len(payload) porque UDP nunca vai fragmentar o nosso pacote?!?!
