@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+var sent bool = true
 
 func main() {
 	config.InitConfig(false)
@@ -105,12 +106,32 @@ func handleMissionRequest(p ml.Packet, clientAddr *net.UDPAddr, conn *net.UDPCon
 		Payload: payload.ToBytes(),
 	}
 
-	missionPacket.Checksum = ml.Checksum(missionPacket.Payload)
 
-	if _, err := conn.WriteToUDP(missionPacket.ToBytes(), clientAddr); err != nil {
+	// Envia a missão ao cliente
+	noMissionPacket := ml.Packet{
+		MsgType: ml.MSG_NO_MISSION,
+		SeqNum:  0,
+		AckNum:  p.SeqNum + 1,
+		Payload: []byte{},
+	}
+
+	toSend := missionPacket
+
+	if sent {
+		toSend = missionPacket
+	} else {
+		toSend = noMissionPacket
+	}
+
+
+	toSend.Checksum = ml.Checksum(toSend.Payload)
+
+	if _, err := conn.WriteToUDP(toSend.ToBytes(), clientAddr); err != nil {
 		fmt.Println("❌ Erro ao enviar missão:", err)
 		return
 	}
+	sent = !sent
+
 
 	fmt.Printf("✅ Missão %d enviada para %s\n", missionID, clientAddr)
 }

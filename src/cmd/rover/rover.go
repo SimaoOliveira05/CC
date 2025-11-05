@@ -17,10 +17,11 @@ type Rover struct {
     seqNum       uint32
     window       map[uint32]*OutgoingMessage // pacotes enviados mas ainda não ACKed
     sendChan     chan ml.Packet
-	activeMission uint8
+	activeMissions uint8
 	mu 			sync.Mutex
 	cond 	  *sync.Cond
 	waiting 	bool
+	missionReceivedChan chan bool
     //ackChan      chan uint32
     //timeout      time.Duration
 }
@@ -35,7 +36,7 @@ func main() {
 
 	// Verifica se o argumento do id foi passado
     if len(os.Args) < 2 {
-        fmt.Println("Uso: ./rover1 <id_do_rover>")
+        fmt.Println("Use: ./rover1 <id_do_rover>")
         return
     }
     roverID := os.Args[1]
@@ -66,11 +67,14 @@ func main() {
 		seqNum:     0,
 		window:     make(map[uint32]*OutgoingMessage),
 		sendChan:   make(chan ml.Packet, 100), // buffer de 100, ajuste conforme necessário
-		activeMission: 0,
+		activeMissions: 0,
 		mu:         sync.Mutex{},
-		cond:    sync.NewCond(&sync.Mutex{}),
-		waiting:  false,
+		waiting:   false,
+		missionReceivedChan: make(chan bool, 1), //Channel para saber se a nave mãe enviou missões
 	}
+
+	// Usar os mesmos locks
+	rover.cond = sync.NewCond(&rover.mu)
 
 
 	go sender(&rover)
@@ -79,16 +83,22 @@ func main() {
 
 	for{
 		rover.cond.L.Lock()
-		for rover.GetActiveMission() != 0 {
+		
+		for rover.GetActiveMissions() != 0 {
 			rover.cond.Wait() // Espera até todas as missões acabarem
 		}
 		rover.cond.L.Unlock()
 		
 		if(!rover.waiting){
 			sendRequest(rover.sendChan)
-			rover.waiting = true
-		} else {
-			time.Sleep(1 * time.Second) // Espera um pouco antes de verificar novamente
+			received := <-rover.missionReceivedChan
+			if received { //Nave-mãe enviou missões
+				rover.waiting = true
+			} else {
+				// Nave mãe não tem missões para enviar, esperamos 5 segundos para pedir outra vez
+				fmt.Println("🚫 Sem missões disponíveis.")
+				time.Sleep(5 * time.Second)
+			}
 		}
 	}
 }
@@ -97,24 +107,24 @@ func main() {
 func (r *Rover) IncrementActiveMission() {
     r.mu.Lock()
     defer r.mu.Unlock()
-    r.activeMission++
-	r.waiting = false
+    r.activeMissions++
 }
 
 // Para ler a flag:
-func (r *Rover) GetActiveMission() uint8 {
+func (r *Rover) GetActiveMissions() uint8 {
     r.mu.Lock()
     defer r.mu.Unlock()
-    return r.activeMission
+    return r.activeMissions
 }
 
 // Para decrementar a flag:
 func (r *Rover) DecrementActiveMission() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if r.activeMission > 0 {
-		r.activeMission--
-		if r.activeMission == 0 {
+	if r.activeMissions > 0 {
+		r.activeMissions--
+		if r.activeMissions == 0 {
+			r.waiting = false
 			r.cond.L.Lock()
 			r.cond.Signal()
 			r.cond.L.Unlock()
@@ -126,8 +136,8 @@ func (r *Rover) DecrementActiveMission() {
 func sender(rover *Rover) {
     for pkt := range rover.sendChan {
         // Centraliza o SeqNum
-        pkt.SeqNum = uint16(rover.seqNum)
 		rover.seqNum++
+        pkt.SeqNum = uint16(rover.seqNum)
 
         // Atualiza checksum após encriptação
         pkt.Checksum = ml.Checksum(pkt.Payload)
@@ -145,7 +155,7 @@ func sender(rover *Rover) {
             SentAt: time.Now(),
             Acked:  false,
         }
-        fmt.Printf("Pacote %d enviado e encriptado\n", pkt.SeqNum)
+        fmt.Printf("Pacote %d enviado e encriptado\n\n", pkt.SeqNum)
     }
 }
 
@@ -164,7 +174,11 @@ func receiver(rover *Rover) {
 		switch pkt.MsgType {
 
 			case ml.MSG_MISSION:
+				rover.missionReceivedChan <- true
 				go generate(ml.DataFromBytes(pkt.Payload), rover)
+
+			case ml.MSG_NO_MISSION:
+				rover.missionReceivedChan <- false
 		}
 	}
 }

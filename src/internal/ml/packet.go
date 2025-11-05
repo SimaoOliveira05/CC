@@ -11,6 +11,7 @@ const (
     MSG_MISSION     = 1
     MSG_ACK         = 2
     MSG_REPORT      = 3
+    MSG_NO_MISSION  = 4
 )
 
 // Estrutura base do pacote
