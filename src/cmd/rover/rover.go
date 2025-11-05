@@ -10,26 +10,30 @@ import (
 	"sync"
 )
 
+
 type Rover struct {
     id           string
     conn         *net.UDPConn
     addrMother   *net.UDPAddr
     seqNum       uint32
-    window       map[uint32]*OutgoingMessage // pacotes enviados mas ainda não ACKed
-    sendChan     chan ml.Packet
+	sendChan     chan ml.Packet
 	activeMissions uint8
 	mu 			sync.Mutex
 	cond 	  *sync.Cond
 	waiting 	bool
 	missionReceivedChan chan bool
-    //ackChan      chan uint32
-    //timeout      time.Duration
+	window       map[uint32]*OutgoingMessage // pacotes enviados mas ainda não ACKed
+    windowmu	 sync.Mutex
+    expectedAck uint16
+	expectedAckmu sync.Mutex
+	ackmanagerChan chan ml.Packet
+	//window 	    []*OutgoingMessage
+    timeout      time.Duration
 }
 
 type OutgoingMessage struct {
     Packet   ml.Packet
     SentAt   time.Time
-    Acked    bool
 }
 
 func main() {
@@ -65,20 +69,23 @@ func main() {
 		conn:       roverConn, // Inicialize com uma conexão UDP real se necessário
 		addrMother: udpAddr, // Inicialize com o endereço da mãe resolvido
 		seqNum:     0,
-		window:     make(map[uint32]*OutgoingMessage),
+		window:     make(map[uint32]*OutgoingMessage), // Janela de tamanho máximo para SeqNum uint16
 		sendChan:   make(chan ml.Packet, 100), // buffer de 100, ajuste conforme necessário
 		activeMissions: 0,
 		mu:         sync.Mutex{},
+		cond:       sync.NewCond(&sync.Mutex{}),
 		waiting:   false,
 		missionReceivedChan: make(chan bool, 1), //Channel para saber se a nave mãe enviou missões
+		expectedAck: 0,
+		timeout: 1 * time.Second,
 	}
 
-	// Usar os mesmos locks
-	rover.cond = sync.NewCond(&rover.mu)
+
 
 
 	go sender(&rover)
 	go receiver(&rover)
+	go ackmanager(&rover)
 
 
 	for{
@@ -101,6 +108,80 @@ func main() {
 			}
 		}
 	}
+}
+
+func verificaOutgoingmsg(ack uint16, sentTime time.Time, r *Rover) int8 {
+	r.expectedAckmu.Lock()
+	defer r.expectedAckmu.Unlock()
+	if (ack < r.expectedAck) {
+		return 0 // Já foi ACKed
+	}
+
+	if time.Since(sentTime) > r.timeout {
+		return 1 // Timeout
+	}
+
+	return 2 // Ainda a aguardar ACK
+}
+
+//func ackmanager(rover *Rover) {
+//	for {
+//		for seq, msg := range rover.window {
+//			rover.windowmu.Lock()
+//			ack := seq
+//			time := msg.SentAt
+//			rover.windowmu.Unlock()
+//			status := verificaOutgoingmsg(uint16(ack), time, rover)
+//			rover.windowmu.Lock()
+//			if status == 0 {
+//				// Já foi ACKed, remover da janela
+//				delete(rover.window, seq)
+//				fmt.Printf("✅ Pacote %d ACKed e removido da janela\n", ack)
+//			} else if status == 1 {
+//				// Timeout, reenviar
+//				rover.sendChan <- msg.Packet
+//				delete(rover.window, seq)
+//				fmt.Printf("⏰ Timeout no pacote %d, reenviando...\n", ack)
+//			}
+//			rover.windowmu.Unlock()
+//		}
+//		time.Sleep(50*time.Millisecond)
+//	}
+//}
+
+func ackmanager(rover *Rover) {
+    for {
+        // Cria slice temporário com os dados do map sob lock
+        type item struct {
+            seq uint32
+            msg *OutgoingMessage
+        }
+        var items []item
+
+        rover.windowmu.Lock()
+        for seq, msg := range rover.window {
+            items = append(items, item{seq: seq, msg: msg})
+        }
+        rover.windowmu.Unlock()
+
+        // Itera sobre o slice fora do lock
+        for _, it := range items {
+            ack := it.seq
+            sentTime := it.msg.SentAt
+            status := verificaOutgoingmsg(uint16(ack), sentTime, rover)
+            rover.windowmu.Lock()
+            if status == 0 {
+                delete(rover.window, ack)
+                fmt.Printf("✅ Pacote %d ACKed e removido da janela\n", ack)
+            } else if status == 1 {
+                rover.sendChan <- it.msg.Packet
+                delete(rover.window, ack)
+                fmt.Printf("⏰ Timeout no pacote %d, reenviando...\n", ack)
+            }
+            rover.windowmu.Unlock()
+        }
+        //time.Sleep(50 * time.Millisecond)
+    }
 }
 
 // Para alterar a flag:
@@ -136,9 +217,10 @@ func (r *Rover) DecrementActiveMission() {
 func sender(rover *Rover) {
     for pkt := range rover.sendChan {
         // Centraliza o SeqNum
-		rover.seqNum++
-        pkt.SeqNum = uint16(rover.seqNum)
-
+		if(pkt.SeqNum == 0) {
+			rover.seqNum++
+			pkt.SeqNum = uint16(rover.seqNum)
+		}
         // Atualiza checksum após encriptação
         pkt.Checksum = ml.Checksum(pkt.Payload)
 
@@ -149,13 +231,17 @@ func sender(rover *Rover) {
             continue
         }
 
-        // Regista na window
-        rover.window[rover.seqNum] = &OutgoingMessage{
-            Packet: pkt,
-            SentAt: time.Now(),
-            Acked:  false,
-        }
-        fmt.Printf("Pacote %d enviado e encriptado\n\n", pkt.SeqNum)
+        // Adiciona à janela de envio para controle de ACKs
+		go func () {
+			rover.windowmu.Lock()
+			rover.window[uint32(pkt.SeqNum)] = &OutgoingMessage{
+				Packet: pkt,
+				SentAt: time.Now(),
+			}
+			rover.windowmu.Unlock()
+		} ()
+
+		fmt.Printf("📤 Pacote enviado do tipo: %d, SeqNum: %d\n", pkt.MsgType, pkt.SeqNum)
     }
 }
 
@@ -171,6 +257,14 @@ func receiver(rover *Rover) {
 		pkt := ml.FromBytes(buf[:n])
 		fmt.Printf("📨 Pacote recebido do tipo: %d\n", pkt.MsgType)
 	
+
+		ackNum := pkt.AckNum
+				rover.expectedAckmu.Lock()
+				if ackNum >= rover.expectedAck {
+					rover.expectedAck = ackNum 
+				}
+				rover.expectedAckmu.Unlock()
+
 		switch pkt.MsgType {
 
 			case ml.MSG_MISSION:
@@ -179,6 +273,7 @@ func receiver(rover *Rover) {
 
 			case ml.MSG_NO_MISSION:
 				rover.missionReceivedChan <- false
+
 		}
 	}
 }

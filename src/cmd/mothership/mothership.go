@@ -59,6 +59,20 @@ func handlePacket(p ml.Packet, clientAddr *net.UDPAddr, conn *net.UDPConn, mm *m
 	case ml.MSG_ACK:
 		handleACK(p, clientAddr)
 	case ml.MSG_REPORT:
+
+		// Envia ACK de volta ao rover
+		ackPacket := ml.Packet{
+			MsgType: ml.MSG_ACK,
+			SeqNum:  0,
+			AckNum:  p.SeqNum + 1,
+			Payload: []byte{},
+		}
+		ackPacket.Checksum = ml.Checksum(ackPacket.Payload)
+
+		if _, err := conn.WriteToUDP(ackPacket.ToBytes(), clientAddr); err != nil {
+			fmt.Println("❌ Erro ao enviar ACK:", err)
+			return
+		}
 		handleReport(p, clientAddr,mm)
 	default:
 		fmt.Printf("⚠️ Tipo de pacote desconhecido: %d\n", p.MsgType)
