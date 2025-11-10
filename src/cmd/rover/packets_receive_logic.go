@@ -21,6 +21,7 @@ func packetHandler(rover *Rover, pkt ml.Packet, c *RoverMlConection, window *Win
 			for i := window.lastAckReceived + 1; i <= int16(pkt.AckNum); i++ {
 				if ch, exists := window.window[uint32(i)]; exists {
 					ch <- 1 // Sinaliza o ACK recebido
+					delete(window.window, uint32(i))
 				}
 			}
 			window.lastAckReceived = int16(pkt.AckNum - 1)
@@ -42,9 +43,7 @@ func receiver(rover *Rover, c *RoverMlConection, window *Window) {
 		}
 
 		// Constrói o pacote a partir dos bytes recebidos e trata-o
-		pkt := ml.FromBytes(buf[:n])
-		fmt.Printf("📨 Pacote recebido do tipo: %d\n", pkt.MsgType)
-		
+		pkt := ml.FromBytes(buf[:n])		
 		packetHandler(rover, pkt, c, window)
 	}
 }

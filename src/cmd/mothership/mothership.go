@@ -1,15 +1,33 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net"
+	"os"
 	"src/config"
 	"src/internal/ml"
 	"src/utils"
+	"sync"
 	"time"
 )
 
-var sent bool = true
+type RoverState struct {
+	Addr        *net.UDPAddr
+	SeqNum      uint16
+	ExpectedSeq uint16
+	Buffer      map[uint16]ml.Packet
+	WindowLock  sync.Mutex
+}
+
+type MotherShip struct {
+	conn           *net.UDPConn
+	rovers         map[string]*RoverState // key: IP (ou ID do rover)
+	missionManager *ml.MissionManager
+	missionQueue   chan ml.MissionState
+	mu             sync.Mutex
+}
 
 func main() {
 	config.InitConfig(false)
@@ -21,133 +39,203 @@ func main() {
 
 	fmt.Println("🛰️ Nave-Mãe à escuta...")
 
-	// Cria o Mission Manager
-	missionManager := ml.NewMissionManager()
+	// Cria o estado da Nave-Mãe
+	mothership := MotherShip{
+		conn:           conn,
+		rovers:         make(map[string]*RoverState),
+		missionManager: ml.NewMissionManager(),
+		missionQueue:   make(chan ml.MissionState, 100),
+		mu:             sync.Mutex{},
+	}
+
+	// Carrega missões do JSON para a missionQueue
+	if err := loadMissionsFromJSON("missions.json", mothership.missionQueue); err != nil {
+		fmt.Println("❌ Erro ao carregar missões do JSON:", err)
+	} else {
+		fmt.Println("✅ Missões carregadas com sucesso na missionQueue")
+	}
 
 	// Goroutine para ler pacotes UDP
-	go mlListener(conn, missionManager)
+	go mothership.receiver()
 
 	// Loop infinito
 	select {}
 }
 
-// mlListener lê continuamente pacotes UDP
-func mlListener(conn *net.UDPConn, mm *ml.MissionManager) {
+// loadMissionsFromJSON lê missões de um ficheiro JSON e coloca-as na missionQueue
+func loadMissionsFromJSON(filename string, queue chan ml.MissionState) error {
+	file, err := os.Open(filename)
+	if err != nil {
+		return fmt.Errorf("erro ao abrir ficheiro: %v", err)
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return fmt.Errorf("erro ao ler ficheiro: %v", err)
+	}
+
+	var missions []ml.MissionState
+	if err := json.Unmarshal(data, &missions); err != nil {
+		return fmt.Errorf("erro ao fazer unmarshal do JSON: %v", err)
+	}
+
+	for _, mission := range missions {
+		queue <- mission
+	}
+
+	fmt.Printf("📋 %d missões enfileiradas\n", len(missions))
+	return nil
+}
+
+// receiver lê continuamente pacotes UDP
+func (ms *MotherShip) receiver() {
 	buf := make([]byte, 1024)
 
 	for {
-		// n é o número de bytes lidos
-		n, clientAddr, err := conn.ReadFromUDP(buf)
+		n, addr, err := ms.conn.ReadFromUDP(buf)
 		if err != nil {
-			fmt.Println("❌ Erro ao ler UDP:", err)
+			fmt.Println("Erro a ler pacote:", err)
 			continue
 		}
 
-		// buf[:n] contém os bytes lidos :n descarta o resto do buffer
-		p := ml.FromBytes(buf[:n])
-		go handlePacket(p, clientAddr, conn, mm)
+		packet := ml.FromBytes(buf[:n])
+		roverID := addr.String()
 
-		fmt.Println("📨 Recebido pacote do tipo:", p.MsgType, "de", clientAddr)
+		ms.mu.Lock()
+		state, exists := ms.rovers[roverID]
+		if !exists {
+			state = &RoverState{
+				Addr:        addr,
+				SeqNum:      0,
+				ExpectedSeq: packet.SeqNum,
+				Buffer:      make(map[uint16]ml.Packet),
+			}
+			ms.rovers[roverID] = state
+		}
+		ms.mu.Unlock()
+
+		// Criar goroutine para processar o pacote
+		go ms.handlePacket(state, packet)
 	}
 }
 
 // handlePacket processa cada pacote numa goroutine separada
-func handlePacket(p ml.Packet, clientAddr *net.UDPAddr, conn *net.UDPConn, mm *ml.MissionManager) {
-	switch p.MsgType {
+func (ms *MotherShip) handlePacket(state *RoverState, pkt ml.Packet) {
+	state.WindowLock.Lock()
+	defer state.WindowLock.Unlock()
+
+	seq := pkt.SeqNum
+	expected := state.ExpectedSeq
+
+	switch {
+	case seq == expected:
+		// Pacote esperado
+		go ms.processPacket(pkt, state)
+		state.ExpectedSeq++
+		ms.sendAck(state, seq)
+
+		// 👇 Após processar o esperado, vê se há mais pacotes no buffer
+		for {
+			if packet, ok := state.Buffer[state.ExpectedSeq]; ok {
+				delete(state.Buffer, state.ExpectedSeq)
+				bufferedPkt := packet
+				go ms.processPacket(bufferedPkt, state)
+				ms.sendAck(state, state.ExpectedSeq)
+				state.ExpectedSeq++
+			} else {
+				break // Não há mais pacotes consecutivos
+			}
+		}
+
+	//case seq < expected:
+	// Pacote duplicado — ACK para tranquilizar o rover
+	//ms.sendAck(state, seq)
+
+	case seq > expected:
+		// Fora de ordem — guarda e ACK cumulativo
+		state.Buffer[seq] = pkt
+		ms.sendAck(state, expected-1)
+	}
+}
+
+func (ms *MotherShip) processPacket(pkt ml.Packet, state *RoverState) {
+	switch pkt.MsgType {
+
 	case ml.MSG_REQUEST:
-		handleMissionRequest(p, clientAddr, conn, mm)
+		ms.handleMissionRequest(state)
 	case ml.MSG_ACK:
-		handleACK(p, clientAddr)
+		handleACK(pkt, state.Addr)
 	case ml.MSG_REPORT:
-
-		// Envia ACK de volta ao rover
-		ackPacket := ml.Packet{
-			MsgType: ml.MSG_ACK,
-			SeqNum:  0,
-			AckNum:  p.SeqNum + 1,
-			Payload: []byte{},
-		}
-		ackPacket.Checksum = ml.Checksum(ackPacket.Payload)
-
-		if _, err := conn.WriteToUDP(ackPacket.ToBytes(), clientAddr); err != nil {
-			fmt.Println("❌ Erro ao enviar ACK:", err)
-			return
-		}
-		handleReport(p, clientAddr,mm)
+		ms.handleReport(pkt, state)
 	default:
-		fmt.Printf("⚠️ Tipo de pacote desconhecido: %d\n", p.MsgType)
+		fmt.Printf("⚠️ Tipo de pacote desconhecido: %d\n", pkt.MsgType)
 	}
 }
 
 // handleMissionRequest processa pedidos de missão do rover
-func handleMissionRequest(p ml.Packet, clientAddr *net.UDPAddr, conn *net.UDPConn, mm *ml.MissionManager) {
+func (ms *MotherShip) handleMissionRequest(state *RoverState) {
 	// Gera um ID único para a missão
 	missionID := uint16(time.Now().Unix())
 
-	// Cria payload da missão
-	payload := ml.MissionData{
-		MsgID:           uint16(missionID),
-		Coordinate:      utils.Coordinate{Latitude: 32, Longitude: 25},
-		TaskType:        ml.TASK_ENV_ANALYSIS,
-		Duration:        10,
-		UpdateFrequency: 2,
-		Priority:        0,
-	}
+	// Tenta obter 3 missões da fila
+	var missionState ml.MissionState
+	select {
+	case missionState = <-ms.missionQueue:
+		// Missão obtida
+		missionState.ID = missionID
+		missionState.CreatedAt = time.Now()
+		ms.missionManager.AddMission(&missionState)
+		// Enviar missão para o rover
+		missionData := ml.MissionData{
+			MsgID:    missionState.ID,
+			Coordinate: utils.Coordinate{Latitude: 0, Longitude: 0},
+			TaskType: missionState.TaskType,
+			Duration: uint32(missionState.Duration),
+			UpdateFrequency: uint32(missionState.UpdateFrequency),
+			Priority: missionState.Priority,
+		}
 
-	// Cria estado da missão
-	missionState := &ml.MissionState{
-		ID:              missionID,
-		IDRover:         0,
-		TaskType:        payload.TaskType,
-		Duration:        time.Duration(payload.Duration) * time.Second,
-		UpdateFrequency: time.Duration(payload.UpdateFrequency) * time.Second,
-		LastUpdate:      time.Now(),
-		CreatedAt:       time.Now(),
-		Priority:        payload.Priority,
-        Report:          nil,
-		State:           "Pending",
-	}
+		payload := missionData.ToBytes()
 
-	// Adiciona missão ao gestor
-	mm.AddMission(missionState)
-	fmt.Printf("📝 Missão %d registada no gestor\n", missionID)
+		state.WindowLock.Lock()
 
-	// Envia a missão ao cliente
-	missionPacket := ml.Packet{
-		MsgType: ml.MSG_MISSION,
-		SeqNum:  0,
-		AckNum:  p.SeqNum + 1,
-		Payload: payload.ToBytes(),
-	}
+		pkt := ml.Packet{
+			RoverId:  0,
+			MsgType:  ml.MSG_MISSION,
+			SeqNum:   state.SeqNum,
+			AckNum:   0,
+			Payload:  payload,
+		}
 
+		state.SeqNum++
+		state.WindowLock.Unlock()
 
-	// Envia a missão ao cliente
-	noMissionPacket := ml.Packet{
-		MsgType: ml.MSG_NO_MISSION,
-		SeqNum:  0,
-		AckNum:  p.SeqNum + 1,
-		Payload: []byte{},
-	}
+		pkt.Checksum = ml.Checksum(pkt.Payload)
+		ms.conn.WriteToUDP(pkt.ToBytes(), state.Addr)
+		fmt.Printf("✅ Missão %d enviada para %s\n", missionID, state.Addr)
+		return
+	default:
+		// Fila vazia
+		fmt.Printf("⚠️ Fila de missões vazia. Enviando NO_MISSION para %s\n", state.Addr)
 
-	toSend := missionPacket
+		state.WindowLock.Lock()
 
-	if sent {
-		toSend = missionPacket
-	} else {
-		toSend = noMissionPacket
-	}
+		noMissionPkt := ml.Packet{
+			RoverId: 0,
+			MsgType: ml.MSG_NO_MISSION,
+			SeqNum:   state.SeqNum,
+			AckNum:  0,
+			Payload: []byte{},
+		}
 
+		state.SeqNum++
+		state.WindowLock.Unlock()
 
-	toSend.Checksum = ml.Checksum(toSend.Payload)
-
-	if _, err := conn.WriteToUDP(toSend.ToBytes(), clientAddr); err != nil {
-		fmt.Println("❌ Erro ao enviar missão:", err)
+		noMissionPkt.Checksum = ml.Checksum(noMissionPkt.Payload)
+		ms.conn.WriteToUDP(noMissionPkt.ToBytes(), state.Addr)
 		return
 	}
-	sent = !sent
-
-
-	fmt.Printf("✅ Missão %d enviada para %s\n", missionID, clientAddr)
 }
 
 // handleACK processa confirmações de entrega
@@ -156,8 +244,8 @@ func handleACK(p ml.Packet, clientAddr *net.UDPAddr) {
 }
 
 // handleReport processa relatórios dos rovers
-func handleReport(p ml.Packet, clientAddr *net.UDPAddr, mm *ml.MissionManager) {
-	fmt.Printf("📊 Relatório recebido de %s\n", clientAddr)
+func (ms *MotherShip) handleReport(p ml.Packet, state *RoverState) {
+	fmt.Printf("📊 Relatório recebido de %s\n", state.Addr)
 
 	if len(p.Payload) < 1 {
 		fmt.Println("❌ Payload vazio")
@@ -165,8 +253,6 @@ func handleReport(p ml.Packet, clientAddr *net.UDPAddr, mm *ml.MissionManager) {
 	}
 
 	taskType := p.Payload[0]
-	fmt.Printf("🔍 TaskType detectado: %d\n", taskType)
-
 	reportTypes := map[uint8]struct {
 		name   string
 		report ml.Report
@@ -193,14 +279,28 @@ func handleReport(p ml.Packet, clientAddr *net.UDPAddr, mm *ml.MissionManager) {
 	if reportInfo.report.IsLast() {
 		fmt.Printf("🏁 Último relatório recebido.\n")
 	}
-    
+
 	fmt.Printf("✅ %s %s\n", reportInfo.name, reportInfo.report.String())
 
-
-
 	// Atualiza o estado da missão no Mission Manager
-	ml.UpdateMission(mm, reportInfo.report)
+	ml.UpdateMission(ms.missionManager, reportInfo.report)
 
-    mm.PrintMissions()
+	//ms.missionManager.PrintMissions()
 }
 
+func (ms *MotherShip) sendAck(state *RoverState, ackNum uint16) {
+	ackPacket := ml.Packet{
+		RoverId: 0,
+		MsgType: ml.MSG_ACK,
+		SeqNum:  0,
+		AckNum:  ackNum,
+		Payload: []byte{},
+	}
+	ackPacket.Checksum = ml.Checksum(ackPacket.Payload)
+
+	if _, err := ms.conn.WriteToUDP(ackPacket.ToBytes(), state.Addr); err != nil {
+		fmt.Println("❌ Erro ao enviar ACK:", err)
+		return
+	}
+	fmt.Printf("📤 ACK enviado para %s, AckNum: %d\n", state.Addr, ackNum)
+}

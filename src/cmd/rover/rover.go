@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 	"src/internal/ml"
+	//"strconv"
 )
 
 type RoverMlConection struct {
@@ -22,7 +23,7 @@ type Window struct {
 }
 
 type Rover struct {
-    id               string
+    id                uint8
 	activeMissions    uint8
 	mu                sync.Mutex
 	cond              *sync.Cond
@@ -58,7 +59,12 @@ func main() {
         fmt.Println("Use: ./rover1 <id_do_rover>")
         return
     }
-    roverID := os.Args[1]
+    //idInt, err := strconv.Atoi(os.Args[1])
+	//if err != nil {
+	//	fmt.Println("ID do rover inválido:", err)
+	//	return
+	//}
+	//roverID := uint8(idInt)
 
 	// Inicializa configuração (isRover = true)
 	config.InitConfig(true)
@@ -75,7 +81,7 @@ func main() {
 
 	// Cria o Rover
 	rover := Rover{
-		id:         roverID,
+		id:         0,
 		activeMissions: 0,
 		mu:         sync.Mutex{},
 		cond:       sync.NewCond(&sync.Mutex{}),
@@ -100,6 +106,8 @@ func main() {
 }
 
 
+
+
 func generate(mission ml.MissionData, rover *Rover, c *RoverMlConection, window *Window){
 
 	rover.IncrementActiveMission()
@@ -118,18 +126,18 @@ func generate(mission ml.MissionData, rover *Rover, c *RoverMlConection, window 
 
 			case <-deadline.C:
 				// Termina quando Duration expirar
-				sendReport(mission,true, c, window)
+				sendReport(mission,true, c, window, rover)
 				return
 			case <-ticker.C:
 				// Enviar report periódico
-				sendReport(mission,false, c, window)
+				sendReport(mission,false, c, window, rover)
 			}
 		}
 	} else {
 		// Modo sem updates: apenas espera Duration e envia um report final
 		<-deadline.C
 		// Termina quando Duration expirar
-		sendReport(mission,true, c, window)
+		sendReport(mission,true, c, window, rover)
 		return
 	}
 }

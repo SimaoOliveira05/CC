@@ -16,6 +16,7 @@ const (
 
 // Estrutura base do pacote
 type Packet struct {
+    RoverId  uint8
     MsgType  uint8
     SeqNum   uint16
     AckNum   uint16
@@ -26,6 +27,7 @@ type Packet struct {
 // Serializa o pacote em bytes
 func (p *Packet) ToBytes() []byte {
     buf := new(bytes.Buffer)
+    binary.Write(buf, binary.BigEndian, p.RoverId)
     binary.Write(buf, binary.BigEndian, p.MsgType)
     binary.Write(buf, binary.BigEndian, p.SeqNum)
     binary.Write(buf, binary.BigEndian, p.AckNum)
@@ -38,6 +40,7 @@ func (p *Packet) ToBytes() []byte {
 func FromBytes(data []byte) Packet {
     var p Packet
     buf := bytes.NewReader(data)
+    binary.Read(buf, binary.BigEndian, &p.RoverId)
     binary.Read(buf, binary.BigEndian, &p.MsgType)
     binary.Read(buf, binary.BigEndian, &p.SeqNum)
     binary.Read(buf, binary.BigEndian, &p.AckNum)

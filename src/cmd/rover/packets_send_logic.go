@@ -9,19 +9,14 @@ import (
 // sendPacket envia um pacote e gerencia retransmissões até receber o ACK
 func sendPacket(pkt ml.Packet, window *Window, c *RoverMlConection) {
     window.mu.Lock()
-	if _, exists := window.window[uint32(pkt.SeqNum)]; exists {
-        // Já existe um packetManager para este SeqNum, não faças nada
-        window.mu.Unlock()
-        return
-    }
 	ch := make(chan int8, 1)
     window.window[uint32(pkt.SeqNum)] = ch
     window.mu.Unlock()
-    go packetManager(pkt, window, ch, c)
+    go packetManager(pkt, ch, c)
 }
 
 // sendReport serializa e envia um report para a mothership
-func sendReport(mission ml.MissionData, final bool, c *RoverMlConection, window *Window) {
+func sendReport(mission ml.MissionData, final bool, c *RoverMlConection, window *Window, r *Rover) {
 	payload := buildReportPayload(mission, final)
 	if payload == nil {
 		return
@@ -29,6 +24,7 @@ func sendReport(mission ml.MissionData, final bool, c *RoverMlConection, window 
 
 	c.seqNum++
 	pkt := ml.Packet{
+		RoverId: r.id,
 		MsgType: ml.MSG_REPORT,
 		SeqNum:  uint16(c.seqNum),
 		AckNum:  0,
@@ -37,14 +33,14 @@ func sendReport(mission ml.MissionData, final bool, c *RoverMlConection, window 
 	}
 
 	sendPacket(pkt, window, c)
-	//fmt.Printf("📤 Report enviado (Missão %d)\n", mission.MsgID)
 }
 
 // sendRequest envia um pedido de missão para a mothership
-func sendRequest(c *RoverMlConection, window *Window){
+func sendRequest(c *RoverMlConection, window *Window, r *Rover) {
 
 	c.seqNum++
 	req := ml.Packet{
+		RoverId: r.id,
 		MsgType: ml.MSG_REQUEST,
 		SeqNum:  uint16(c.seqNum),
 		AckNum:  0,
@@ -56,7 +52,7 @@ func sendRequest(c *RoverMlConection, window *Window){
 }
 
 // packetManager gerencia o envio e retransmissão de um pacote até receber o ACK
-func packetManager(pkt ml.Packet, window *Window, ch chan int8, c *RoverMlConection) {
+func packetManager(pkt ml.Packet, ch chan int8, c *RoverMlConection) {
     retries := 0 
 	maxRetries := 5
 	for {
@@ -66,22 +62,24 @@ func packetManager(pkt ml.Packet, window *Window, ch chan int8, c *RoverMlConect
             fmt.Println("Erro ao enviar pacote:", err)
             return
         }
-        fmt.Printf("📤 Pacote enviado do tipo: %d, SeqNum: %d\n", pkt.MsgType, pkt.SeqNum)
+		if(pkt.MsgType == ml.MSG_REQUEST){
+			fmt.Printf("📤 Pedido de missão enviado, SeqNum: %d\n", pkt.SeqNum)
+		}
+		if(pkt.MsgType == ml.MSG_REPORT){
+			fmt.Printf("📤 Report enviado, SeqNum: %d\n", pkt.SeqNum)
+		}
+		if(pkt.MsgType == ml.MSG_ACK){
+			fmt.Printf("📤 ACK enviado, SeqNum: %d\n", pkt.SeqNum)
+		}
 
         select {
         case <-ch:
             fmt.Printf("✅ ACK recebido para SeqNum %d\n", pkt.SeqNum)
-            window.mu.Lock()
-            delete(window.window, uint32(pkt.SeqNum))
-            window.mu.Unlock()
             return
-		case <-time.After(5 * time.Second):
+		case <-time.After(500 * time.Millisecond):
 			retries++
 			if retries > maxRetries {
 				fmt.Printf("❌ Falha ao receber ACK para SeqNum %d após %d tentativas. Abortando...\n", pkt.SeqNum, maxRetries)
-				window.mu.Lock()
-				delete(window.window, uint32(pkt.SeqNum))
-				window.mu.Unlock()
 				return
 			}
 			fmt.Printf("⏱️ Timeout esperando ACK para SeqNum %d. Retransmitindo (tentativa %d)...\n", pkt.SeqNum, retries)

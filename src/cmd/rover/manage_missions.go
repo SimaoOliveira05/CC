@@ -15,7 +15,7 @@ func manageMissions(rover *Rover, roverConn *RoverMlConection, window *Window) {
 
 		// Se não estiver à espera de missões, request de novas missões
 		if(!rover.waiting) {
-			sendRequest(roverConn, window)
+			sendRequest(roverConn, window, rover)
 			print("")
 			received := <-rover.missionReceivedChan
 			if received { //Nave-mãe enviou missões
