@@ -7,57 +7,76 @@ import (
 )
 
 // sendPacket envia um pacote e gerencia retransmissões até receber o ACK
-func sendPacket(pkt ml.Packet, window *Window, c *RoverMlConection) {
-    window.mu.Lock()
+func (rv *Rover) sendPacket(pkt ml.Packet) {
+    rv.window.mu.Lock()
 	ch := make(chan int8, 1)
-    window.window[uint32(pkt.SeqNum)] = ch
-    window.mu.Unlock()
-    go packetManager(pkt, ch, c)
+    rv.window.window[uint32(pkt.SeqNum)] = ch
+    rv.window.mu.Unlock()
+    go rv.packetManager(pkt, ch)
 }
 
 // sendReport serializa e envia um report para a mothership
-func sendReport(mission ml.MissionData, final bool, c *RoverMlConection, window *Window, r *Rover) {
+func (rv *Rover) sendReport(mission ml.MissionData, final bool) {
 	payload := buildReportPayload(mission, final)
 	if payload == nil {
 		return
 	}
 
-	c.seqNum++
+	rv.conn.seqNum++
 	pkt := ml.Packet{
-		RoverId: r.id,
+		RoverId: rv.id,
 		MsgType: ml.MSG_REPORT,
-		SeqNum:  uint16(c.seqNum),
+		SeqNum:  uint16(rv.conn.seqNum),
 		AckNum:  0,
 		Checksum: 0,
 		Payload: payload,
 	}
 
-	sendPacket(pkt, window, c)
+	rv.sendPacket(pkt)
 }
 
 // sendRequest envia um pedido de missão para a mothership
-func sendRequest(c *RoverMlConection, window *Window, r *Rover) {
+func (rv *Rover) sendRequest() {
 
-	c.seqNum++
+	rv.conn.seqNum++
 	req := ml.Packet{
-		RoverId: r.id,
+		RoverId: rv.id,
 		MsgType: ml.MSG_REQUEST,
-		SeqNum:  uint16(c.seqNum),
+		SeqNum:  uint16(rv.conn.seqNum),
 		AckNum:  0,
 		Checksum: 0,
 		Payload: []byte{},
 	}
 
-	sendPacket(req, window, c)
+	rv.sendPacket(req)
 }
 
+
+func (rv *Rover) sendAck(ackNum uint16) {
+	ackPacket := ml.Packet{
+		RoverId: 0,
+		MsgType: ml.MSG_ACK,
+		SeqNum:  0,
+		AckNum:  ackNum + 1,
+		Payload: []byte{},
+	}
+	ackPacket.Checksum = ml.Checksum(ackPacket.Payload)
+
+	if _, err := rv.conn.conn.Write(ackPacket.ToBytes()); err != nil {
+		fmt.Println("❌ Erro ao enviar ACK:", err)
+		return
+	}
+	fmt.Printf("📤 ACK enviado, AckNum: %d\n", ackNum)
+}
+
+
 // packetManager gerencia o envio e retransmissão de um pacote até receber o ACK
-func packetManager(pkt ml.Packet, ch chan int8, c *RoverMlConection) {
+func (rv *Rover) packetManager(pkt ml.Packet, ch chan int8) {
     retries := 0 
 	maxRetries := 5
 	for {
         // Envia o pacote
-        _, err := c.conn.Write(pkt.ToBytes())
+        _, err := rv.conn.conn.Write(pkt.ToBytes())
         if err != nil {
             fmt.Println("Erro ao enviar pacote:", err)
             return

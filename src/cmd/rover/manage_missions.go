@@ -5,21 +5,21 @@ import (
 	"time"
 )
 
-func manageMissions(rover *Rover, roverConn *RoverMlConection, window *Window) {
+func (rv *Rover) manageMissions() {
 	// Espera até que não haja missões ativas
-		rover.cond.L.Lock()
-		for rover.GetActiveMissions() != 0 {
-			rover.cond.Wait() // Espera até todas as missões acabarem
+		rv.cond.L.Lock()
+		for rv.GetActiveMissions() != 0 {
+			rv.cond.Wait() // Espera até todas as missões acabarem
 		}
-		rover.cond.L.Unlock()
+		rv.cond.L.Unlock()
 
 		// Se não estiver à espera de missões, request de novas missões
-		if(!rover.waiting) {
-			sendRequest(roverConn, window, rover)
+		if !rv.waiting {
+			rv.sendRequest()
 			print("")
-			received := <-rover.missionReceivedChan
+			received := <-rv.missionReceivedChan
 			if received { //Nave-mãe enviou missões
-				rover.waiting = true
+				rv.waiting = true
 			} else {
 				// Nave mãe não tem missões para enviar, esperamos 5 segundos para pedir outra vez
 				fmt.Println("🚫 Sem missões disponíveis.")

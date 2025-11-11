@@ -5,45 +5,128 @@ import (
 	"src/internal/ml"
 )
 
-func packetHandler(rover *Rover, pkt ml.Packet, c *RoverMlConection, window *Window) {
+func (rv *Rover) packetHandler(pkt ml.Packet) {
 	// Lógica para tratar o pacote recebido
 	switch pkt.MsgType {
 
-		case ml.MSG_MISSION:
-			rover.missionReceivedChan <- true
-			go generate(ml.DataFromBytes(pkt.Payload), rover, c, window)
+	case ml.MSG_MISSION:
+		rv.handleMissionPacket(pkt)
 
-		case ml.MSG_NO_MISSION:
-			rover.missionReceivedChan <- false
+	case ml.MSG_NO_MISSION:
+		rv.handleNoMissionPacket(pkt)
 
-		case ml.MSG_ACK:
-			window.mu.Lock()
-			for i := window.lastAckReceived + 1; i <= int16(pkt.AckNum); i++ {
-				if ch, exists := window.window[uint32(i)]; exists {
-					ch <- 1 // Sinaliza o ACK recebido
-					delete(window.window, uint32(i))
-				}
+	case ml.MSG_ACK:
+		rv.window.mu.Lock()
+		for i := rv.window.lastAckReceived + 1; i < int16(pkt.AckNum); i++ {
+			if ch, exists := rv.window.window[uint32(i)]; exists {
+				ch <- 1 // Sinaliza o ACK recebido
+				delete(rv.window.window, uint32(i))
 			}
-			window.lastAckReceived = int16(pkt.AckNum - 1)
-			window.mu.Unlock()
+		}
+		rv.window.lastAckReceived = int16(pkt.AckNum - 1)
+		rv.window.mu.Unlock()
 
-		default:
-			fmt.Printf("⚠️ Tipo de pacote desconhecido: %d\n", pkt.MsgType)
+	default:
+		fmt.Printf("⚠️ Tipo de pacote desconhecido: %d\n", pkt.MsgType)
 	}
 }
 
-func receiver(rover *Rover, c *RoverMlConection, window *Window) {
+// handleMissionPacket processa pacotes MISSION com ordenação
+func (rv *Rover) handleMissionPacket(pkt ml.Packet) {
+	rv.bufferMu.Lock()
+	defer rv.bufferMu.Unlock()
+
+	seq := pkt.SeqNum
+	expected := rv.expectedSeq
+
+	switch {
+	case seq == expected:
+		// Pacote esperado — processa
+		rv.processMission(pkt)
+		rv.expectedSeq++
+		rv.sendAck(seq)
+
+		// Processa pacotes bufferizados consecutivos
+		for {
+			if bufferedPkt, ok := rv.buffer[rv.expectedSeq]; ok {
+				delete(rv.buffer, rv.expectedSeq)
+				rv.processMission(bufferedPkt)
+				rv.sendAck(rv.expectedSeq)
+				rv.expectedSeq++
+			} else {
+				break
+			}
+		}
+
+	case seq > expected:
+		// Fora de ordem — guarda no buffer e envia ACK cumulativo
+		rv.buffer[seq] = pkt
+		rv.sendAck(expected)
+
+		case seq < expected:
+			rv.sendAck(seq)
+	}
+}
+
+// handleNoMissionPacket processa pacotes NO_MISSION com ordenação
+func (rv *Rover) handleNoMissionPacket(pkt ml.Packet) {
+	rv.bufferMu.Lock()
+	defer rv.bufferMu.Unlock()
+
+	seq := pkt.SeqNum
+	expected := rv.expectedSeq
+
+	switch {
+	case seq == expected:
+		// Pacote esperado
+		rv.expectedSeq++
+		rv.sendAck(seq)
+		rv.missionReceivedChan <- false
+
+		// Processa pacotes bufferizados consecutivos
+		for {
+			if bufferedPkt, ok := rv.buffer[rv.expectedSeq]; ok {
+				delete(rv.buffer, rv.expectedSeq)
+				if bufferedPkt.MsgType == ml.MSG_NO_MISSION {
+					rv.sendAck(rv.expectedSeq)
+					rv.missionReceivedChan <- false
+				} else if bufferedPkt.MsgType == ml.MSG_MISSION {
+					rv.processMission(bufferedPkt)
+					rv.sendAck(rv.expectedSeq)
+				}
+				rv.expectedSeq++
+			} else {
+				break
+			}
+		}
+
+	case seq > expected:
+		// Fora de ordem — guarda no buffer e envia ACK cumulativo
+		rv.buffer[seq] = pkt
+		rv.sendAck(expected)
+
+		// case seq < expected: pacote duplicado, ignora
+	}
+}
+
+// processMission extrai e processa a missão
+func (rv *Rover) processMission(pkt ml.Packet) {
+	rv.missionReceivedChan <- true
+	go rv.generate(ml.DataFromBytes(pkt.Payload))
+}
+
+func (rv *Rover) receiver() {
 	buf := make([]byte, 2048)
 	// Loop de recepção
 	for {
-		n, _, err := c.conn.ReadFromUDP(buf)
+		n, _, err := rv.conn.conn.ReadFromUDP(buf)
 		if err != nil {
 			fmt.Println("Erro ao ler pacote UDP:", err)
 			continue
 		}
 
 		// Constrói o pacote a partir dos bytes recebidos e trata-o
-		pkt := ml.FromBytes(buf[:n])		
-		packetHandler(rover, pkt, c, window)
+		pkt := ml.FromBytes(buf[:n])
+		rv.packetHandler(pkt)
 	}
 }

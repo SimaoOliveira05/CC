@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net"
 	"os"
 	"src/config"
@@ -13,12 +13,19 @@ import (
 	"time"
 )
 
+type Window struct {
+	lastAckReceived int16
+	window          map[uint32](chan int8) // pacotes enviados mas ainda não ACKed
+	mu              sync.Mutex
+}
+
 type RoverState struct {
 	Addr        *net.UDPAddr
 	SeqNum      uint16
 	ExpectedSeq uint16
 	Buffer      map[uint16]ml.Packet
 	WindowLock  sync.Mutex
+	Window      *Window // Janela deslizante específica deste rover
 }
 
 type MotherShip struct {
@@ -70,7 +77,7 @@ func loadMissionsFromJSON(filename string, queue chan ml.MissionState) error {
 	}
 	defer file.Close()
 
-	data, err := io.ReadAll(file)
+	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		return fmt.Errorf("erro ao ler ficheiro: %v", err)
 	}
@@ -110,8 +117,14 @@ func (ms *MotherShip) receiver() {
 				SeqNum:      0,
 				ExpectedSeq: packet.SeqNum,
 				Buffer:      make(map[uint16]ml.Packet),
+				Window: &Window{
+					lastAckReceived: -1,
+					window:          make(map[uint32](chan int8)),
+					mu:              sync.Mutex{},
+				},
 			}
 			ms.rovers[roverID] = state
+			fmt.Printf("🆕 Novo rover registado: %s\n", roverID)
 		}
 		ms.mu.Unlock()
 
@@ -124,6 +137,12 @@ func (ms *MotherShip) receiver() {
 func (ms *MotherShip) handlePacket(state *RoverState, pkt ml.Packet) {
 	state.WindowLock.Lock()
 	defer state.WindowLock.Unlock()
+
+	if pkt.MsgType == ml.MSG_ACK {
+		// Pacote ACK — processa diretamente
+		ms.handleACK(pkt, state)
+		return
+	}
 
 	seq := pkt.SeqNum
 	expected := state.ExpectedSeq
@@ -148,14 +167,14 @@ func (ms *MotherShip) handlePacket(state *RoverState, pkt ml.Packet) {
 			}
 		}
 
-	//case seq < expected:
-	// Pacote duplicado — ACK para tranquilizar o rover
-	//ms.sendAck(state, seq)
+	case seq < expected:
+		// Pacote duplicado — ACK para tranquilizar o rover
+		ms.sendAck(state, seq)
 
 	case seq > expected:
 		// Fora de ordem — guarda e ACK cumulativo
 		state.Buffer[seq] = pkt
-		ms.sendAck(state, expected-1)
+		ms.sendAck(state, expected)
 	}
 }
 
@@ -165,7 +184,7 @@ func (ms *MotherShip) processPacket(pkt ml.Packet, state *RoverState) {
 	case ml.MSG_REQUEST:
 		ms.handleMissionRequest(state)
 	case ml.MSG_ACK:
-		handleACK(pkt, state.Addr)
+		ms.handleACK(pkt, state)
 	case ml.MSG_REPORT:
 		ms.handleReport(pkt, state)
 	default:
@@ -178,7 +197,6 @@ func (ms *MotherShip) handleMissionRequest(state *RoverState) {
 	// Gera um ID único para a missão
 	missionID := uint16(time.Now().Unix())
 
-	// Tenta obter 3 missões da fila
 	var missionState ml.MissionState
 	select {
 	case missionState = <-ms.missionQueue:
@@ -188,12 +206,12 @@ func (ms *MotherShip) handleMissionRequest(state *RoverState) {
 		ms.missionManager.AddMission(&missionState)
 		// Enviar missão para o rover
 		missionData := ml.MissionData{
-			MsgID:    missionState.ID,
-			Coordinate: utils.Coordinate{Latitude: 0, Longitude: 0},
-			TaskType: missionState.TaskType,
-			Duration: uint32(missionState.Duration),
+			MsgID:           missionState.ID,
+			Coordinate:      utils.Coordinate{Latitude: 0, Longitude: 0},
+			TaskType:        missionState.TaskType,
+			Duration:        uint32(missionState.Duration),
 			UpdateFrequency: uint32(missionState.UpdateFrequency),
-			Priority: missionState.Priority,
+			Priority:        missionState.Priority,
 		}
 
 		payload := missionData.ToBytes()
@@ -201,18 +219,18 @@ func (ms *MotherShip) handleMissionRequest(state *RoverState) {
 		state.WindowLock.Lock()
 
 		pkt := ml.Packet{
-			RoverId:  0,
-			MsgType:  ml.MSG_MISSION,
-			SeqNum:   state.SeqNum,
-			AckNum:   0,
-			Payload:  payload,
+			RoverId: 0,
+			MsgType: ml.MSG_MISSION,
+			SeqNum:  state.SeqNum,
+			AckNum:  0,
+			Payload: payload,
 		}
 
 		state.SeqNum++
 		state.WindowLock.Unlock()
 
 		pkt.Checksum = ml.Checksum(pkt.Payload)
-		ms.conn.WriteToUDP(pkt.ToBytes(), state.Addr)
+		ms.sendPacket(pkt, state)
 		fmt.Printf("✅ Missão %d enviada para %s\n", missionID, state.Addr)
 		return
 	default:
@@ -224,7 +242,7 @@ func (ms *MotherShip) handleMissionRequest(state *RoverState) {
 		noMissionPkt := ml.Packet{
 			RoverId: 0,
 			MsgType: ml.MSG_NO_MISSION,
-			SeqNum:   state.SeqNum,
+			SeqNum:  state.SeqNum,
 			AckNum:  0,
 			Payload: []byte{},
 		}
@@ -233,14 +251,23 @@ func (ms *MotherShip) handleMissionRequest(state *RoverState) {
 		state.WindowLock.Unlock()
 
 		noMissionPkt.Checksum = ml.Checksum(noMissionPkt.Payload)
-		ms.conn.WriteToUDP(noMissionPkt.ToBytes(), state.Addr)
+		ms.sendPacket(noMissionPkt, state)
 		return
 	}
 }
 
 // handleACK processa confirmações de entrega
-func handleACK(p ml.Packet, clientAddr *net.UDPAddr) {
-	fmt.Printf("✅ ACK recebido de %s (SeqNum: %d)\n", clientAddr, p.SeqNum)
+func (ms *MotherShip) handleACK(p ml.Packet, state *RoverState) {
+	state.Window.mu.Lock()
+	for i := state.Window.lastAckReceived + 1; i < int16(p.AckNum); i++ {
+		if ch, exists := state.Window.window[uint32(i)]; exists {
+			ch <- 1 // Sinaliza o ACK recebido
+			delete(state.Window.window, uint32(i))
+		}
+	}
+	state.Window.lastAckReceived = int16(p.AckNum - 1)
+	state.Window.mu.Unlock()
+	fmt.Printf("✅ ACK recebido de %s, AckNum: %d (confirmou até SeqNum %d)\n", state.Addr, p.AckNum, p.AckNum-1)
 }
 
 // handleReport processa relatórios dos rovers
@@ -293,7 +320,7 @@ func (ms *MotherShip) sendAck(state *RoverState, ackNum uint16) {
 		RoverId: 0,
 		MsgType: ml.MSG_ACK,
 		SeqNum:  0,
-		AckNum:  ackNum,
+		AckNum:  ackNum + 1,
 		Payload: []byte{},
 	}
 	ackPacket.Checksum = ml.Checksum(ackPacket.Payload)
@@ -303,4 +330,46 @@ func (ms *MotherShip) sendAck(state *RoverState, ackNum uint16) {
 		return
 	}
 	fmt.Printf("📤 ACK enviado para %s, AckNum: %d\n", state.Addr, ackNum)
+}
+
+// sendPacket envia um pacote e gerencia retransmissões até receber o ACK
+func (ms *MotherShip) sendPacket(pkt ml.Packet, state *RoverState) {
+	state.Window.mu.Lock()
+	ch := make(chan int8, 1)
+	state.Window.window[uint32(pkt.SeqNum)] = ch
+	state.Window.mu.Unlock()
+	go ms.packetManager(pkt, ch, state)
+}
+
+// packetManager gerencia o envio e retransmissão de um pacote até receber o ACK
+func (ms *MotherShip) packetManager(pkt ml.Packet, ch chan int8, state *RoverState) {
+	retries := 0
+	maxRetries := 5
+	for {
+		// Envia o pacote
+		_, err := ms.conn.WriteToUDP(pkt.ToBytes(), state.Addr)
+		if err != nil {
+			fmt.Println("❌ Erro ao enviar pacote:", err)
+			return
+		}
+		if pkt.MsgType == ml.MSG_MISSION {
+			fmt.Printf("📤 Missão enviada, SeqNum: %d\n", pkt.SeqNum)
+		}
+		if pkt.MsgType == ml.MSG_NO_MISSION {
+			fmt.Printf("📤 NO_MISSION enviado, SeqNum: %d\n", pkt.SeqNum)
+		}
+
+		select {
+		case <-ch:
+			fmt.Printf("✅ ACK confirmado para SeqNum %d\n", pkt.SeqNum)
+			return
+		case <-time.After(500 * time.Millisecond):
+			retries++
+			if retries > maxRetries {
+				fmt.Printf("❌ Falha ao receber ACK para SeqNum %d após %d tentativas. Abortando...\n", pkt.SeqNum, maxRetries)
+				return
+			}
+			fmt.Printf("⏱️ Timeout esperando ACK para SeqNum %d. Retransmitindo (tentativa %d)...\n", pkt.SeqNum, retries)
+		}
+	}
 }
