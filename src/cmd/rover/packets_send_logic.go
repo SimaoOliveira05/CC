@@ -3,17 +3,9 @@ package main
 import (
 	"fmt"
 	"src/internal/ml"
-	"time"
+	"src/utils/packetsLogic"
 )
 
-// sendPacket envia um pacote e gerencia retransmissões até receber o ACK
-func (rv *Rover) sendPacket(pkt ml.Packet) {
-    rv.window.mu.Lock()
-	ch := make(chan int8, 1)
-    rv.window.window[uint32(pkt.SeqNum)] = ch
-    rv.window.mu.Unlock()
-    go rv.packetManager(pkt, ch)
-}
 
 // sendReport serializa e envia um report para a mothership
 func (rv *Rover) sendReport(mission ml.MissionData, final bool) {
@@ -32,13 +24,15 @@ func (rv *Rover) sendReport(mission ml.MissionData, final bool) {
 		Payload: payload,
 	}
 
-	rv.sendPacket(pkt)
+	packetslogic.PacketManager(rv.conn.conn, rv.conn.addr, pkt, rv.window)
 }
 
 // sendRequest envia um pedido de missão para a mothership
 func (rv *Rover) sendRequest() {
 
 	rv.conn.seqNum++
+	
+
 	req := ml.Packet{
 		RoverId: rv.id,
 		MsgType: ml.MSG_REQUEST,
@@ -48,13 +42,13 @@ func (rv *Rover) sendRequest() {
 		Payload: []byte{},
 	}
 
-	rv.sendPacket(req)
+	packetslogic.PacketManager(rv.conn.conn, rv.conn.addr, req, rv.window)
 }
 
 
 func (rv *Rover) sendAck(ackNum uint16) {
 	ackPacket := ml.Packet{
-		RoverId: 0,
+		RoverId: rv.id,
 		MsgType: ml.MSG_ACK,
 		SeqNum:  0,
 		AckNum:  ackNum + 1,
@@ -62,49 +56,9 @@ func (rv *Rover) sendAck(ackNum uint16) {
 	}
 	ackPacket.Checksum = ml.Checksum(ackPacket.Payload)
 
-	if _, err := rv.conn.conn.Write(ackPacket.ToBytes()); err != nil {
-		fmt.Println("❌ Erro ao enviar ACK:", err)
-		return
-	}
-	fmt.Printf("📤 ACK enviado, AckNum: %d\n", ackNum)
+	packetslogic.PacketManager(rv.conn.conn, rv.conn.addr, ackPacket, rv.window)
 }
 
-
-// packetManager gerencia o envio e retransmissão de um pacote até receber o ACK
-func (rv *Rover) packetManager(pkt ml.Packet, ch chan int8) {
-    retries := 0 
-	maxRetries := 5
-	for {
-        // Envia o pacote
-        _, err := rv.conn.conn.Write(pkt.ToBytes())
-        if err != nil {
-            fmt.Println("Erro ao enviar pacote:", err)
-            return
-        }
-		if(pkt.MsgType == ml.MSG_REQUEST){
-			fmt.Printf("📤 Pedido de missão enviado, SeqNum: %d\n", pkt.SeqNum)
-		}
-		if(pkt.MsgType == ml.MSG_REPORT){
-			fmt.Printf("📤 Report enviado, SeqNum: %d\n", pkt.SeqNum)
-		}
-		if(pkt.MsgType == ml.MSG_ACK){
-			fmt.Printf("📤 ACK enviado, SeqNum: %d\n", pkt.SeqNum)
-		}
-
-        select {
-        case <-ch:
-            fmt.Printf("✅ ACK recebido para SeqNum %d\n", pkt.SeqNum)
-            return
-		case <-time.After(100 * time.Millisecond):
-			retries++
-			if retries > maxRetries {
-				fmt.Printf("❌ Falha ao receber ACK para SeqNum %d após %d tentativas. Abortando...\n", pkt.SeqNum, maxRetries)
-				return
-			}
-			fmt.Printf("⏱️ Timeout esperando ACK para SeqNum %d. Retransmitindo (tentativa %d)...\n", pkt.SeqNum, retries)
-        }
-    }
-}
 
 // buildReportPayload cria o payload correto conforme o TaskType
 func buildReportPayload(mission ml.MissionData, final bool) []byte {

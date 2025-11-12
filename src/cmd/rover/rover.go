@@ -3,23 +3,17 @@ package main
 import (
 	"fmt"
 	"net"
-	"os"
 	"src/config"
 	"src/internal/ml"
+	packetslogic "src/utils/packetsLogic"
 	"sync"
 	"time"
-	//"strconv"
 )
 
 type RoverMlConection struct {
 	conn   *net.UDPConn // Conexão UDP com a nave-mãe
+	addr   *net.UDPAddr // Endereço da nave-mãe
 	seqNum uint32       // Número de sequência esperado para envio
-}
-
-type Window struct {
-	lastAckReceived int16
-	window          map[uint32](chan int8) // pacotes enviados mas ainda não ACKed
-	mu              sync.Mutex
 }
 
 type Rover struct {
@@ -30,27 +24,30 @@ type Rover struct {
 	waiting             bool
 	missionReceivedChan chan bool
 	conn                *RoverMlConection
-	window              *Window
+	window              *packetslogic.Window
 	expectedSeq         uint16
 	buffer              map[uint16]ml.Packet
 	bufferMu            sync.Mutex
 }
 
 func initConnection(mothershipAddr string) (*RoverMlConection, error) {
-	udpAddr, err := net.ResolveUDPAddr("udp", mothershipAddr+":9999")
-
+	// Resolve o endereço da nave-mãe
+	motherAddr, err := net.ResolveUDPAddr("udp", mothershipAddr+":9999")
 	if err != nil {
 		return nil, fmt.Errorf("erro ao resolver endereço UDP da nave-mãe: %v", err)
 	}
 
-	roverConn, err := net.DialUDP("udp", nil, udpAddr)
-
+	// Abre uma porta UDP local (porta 0 = qualquer porta livre)
+	roverConn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 0})
 	if err != nil {
-		return nil, fmt.Errorf("erro ao conectar: %v", err)
+		return nil, fmt.Errorf("erro ao criar conexão UDP: %v", err)
 	}
+
+	fmt.Printf("✅ Conexão UDP aberta na porta %d\n", roverConn.LocalAddr().(*net.UDPAddr).Port)
 
 	RoverMlConection := RoverMlConection{
 		conn:   roverConn,
+		addr:   motherAddr,
 		seqNum: 0,
 	}
 
@@ -59,24 +56,20 @@ func initConnection(mothershipAddr string) (*RoverMlConection, error) {
 
 func main() {
 
-	// Verifica se o argumento do id foi passado
-	if len(os.Args) < 2 {
-		fmt.Println("Use: ./rover1 <id_do_rover>")
-		return
-	}
-	//idInt, err := strconv.Atoi(os.Args[1])
-	//if err != nil {
-	//	fmt.Println("ID do rover inválido:", err)
-	//	return
-	//}
-	//roverID := uint8(idInt)
-
 	// Inicializa configuração (isRover = true)
 	config.InitConfig(true)
 	config.PrintConfig()
 
 	// Inicia conexão com a nave-mãe
 	mothershipAddr := config.GetMotherIP()
+
+	// 🆔 Solicita ID à nave-mãe via TCP
+	roverID, err := requestID(mothershipAddr)
+	if err != nil {
+		fmt.Println("❌ Erro ao obter ID:", err)
+		return
+	}
+
 	roverConn, err := initConnection(mothershipAddr)
 	if err != nil {
 		fmt.Println("❌ Erro ao inicializar conexão:", err)
@@ -86,24 +79,27 @@ func main() {
 
 	// Cria o Rover
 	rover := Rover{
-		id:                  0,
+		id:                  roverID,
 		activeMissions:      0,
 		mu:                  sync.Mutex{},
 		cond:                sync.NewCond(&sync.Mutex{}),
 		waiting:             false,
 		missionReceivedChan: make(chan bool, 1), //Channel para saber se a nave mãe enviou missões
 		conn:                roverConn,
-		window: &Window{
-			lastAckReceived: -1,
-			window:          make(map[uint32](chan int8)),
-			mu:              sync.Mutex{},
+		window: &packetslogic.Window{
+			LastAckReceived: -1,
+			Window:          make(map[uint32](chan int8)),
+			Mu:              sync.Mutex{},
 		},
 		expectedSeq: 0,
 		buffer:      make(map[uint16]ml.Packet),
 		bufferMu:    sync.Mutex{},
 	}
+
 	// Inicia o receiver de pacotes
 	go rover.receiver()
+
+	go rover.telemetrySender(config.GetMotherIP())
 
 	// Loop principal
 	for {

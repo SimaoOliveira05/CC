@@ -4,17 +4,20 @@ import (
 	"fmt"
 	"src/internal/ml"
 	"src/utils"
+	"src/utils/packetsLogic"
 	"time"
 )
 
 // handlePacket processa cada pacote numa goroutine separada
 func (ms *MotherShip) handlePacket(state *RoverState, pkt ml.Packet) {
+	
+	
 	state.WindowLock.Lock()
 	defer state.WindowLock.Unlock()
 
 	if pkt.MsgType == ml.MSG_ACK {
 		// Pacote ACK — processa diretamente
-		ms.handleAck(pkt, state)
+		go ms.dispatchPacket(pkt, state)
 		return
 	}
 
@@ -56,7 +59,7 @@ func (ms *MotherShip) dispatchPacket(pkt ml.Packet, state *RoverState) {
 	case ml.MSG_REQUEST:
 		ms.handleMissionRequest(state)
 	case ml.MSG_ACK:
-		ms.handleAck(pkt, state)
+		packetslogic.HandleAck(pkt, state.Window)
 	case ml.MSG_REPORT:
 		ms.handleReport(pkt, state)
 	default:
@@ -102,7 +105,7 @@ func (ms *MotherShip) handleMissionRequest(state *RoverState) {
 		state.WindowLock.Unlock()
 
 		pkt.Checksum = ml.Checksum(pkt.Payload)
-		ms.sendPacket(pkt, state)
+		packetslogic.PacketManager(ms.conn, state.Addr, pkt, state.Window)
 		fmt.Printf("✅ Missão %d enviada para %s\n", missionID, state.Addr)
 		return
 	default:
@@ -123,25 +126,10 @@ func (ms *MotherShip) handleMissionRequest(state *RoverState) {
 		state.WindowLock.Unlock()
 
 		noMissionPkt.Checksum = ml.Checksum(noMissionPkt.Payload)
-		ms.sendPacket(noMissionPkt, state)
+		packetslogic.PacketManager(ms.conn, state.Addr, noMissionPkt, state.Window)
 		return
 	}
 }
-
-// handleACK processa confirmações de entrega
-func (ms *MotherShip) handleAck(p ml.Packet, state *RoverState) {
-	state.Window.mu.Lock()
-	for i := state.Window.lastAckReceived + 1; i < int16(p.AckNum); i++ {
-		if ch, exists := state.Window.window[uint32(i)]; exists {
-			ch <- 1 // Sinaliza o ACK recebido
-			delete(state.Window.window, uint32(i))
-		}
-	}
-	state.Window.lastAckReceived = int16(p.AckNum - 1)
-	state.Window.mu.Unlock()
-	fmt.Printf("✅ ACK recebido de %s, AckNum: %d (confirmou até SeqNum %d)\n", state.Addr, p.AckNum, p.AckNum-1)
-}
-
 // handleReport processa relatórios dos rovers
 func (ms *MotherShip) handleReport(p ml.Packet, state *RoverState) {
 	fmt.Printf("📊 Relatório recebido de %s\n", state.Addr)
@@ -177,12 +165,11 @@ func (ms *MotherShip) handleReport(p ml.Packet, state *RoverState) {
 
 	if reportInfo.report.IsLast() {
 		fmt.Printf("🏁 Último relatório recebido.\n")
+		ms.missionManager.PrintMissions()
 	}
 
 	fmt.Printf("✅ %s %s\n", reportInfo.name, reportInfo.report.String())
 
 	// Atualiza o estado da missão no Mission Manager
 	ml.UpdateMission(ms.missionManager, reportInfo.report)
-
-	//ms.missionManager.PrintMissions()
 }

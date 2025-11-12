@@ -9,13 +9,9 @@ import (
 	"src/config"
 	"src/internal/ml"
 	"sync"
+	"src/utils/packetsLogic"
 )
 
-type Window struct {
-	lastAckReceived int16
-	window          map[uint32](chan int8) // pacotes enviados mas ainda não ACKed
-	mu              sync.Mutex
-}
 
 type RoverState struct {
 	Addr        *net.UDPAddr
@@ -23,24 +19,23 @@ type RoverState struct {
 	ExpectedSeq uint16
 	Buffer      map[uint16]ml.Packet
 	WindowLock  sync.Mutex
-	Window      *Window // Janela deslizante específica deste rover
+	Window      *packetslogic.Window // Janela deslizante específica deste rover
 }
 
 type MotherShip struct {
 	conn           *net.UDPConn
-	rovers         map[string]*RoverState // key: IP (ou ID do rover)
+	rovers         map[uint8]*RoverState // key: IP (ou ID do rover)
 	missionManager *ml.MissionManager
 	missionQueue   chan ml.MissionState
 	mu             sync.Mutex
 }
 
 func initConnection(mothershipAddr string) (*MotherShip, error) {
-	udpAddr, err := net.ResolveUDPAddr("udp", mothershipAddr+":9999")
 
-	if err != nil {
-		return nil, fmt.Errorf("erro ao resolver endereço UDP da nave-mãe: %v", err)
-	}
-	mothershipConn, err := net.ListenUDP("udp", udpAddr)
+	mothershipConn, err := net.ListenUDP("udp", &net.UDPAddr{
+    											IP:   net.ParseIP(mothershipAddr),
+												Port: 9999,
+												})
 
 	if err != nil {
 		return nil, fmt.Errorf("erro ao conectar: %v", err)
@@ -49,7 +44,7 @@ func initConnection(mothershipAddr string) (*MotherShip, error) {
 	// Cria o estado da Nave-Mãe
 	mothership := MotherShip{
 		conn:           mothershipConn,
-		rovers:         make(map[string]*RoverState),
+		rovers:         make(map[uint8]*RoverState),
 		missionManager: ml.NewMissionManager(),
 		missionQueue:   make(chan ml.MissionState, 100),
 		mu:             sync.Mutex{},
@@ -76,8 +71,15 @@ func main() {
 		return
 	}
 
+	idManager := NewIDManager()
+
+    // Servidor de atribuição de IDs (TCP)
+    go mothership.idAssignmentServer("9997", idManager)
+
 	// Goroutine para ler pacotes UDP
 	go mothership.receiver()
+
+	go mothership.telemetryReceiver("9998")
 
 	// Loop infinito
 	select {}

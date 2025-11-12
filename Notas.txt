@@ -20,6 +20,7 @@ ID do rover pode ser passado como argumento? Mothership é que atribui?
 
 Não é preciso fazer seq += len(payload) porque UDP nunca vai fragmentar o nosso pacote?!?!
 
+DIALUDP OU LISTENUDP, O QUE USAR???
 
 CHAT-GPT:
 Sim, a Nave-Mãe tem um “sender”, mas ele não precisa de ser uma thread separada como no rover.
@@ -32,3 +33,5 @@ Executar:
 go run mothership.go
 go build -o rover ./cmd/rover
 ./rover 1 [--mother-ip=127.0.0.1] [--rover-ip=127.0.0.1]
+
+

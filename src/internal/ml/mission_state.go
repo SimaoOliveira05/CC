@@ -1,9 +1,9 @@
 package ml
 
 import (
+	"fmt"
 	"sync"
 	"time"
-	"fmt"
 )
 
 // MissionState represents the last updated state of a mission.
@@ -16,14 +16,14 @@ type MissionState struct {
 	LastUpdate      time.Time
 	CreatedAt       time.Time
 	Priority        uint8
-	Report          Report
+	Report          []Report
 	State           string // e.g, "Pending", "In Progress", "Completed"
 }
 
 // MissionManager will manage all the active missions.
 type MissionManager struct {
 	ActiveMissions map[uint16]*MissionState
-	mu       sync.RWMutex
+	mu             sync.RWMutex
 }
 
 func NewMissionManager() *MissionManager {
@@ -41,23 +41,22 @@ func (mm *MissionManager) AddMission(mission *MissionState) {
 
 func UpdateMission(mm *MissionManager, report Report) {
 
-
 	mission := mm.GetMission(report.GetMissionID())
-    if mission == nil {
-        return
-    }
+	if mission == nil {
+		return
+	}
 
-    // Atualiza o estado genérico
-	mission.Report = report
-    mission.LastUpdate = time.Now()
+	// Atualiza o estado genérico
+	mission.Report = append(mission.Report, report)
+	mission.LastUpdate = time.Now()
 	if report.IsLast() {
 		mission.State = "Completed"
 	} else {
 		mission.State = "In Progress"
 	}
 
-    // Aqui podes adicionar lógica para atualizar outros campos conforme o tipo de report
-    // Exemplo: mission.TaskType, mission.Priority, etc.
+	// Aqui podes adicionar lógica para atualizar outros campos conforme o tipo de report
+	// Exemplo: mission.TaskType, mission.Priority, etc.
 }
 
 // DeleteMission removes a mission from the manager
@@ -80,12 +79,15 @@ func (mm *MissionManager) PrintMissions() {
 	defer mm.mu.RUnlock()
 	fmt.Println("===== Missões Ativas =====")
 	for id, m := range mm.ActiveMissions {
-		if (m.Report == nil) {
-			fmt.Printf("ID: %d | Rover: %d | TaskType: %d | Estado: %s | Duração: %v | Última atualização: %v | Detalhes: Nenhum relatório recebido\n",
-				id, m.IDRover, m.TaskType, m.State, m.Duration, m.LastUpdate)
+		fmt.Printf("ID: %d | Rover: %d | TaskType: %d | Estado: %s | Duração: %v | Última atualização: %v\n",
+			id, m.IDRover, m.TaskType, m.State, m.Duration, m.LastUpdate)
+		if len(m.Report) == 0 {
+			fmt.Println("  Nenhum relatório recebido")
 		} else {
-			fmt.Printf("ID: %d | Rover: %d | TaskType: %d | Estado: %s | Duração: %v | Última atualização: %v | Detalhes: %s\n",
-				id, m.IDRover, m.TaskType, m.State, m.Duration, m.LastUpdate, m.Report.String())
+			fmt.Println("  Relatórios recebidos:")
+			for i, rep := range m.Report {
+				fmt.Printf("    [%d] %s\n", i+1, rep.String())
+			}
 		}
 	}
 	fmt.Println("==========================")

@@ -16,15 +16,15 @@ func (rv *Rover) packetHandler(pkt ml.Packet) {
 		rv.handleMissionPacket(pkt)
 
 	case ml.MSG_ACK:
-		rv.window.mu.Lock()
-		for i := rv.window.lastAckReceived + 1; i < int16(pkt.AckNum); i++ {
-			if ch, exists := rv.window.window[uint32(i)]; exists {
+		rv.window.Mu.Lock()
+		for i := rv.window.LastAckReceived + 1; i < int16(pkt.AckNum); i++ {
+			if ch, exists := rv.window.Window[uint32(i)]; exists {
 				ch <- 1 // Sinaliza o ACK recebido
-				delete(rv.window.window, uint32(i))
+				delete(rv.window.Window, uint32(i))
 			}
 		}
-		rv.window.lastAckReceived = int16(pkt.AckNum - 1)
-		rv.window.mu.Unlock()
+		rv.window.LastAckReceived = int16(pkt.AckNum - 1)
+		rv.window.Mu.Unlock()
 
 	default:
 		fmt.Printf("⚠️ Tipo de pacote desconhecido: %d\n", pkt.MsgType)

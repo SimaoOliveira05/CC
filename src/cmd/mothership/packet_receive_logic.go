@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"src/internal/ml"
+	packetslogic "src/utils/packetsLogic"
 	"sync"
 )
 
@@ -18,7 +19,7 @@ func (ms *MotherShip) receiver() {
 		}
 
 		packet := ml.FromBytes(buf[:n])
-		roverID := addr.String()
+		roverID := packet.RoverId
 
 		ms.mu.Lock()
 		state, exists := ms.rovers[roverID]
@@ -28,14 +29,14 @@ func (ms *MotherShip) receiver() {
 				SeqNum:      0,
 				ExpectedSeq: packet.SeqNum,
 				Buffer:      make(map[uint16]ml.Packet),
-				Window: &Window{
-					lastAckReceived: -1,
-					window:          make(map[uint32](chan int8)),
-					mu:              sync.Mutex{},
+				Window: &packetslogic.Window{
+					LastAckReceived: -1,
+					Window:          make(map[uint32](chan int8)),
+					Mu:              sync.Mutex{},
 				},
 			}
 			ms.rovers[roverID] = state
-			fmt.Printf("🆕 Novo rover registado: %s\n", roverID)
+			fmt.Printf("🆕 Novo rover registado: %d\n", roverID)
 		}
 		ms.mu.Unlock()
 
