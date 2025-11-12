@@ -95,7 +95,7 @@ func (rv *Rover) packetManager(pkt ml.Packet, ch chan int8) {
         case <-ch:
             fmt.Printf("✅ ACK recebido para SeqNum %d\n", pkt.SeqNum)
             return
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			retries++
 			if retries > maxRetries {
 				fmt.Printf("❌ Falha ao receber ACK para SeqNum %d após %d tentativas. Abortando...\n", pkt.SeqNum, maxRetries)

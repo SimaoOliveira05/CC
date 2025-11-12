@@ -3,8 +3,8 @@
     "ID": 1,
     "IDRover": 0,
     "TaskType": 1,
-    "Duration": 60,
-    "UpdateFrequency": 10,
+    "Duration": 20,
+    "UpdateFrequency": 2,
     "Priority": 1,
     "State": "Pending"
   },
@@ -12,8 +12,8 @@
     "ID": 2,
     "IDRover": 0,
     "TaskType": 2,
-    "Duration": 120,
-    "UpdateFrequency": 20,
+    "Duration": 20,
+    "UpdateFrequency": 3,
     "Priority": 2,
     "State": "Pending"
   },

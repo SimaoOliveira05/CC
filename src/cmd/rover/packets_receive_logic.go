@@ -13,7 +13,7 @@ func (rv *Rover) packetHandler(pkt ml.Packet) {
 		rv.handleMissionPacket(pkt)
 
 	case ml.MSG_NO_MISSION:
-		rv.handleNoMissionPacket(pkt)
+		rv.handleMissionPacket(pkt)
 
 	case ml.MSG_ACK:
 		rv.window.mu.Lock()
@@ -31,7 +31,7 @@ func (rv *Rover) packetHandler(pkt ml.Packet) {
 	}
 }
 
-// handleMissionPacket processa pacotes MISSION com ordenação
+// handleNoMissionPacket processa pacotes NO_MISSION com ordenação
 func (rv *Rover) handleMissionPacket(pkt ml.Packet) {
 	rv.bufferMu.Lock()
 	defer rv.bufferMu.Unlock()
@@ -41,56 +41,26 @@ func (rv *Rover) handleMissionPacket(pkt ml.Packet) {
 
 	switch {
 	case seq == expected:
-		// Pacote esperado — processa
-		rv.processMission(pkt)
-		rv.expectedSeq++
-		rv.sendAck(seq)
-
-		// Processa pacotes bufferizados consecutivos
-		for {
-			if bufferedPkt, ok := rv.buffer[rv.expectedSeq]; ok {
-				delete(rv.buffer, rv.expectedSeq)
-				rv.processMission(bufferedPkt)
-				rv.sendAck(rv.expectedSeq)
-				rv.expectedSeq++
-			} else {
-				break
-			}
-		}
-
-	case seq > expected:
-		// Fora de ordem — guarda no buffer e envia ACK cumulativo
-		rv.buffer[seq] = pkt
-		rv.sendAck(expected)
-
-		case seq < expected:
-			rv.sendAck(seq)
-	}
-}
-
-// handleNoMissionPacket processa pacotes NO_MISSION com ordenação
-func (rv *Rover) handleNoMissionPacket(pkt ml.Packet) {
-	rv.bufferMu.Lock()
-	defer rv.bufferMu.Unlock()
-
-	seq := pkt.SeqNum
-	expected := rv.expectedSeq
-
-	switch {
-	case seq == expected:
 		// Pacote esperado
+		switch pkt.MsgType {
+		case ml.MSG_MISSION:
+			rv.processMission(pkt)
+			rv.sendAck(seq)
+		case ml.MSG_NO_MISSION:
+			rv.sendAck(seq)
+			rv.missionReceivedChan <- false
+		}
 		rv.expectedSeq++
-		rv.sendAck(seq)
-		rv.missionReceivedChan <- false
 
 		// Processa pacotes bufferizados consecutivos
 		for {
 			if bufferedPkt, ok := rv.buffer[rv.expectedSeq]; ok {
 				delete(rv.buffer, rv.expectedSeq)
-				if bufferedPkt.MsgType == ml.MSG_NO_MISSION {
+				switch bufferedPkt.MsgType {
+				case ml.MSG_NO_MISSION:
 					rv.sendAck(rv.expectedSeq)
 					rv.missionReceivedChan <- false
-				} else if bufferedPkt.MsgType == ml.MSG_MISSION {
+				case ml.MSG_MISSION:
 					rv.processMission(bufferedPkt)
 					rv.sendAck(rv.expectedSeq)
 				}

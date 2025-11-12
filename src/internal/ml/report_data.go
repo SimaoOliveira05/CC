@@ -24,7 +24,6 @@ type Report interface {
 	String() string
 	IsLast() bool
 	GetMissionID() uint16
-	Clone() Report
 }
 
 //
@@ -40,25 +39,15 @@ type ImageReport struct {
 	IsLastReport bool   // indica se é o último report
 }
 
-func (r *ImageReport) Clone() Report {
-	dataCopy := make([]byte, len(r.Data))
-	copy(dataCopy, r.Data)
-	return &ImageReport{
-		TaskType:     r.TaskType,
-		MissionID:    r.MissionID,
-		ChunkID:      r.ChunkID,
-		Data:         dataCopy,
-		IsLastReport: r.IsLastReport,
-	}
-}
-
 func (r *ImageReport) GetMissionID() uint16 {
 	return r.MissionID
 }
 
+
 func (r *ImageReport) IsLast() bool {
 	return r.IsLastReport
 }
+
 func (r *ImageReport) ToBytes() []byte {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, r.TaskType)
@@ -109,17 +98,6 @@ type SampleReport struct {
 	IsLastReport bool        // indica se é o último report
 }
 
-func (r *SampleReport) Clone() Report {
-	compsCopy := make([]Component, len(r.Components))
-	copy(compsCopy, r.Components)
-	return &SampleReport{
-		TaskType:     r.TaskType,
-		MissionID:    r.MissionID,
-		NumSamples:   r.NumSamples,
-		Components:   compsCopy,
-		IsLastReport: r.IsLastReport,
-	}
-}
 
 func (r *SampleReport) GetMissionID() uint16 {
 	return r.MissionID
@@ -180,6 +158,7 @@ func (r *SampleReport) FromBytes(b []byte) error {
 }
 
 func (r *SampleReport) GetTaskType() uint8 { return TASK_SAMPLE_COLLECTION }
+
 func (r *SampleReport) String() string {
 	compStr := ""
 	for i, c := range r.Components {
@@ -208,19 +187,6 @@ type EnvReport struct {
 	IsLastReport bool // indica se é o último report
 }
 
-func (r *EnvReport) Clone() Report {
-	return &EnvReport{
-		TaskType:     r.TaskType,
-		MissionID:    r.MissionID,
-		Temp:         r.Temp,
-		Oxygen:       r.Oxygen,
-		Pressure:     r.Pressure,
-		Humidity:     r.Humidity,
-		WindSpeed:    r.WindSpeed,
-		Radiation:    r.Radiation,
-		IsLastReport: r.IsLastReport,
-	}
-}
 
 func (r *EnvReport) GetMissionID() uint16 {
 	return r.MissionID
@@ -283,15 +249,7 @@ type RepairReport struct {
 	IsLastReport bool // indica se é o último report
 }
 
-func (r *RepairReport) Clone() Report {
-	return &RepairReport{
-		TaskType:     r.TaskType,
-		MissionID:    r.MissionID,
-		ProblemID:    r.ProblemID,
-		Repairable:   r.Repairable,
-		IsLastReport: r.IsLastReport,
-	}
-}
+
 
 func (r *RepairReport) GetMissionID() uint16 {
 	return r.MissionID
@@ -353,16 +311,6 @@ type TopoReport struct {
 	IsLastReport bool // indica se é o último report
 }
 
-func (r *TopoReport) Clone() Report {
-	return &TopoReport{
-		TaskType:     r.TaskType,
-		MissionID:    r.MissionID,
-		Latitude:     r.Latitude,
-		Longitude:    r.Longitude,
-		Height:       r.Height,
-		IsLastReport: r.IsLastReport,
-	}
-}
 
 func (r *TopoReport) GetMissionID() uint16 {
 	return r.MissionID
@@ -417,14 +365,6 @@ type InstallReport struct {
 	IsLastReport bool // indica se é o último report
 }
 
-func (r *InstallReport) Clone() Report {
-	return &InstallReport{
-		TaskType:     r.TaskType,
-		MissionID:    r.MissionID,
-		Success:      r.Success,
-		IsLastReport: r.IsLastReport,
-	}
-}
 
 func (r *InstallReport) GetMissionID() uint16 {
 	return r.MissionID
