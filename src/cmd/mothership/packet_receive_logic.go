@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"src/internal/ml"
-	packetslogic "src/utils/packetsLogic"
+	"src/utils/packetsLogic"
 	"sync"
 )
 

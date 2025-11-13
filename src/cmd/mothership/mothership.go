@@ -8,8 +8,9 @@ import (
 	"os"
 	"src/config"
 	"src/internal/ml"
-	"sync"
+	"src/internal/ts"
 	"src/utils/packetsLogic"
+	"sync"
 )
 
 
@@ -28,6 +29,8 @@ type MotherShip struct {
 	missionManager *ml.MissionManager
 	missionQueue   chan ml.MissionState
 	mu             sync.Mutex
+
+	roverInfo      *ts.RoverManager
 }
 
 func initConnection(mothershipAddr string) (*MotherShip, error) {
@@ -48,6 +51,7 @@ func initConnection(mothershipAddr string) (*MotherShip, error) {
 		missionManager: ml.NewMissionManager(),
 		missionQueue:   make(chan ml.MissionState, 100),
 		mu:             sync.Mutex{},
+		roverInfo:      ts.NewRoverManager(),
 	}
 
 	// Carrega missões iniciais de um ficheiro JSON

@@ -4,6 +4,7 @@ import (
     "fmt"
     "net"
     "sync"
+    "src/internal/ts"
 )
 
 type IDManager struct {
@@ -59,4 +60,10 @@ func (ms *MotherShip) handleIDRequest(conn net.Conn, idManager *IDManager) {
     }
 
     fmt.Printf("✅ ID %d atribuído a novo rover\n", id)
+    ms.roverInfo.AddRover(&ts.RoverInfo{
+    	ID: id,
+    	State: "Desconhecido",
+    	Battery: 100,
+    	Speed: 0.0,
+    })
 }

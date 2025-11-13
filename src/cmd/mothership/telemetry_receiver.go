@@ -49,7 +49,8 @@ func (ms *MotherShip) handleTelemetryConnection(conn net.Conn) {
             estado = "Ocioso"
         }
 
-        fmt.Printf("📡 Telemetria recebida: Rover=%d, Estado=%s, Bateria=%d%%, Velocidade=%.2f m/s\n",
-            telemetry.RoverID, estado, telemetry.Battery, telemetry.Speed)
+        ms.roverInfo.UpdateRover(telemetry.RoverID, estado, telemetry.Battery, telemetry.Speed)
+
+        fmt.Println(ms.roverInfo.String())
     }
 }
