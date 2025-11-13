@@ -46,19 +46,6 @@ func (rv *Rover) sendRequest() {
 }
 
 
-func (rv *Rover) sendAck(ackNum uint16) {
-	ackPacket := ml.Packet{
-		RoverId: rv.id,
-		MsgType: ml.MSG_ACK,
-		SeqNum:  0,
-		AckNum:  ackNum + 1,
-		Payload: []byte{},
-	}
-	ackPacket.Checksum = ml.Checksum(ackPacket.Payload)
-
-	packetslogic.PacketManager(rv.conn.conn, rv.conn.addr, ackPacket, rv.window)
-}
-
 
 // buildReportPayload cria o payload correto conforme o TaskType
 func buildReportPayload(mission ml.MissionData, final bool) []byte {

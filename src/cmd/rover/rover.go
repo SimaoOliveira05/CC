@@ -5,7 +5,7 @@ import (
 	"net"
 	"src/config"
 	"src/internal/ml"
-	packetslogic "src/utils/packetsLogic"
+	"src/utils/packetsLogic"
 	"sync"
 	"time"
 )

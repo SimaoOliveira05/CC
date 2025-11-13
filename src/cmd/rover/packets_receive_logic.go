@@ -3,16 +3,14 @@ package main
 import (
 	"fmt"
 	"src/internal/ml"
+	packetslogic "src/utils/packetsLogic"
 )
 
 func (rv *Rover) packetHandler(pkt ml.Packet) {
 	// Lógica para tratar o pacote recebido
 	switch pkt.MsgType {
 
-	case ml.MSG_MISSION:
-		rv.handleMissionPacket(pkt)
-
-	case ml.MSG_NO_MISSION:
+	case ml.MSG_MISSION, ml.MSG_NO_MISSION:
 		rv.handleMissionPacket(pkt)
 
 	case ml.MSG_ACK:
@@ -45,9 +43,9 @@ func (rv *Rover) handleMissionPacket(pkt ml.Packet) {
 		switch pkt.MsgType {
 		case ml.MSG_MISSION:
 			rv.processMission(pkt)
-			rv.sendAck(seq)
+			packetslogic.SendAck(rv.conn.conn, rv.conn.addr, seq, rv.window, rv.id)
 		case ml.MSG_NO_MISSION:
-			rv.sendAck(seq)
+			packetslogic.SendAck(rv.conn.conn, rv.conn.addr, seq, rv.window, rv.id)
 			rv.missionReceivedChan <- false
 		}
 		rv.expectedSeq++
@@ -58,11 +56,11 @@ func (rv *Rover) handleMissionPacket(pkt ml.Packet) {
 				delete(rv.buffer, rv.expectedSeq)
 				switch bufferedPkt.MsgType {
 				case ml.MSG_NO_MISSION:
-					rv.sendAck(rv.expectedSeq)
+					packetslogic.SendAck(rv.conn.conn, rv.conn.addr, rv.expectedSeq, rv.window, rv.id)
 					rv.missionReceivedChan <- false
 				case ml.MSG_MISSION:
 					rv.processMission(bufferedPkt)
-					rv.sendAck(rv.expectedSeq)
+					packetslogic.SendAck(rv.conn.conn, rv.conn.addr, rv.expectedSeq, rv.window, rv.id)
 				}
 				rv.expectedSeq++
 			} else {
@@ -73,7 +71,7 @@ func (rv *Rover) handleMissionPacket(pkt ml.Packet) {
 	case seq > expected:
 		// Fora de ordem — guarda no buffer e envia ACK cumulativo
 		rv.buffer[seq] = pkt
-		rv.sendAck(expected)
+		packetslogic.SendAck(rv.conn.conn, rv.conn.addr, expected, rv.window, rv.id)
 
 		// case seq < expected: pacote duplicado, ignora
 	}
