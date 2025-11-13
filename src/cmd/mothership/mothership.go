@@ -29,7 +29,6 @@ type MotherShip struct {
 	missionManager *ml.MissionManager
 	missionQueue   chan ml.MissionState
 	mu             sync.Mutex
-
 	roverInfo      *ts.RoverManager
 }
 

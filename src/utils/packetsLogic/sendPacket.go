@@ -80,3 +80,18 @@ func PacketManager(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *
 }
 
 
+func SendAck(conn *net.UDPConn, addr *net.UDPAddr, ackNum uint16, window *Window, roverId uint8) {
+	ackPacket := ml.Packet{
+		RoverId: roverId,
+		MsgType: ml.MSG_ACK,
+		SeqNum:  0,
+		AckNum:  ackNum + 1,
+		Payload: []byte{},
+	}
+	ackPacket.Checksum = ml.Checksum(ackPacket.Payload)
+
+	PacketManager(conn, addr, ackPacket, window)
+}
+
+
+

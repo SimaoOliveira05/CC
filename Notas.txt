@@ -11,9 +11,6 @@ coise que ter um pacote MISSION_END
 
 PERGUNTAS AO BRO LOST:
 
-
-Struct rover ou variáveis globais?
-
 Na cena do wait antes de 
 
 ID do rover pode ser passado como argumento? Mothership é que atribui?

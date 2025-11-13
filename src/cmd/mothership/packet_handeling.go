@@ -29,14 +29,14 @@ func (ms *MotherShip) handlePacket(state *RoverState, pkt ml.Packet) {
 		// Pacote esperado
 		go ms.dispatchPacket(pkt, state)
 		state.ExpectedSeq++
-		ms.sendAck(state, seq)
+		packetslogic.SendAck(ms.conn, state.Addr, seq, state.Window, 0)
 
 		for {
 			if packet, ok := state.Buffer[state.ExpectedSeq]; ok {
 				delete(state.Buffer, state.ExpectedSeq)
 				bufferedPkt := packet
 				go ms.dispatchPacket(bufferedPkt, state)
-				ms.sendAck(state, state.ExpectedSeq)
+				packetslogic.SendAck(ms.conn, state.Addr, state.ExpectedSeq, state.Window, 0)
 				state.ExpectedSeq++
 			} else {
 				break // Não há mais pacotes consecutivos
@@ -44,11 +44,11 @@ func (ms *MotherShip) handlePacket(state *RoverState, pkt ml.Packet) {
 		}
 
 	case seq < expected:
-		ms.sendAck(state, seq)
+		packetslogic.SendAck(ms.conn, state.Addr, seq, state.Window, 0)
 
 	case seq > expected:
 		state.Buffer[seq] = pkt
-		ms.sendAck(state, expected)
+		packetslogic.SendAck(ms.conn, state.Addr, expected, state.Window, 0)
 	}
 }
 
