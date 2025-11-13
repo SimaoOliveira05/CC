@@ -26,9 +26,3 @@ No caso da Nave-Mãe, o envio é reativo (responde a eventos, como um REPORT ou 
 A Nave-Mãe não precisa de uma goroutine que lê continuamente de um canal sendChan,
 porque ela só envia algo quando acontece um evento específico:
 
-Executar:
-go run mothership.go
-go build -o rover ./cmd/rover
-./rover 1 [--mother-ip=127.0.0.1] [--rover-ip=127.0.0.1]
-
-
