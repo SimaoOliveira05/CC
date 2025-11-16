@@ -18,6 +18,7 @@ type Window struct {
 // SendPacketUDP encodes and sends a packet through UDP connection
 func SendPacketUDP(conn *net.UDPConn, addr *net.UDPAddr, packet ml.Packet) error {
 	// Encodes the packet
+	packet.Checksum = ml.Checksum(packet.Payload)
 	encodedPacket := packet.ToBytes()
 
 
@@ -88,7 +89,6 @@ func SendAck(conn *net.UDPConn, addr *net.UDPAddr, ackNum uint16, window *Window
 		AckNum:  ackNum + 1,
 		Payload: []byte{},
 	}
-	ackPacket.Checksum = ml.Checksum(ackPacket.Payload)
 
 	PacketManager(conn, addr, ackPacket, window)
 }

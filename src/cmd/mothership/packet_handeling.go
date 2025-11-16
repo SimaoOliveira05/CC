@@ -104,7 +104,6 @@ func (ms *MotherShip) handleMissionRequest(state *RoverState) {
 		state.SeqNum++
 		state.WindowLock.Unlock()
 
-		pkt.Checksum = ml.Checksum(pkt.Payload)
 		packetslogic.PacketManager(ms.conn, state.Addr, pkt, state.Window)
 		fmt.Printf("✅ Missão %d enviada para %s\n", missionID, state.Addr)
 		return
@@ -125,7 +124,6 @@ func (ms *MotherShip) handleMissionRequest(state *RoverState) {
 		state.SeqNum++
 		state.WindowLock.Unlock()
 
-		noMissionPkt.Checksum = ml.Checksum(noMissionPkt.Payload)
 		packetslogic.PacketManager(ms.conn, state.Addr, noMissionPkt, state.Window)
 		return
 	}
