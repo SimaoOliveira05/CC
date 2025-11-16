@@ -2,7 +2,9 @@ package packetslogic
 
 import (
 	"fmt"
+	"net"
 	"src/internal/ml"
+	"sync"
 )
 
 // handleACK processa confirmações de entrega
@@ -16,5 +18,82 @@ func HandleAck(p ml.Packet, window *Window) {
 	}
 	window.LastAckReceived = int16(p.AckNum - 1)
 	window.Mu.Unlock()
-	fmt.Printf("✅ ACK recebido, AckNum: %d (confirmou até SeqNum %d)\n", p.AckNum, p.AckNum-1)
+}
+
+// PacketProcessor é a função callback para processar um pacote após ordenação
+type PacketProcessor func(pkt ml.Packet)
+
+// HandleOrderedPacket processa pacotes com ordenação e verificação de checksum
+// Parâmetros:
+//   - pkt: pacote recebido
+//   - expectedSeq: ponteiro para o número de sequência esperado
+//   - buffer: buffer de pacotes fora de ordem
+//   - mu: mutex para proteger acesso ao estado
+//   - conn: conexão UDP
+//   - addr: endereço do remetente
+//   - window: janela de controlo de fluxo
+//   - roverID: ID do rover (0 para MotherShip)
+//   - processor: função callback para processar o pacote
+//   - skipOrdering: se true, processa sem ordenação (ex: ACKs)
+func HandleOrderedPacket(
+	pkt ml.Packet,
+	expectedSeq *uint16,
+	buffer map[uint16]ml.Packet,
+	mu *sync.Mutex,
+	conn *net.UDPConn,
+	addr *net.UDPAddr,
+	window *Window,
+	roverID uint8,
+	processor PacketProcessor,
+	skipOrdering bool,
+) {
+	// 1. Verificar checksum ANTES de adquirir lock
+	expectedChecksum := ml.Checksum(pkt.Payload)
+	if pkt.Checksum != expectedChecksum {
+		fmt.Printf("❌ Checksum inválido de %s: esperado %d, recebido %d. Pacote descartado.\n",
+			addr, expectedChecksum, pkt.Checksum)
+		return
+	}
+
+	// 2. Se for para processar sem ordenação (ACKs), processa diretamente
+	if skipOrdering {
+		go processor(pkt)
+		return
+	}
+
+	// 3. Lógica de ordenação com janela deslizante
+	mu.Lock()
+	defer mu.Unlock()
+
+	seq := pkt.SeqNum
+	expected := *expectedSeq
+
+	switch {
+	case seq == expected:
+		// Pacote esperado - processa e avança janela
+		go processor(pkt)
+		*expectedSeq++
+		SendAck(conn, addr, seq, window, roverID)
+
+		// Processa pacotes bufferizados consecutivos
+		for {
+			if bufferedPkt, ok := buffer[*expectedSeq]; ok {
+				delete(buffer, *expectedSeq)
+				go processor(bufferedPkt)
+				SendAck(conn, addr, *expectedSeq, window, roverID)
+				*expectedSeq++
+			} else {
+				break
+			}
+		}
+
+	case seq > expected:
+		// Pacote fora de ordem - bufferiza e envia ACK cumulativo
+		buffer[seq] = pkt
+		SendAck(conn, addr, expected, window, roverID)
+
+	case seq < expected:
+		// Pacote duplicado - reenvia ACK
+		SendAck(conn, addr, seq, window, roverID)
+	}
 }

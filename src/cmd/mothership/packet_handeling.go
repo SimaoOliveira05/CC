@@ -4,52 +4,29 @@ import (
 	"fmt"
 	"src/internal/ml"
 	"src/utils"
-	"src/utils/packetsLogic"
+	packetslogic "src/utils/packetsLogic"
 	"time"
 )
 
 // handlePacket processa cada pacote numa goroutine separada
 func (ms *MotherShip) handlePacket(state *RoverState, pkt ml.Packet) {
-	
-	
-	state.WindowLock.Lock()
-	defer state.WindowLock.Unlock()
-
-	if pkt.MsgType == ml.MSG_ACK {
-		// Pacote ACK — processa diretamente
-		go ms.dispatchPacket(pkt, state)
-		return
+	// Closure que captura o 'state'
+	processor := func(p ml.Packet) {
+		ms.dispatchPacket(p, state)
 	}
 
-	seq := pkt.SeqNum
-	expected := state.ExpectedSeq
-
-	switch {
-	case seq == expected:
-		// Pacote esperado
-		go ms.dispatchPacket(pkt, state)
-		state.ExpectedSeq++
-		packetslogic.SendAck(ms.conn, state.Addr, seq, state.Window, 0)
-
-		for {
-			if packet, ok := state.Buffer[state.ExpectedSeq]; ok {
-				delete(state.Buffer, state.ExpectedSeq)
-				bufferedPkt := packet
-				go ms.dispatchPacket(bufferedPkt, state)
-				packetslogic.SendAck(ms.conn, state.Addr, state.ExpectedSeq, state.Window, 0)
-				state.ExpectedSeq++
-			} else {
-				break // Não há mais pacotes consecutivos
-			}
-		}
-
-	case seq < expected:
-		packetslogic.SendAck(ms.conn, state.Addr, seq, state.Window, 0)
-
-	case seq > expected:
-		state.Buffer[seq] = pkt
-		packetslogic.SendAck(ms.conn, state.Addr, expected, state.Window, 0)
-	}
+	packetslogic.HandleOrderedPacket(
+		pkt,
+		&state.ExpectedSeq,
+		state.Buffer,
+		&state.WindowLock,
+		ms.conn,
+		state.Addr,
+		state.Window,
+		0,
+		processor,
+		pkt.MsgType == ml.MSG_ACK,
+	)
 }
 
 // dispatchPacket encaminha o pacote para o handler correto conforme o tipo
@@ -128,6 +105,7 @@ func (ms *MotherShip) handleMissionRequest(state *RoverState) {
 		return
 	}
 }
+
 // handleReport processa relatórios dos rovers
 func (ms *MotherShip) handleReport(p ml.Packet, state *RoverState) {
 	fmt.Printf("📊 Relatório recebido de %s\n", state.Addr)
