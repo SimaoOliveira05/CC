@@ -13,7 +13,13 @@ type Window struct {
 	Mu              sync.Mutex
 }
 
-
+func NewWindow() *Window {
+	return &Window{
+		LastAckReceived: -1,
+		Window:          make(map[uint32](chan int8)),
+		Mu:			  sync.Mutex{},
+	}
+}
 
 // SendPacketUDP encodes and sends a packet through UDP connection
 func SendPacketUDP(conn *net.UDPConn, addr *net.UDPAddr, packet ml.Packet) error {

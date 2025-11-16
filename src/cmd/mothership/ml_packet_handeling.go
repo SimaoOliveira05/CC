@@ -4,23 +4,26 @@ import (
 	"fmt"
 	"src/internal/ml"
 	"src/utils"
-	packetslogic "src/utils/packetsLogic"
+	"src/internal/core"
 	"time"
+	pl "src/utils/packetsLogic"
 )
 
 // handlePacket processa cada pacote numa goroutine separada
-func (ms *MotherShip) handlePacket(state *RoverState, pkt ml.Packet) {
+func (ms *MotherShip) handlePacket(state *core.RoverState, pkt ml.Packet) {
+	
+	
 	// Closure que captura o 'state'
 	processor := func(p ml.Packet) {
 		ms.dispatchPacket(p, state)
 	}
 
-	packetslogic.HandleOrderedPacket(
+	pl.HandleOrderedPacket(
 		pkt,
 		&state.ExpectedSeq,
 		state.Buffer,
 		&state.WindowLock,
-		ms.conn,
+		ms.Conn,
 		state.Addr,
 		state.Window,
 		0,
@@ -30,13 +33,13 @@ func (ms *MotherShip) handlePacket(state *RoverState, pkt ml.Packet) {
 }
 
 // dispatchPacket encaminha o pacote para o handler correto conforme o tipo
-func (ms *MotherShip) dispatchPacket(pkt ml.Packet, state *RoverState) {
+func (ms *MotherShip) dispatchPacket(pkt ml.Packet, state *core.RoverState) {
 	switch pkt.MsgType {
 
 	case ml.MSG_REQUEST:
 		ms.handleMissionRequest(state)
 	case ml.MSG_ACK:
-		packetslogic.HandleAck(pkt, state.Window)
+		pl.HandleAck(pkt, state.Window)
 	case ml.MSG_REPORT:
 		ms.handleReport(pkt, state)
 	default:
@@ -45,17 +48,17 @@ func (ms *MotherShip) dispatchPacket(pkt ml.Packet, state *RoverState) {
 }
 
 // handleMissionRequest processa pedidos de missão do rover
-func (ms *MotherShip) handleMissionRequest(state *RoverState) {
+func (ms *MotherShip) handleMissionRequest(state *core.RoverState) {
 	// Gera um ID único para a missão
 	missionID := uint16(time.Now().Unix())
 
 	var missionState ml.MissionState
 	select {
-	case missionState = <-ms.missionQueue:
+	case missionState = <-ms.MissionQueue:
 		// Missão obtida
 		missionState.ID = missionID
 		missionState.CreatedAt = time.Now()
-		ms.missionManager.AddMission(&missionState)
+		ms.MissionManager.AddMission(&missionState)
 		// Enviar missão para o rover
 		missionData := ml.MissionData{
 			MsgID:           missionState.ID,
@@ -81,7 +84,7 @@ func (ms *MotherShip) handleMissionRequest(state *RoverState) {
 		state.SeqNum++
 		state.WindowLock.Unlock()
 
-		packetslogic.PacketManager(ms.conn, state.Addr, pkt, state.Window)
+		pl.PacketManager(ms.Conn, state.Addr, pkt, state.Window)
 		fmt.Printf("✅ Missão %d enviada para %s\n", missionID, state.Addr)
 		return
 	default:
@@ -101,13 +104,13 @@ func (ms *MotherShip) handleMissionRequest(state *RoverState) {
 		state.SeqNum++
 		state.WindowLock.Unlock()
 
-		packetslogic.PacketManager(ms.conn, state.Addr, noMissionPkt, state.Window)
+		pl.PacketManager(ms.Conn, state.Addr, noMissionPkt, state.Window)
 		return
 	}
 }
 
 // handleReport processa relatórios dos rovers
-func (ms *MotherShip) handleReport(p ml.Packet, state *RoverState) {
+func (ms *MotherShip) handleReport(p ml.Packet, state *core.RoverState) {
 	fmt.Printf("📊 Relatório recebido de %s\n", state.Addr)
 
 	if len(p.Payload) < 1 {
@@ -141,11 +144,11 @@ func (ms *MotherShip) handleReport(p ml.Packet, state *RoverState) {
 
 	if reportInfo.report.IsLast() {
 		fmt.Printf("🏁 Último relatório recebido.\n")
-		ms.missionManager.PrintMissions()
+		ms.MissionManager.PrintMissions()
 	}
 
 	fmt.Printf("✅ %s %s\n", reportInfo.name, reportInfo.report.String())
 
 	// Atualiza o estado da missão no Mission Manager
-	ml.UpdateMission(ms.missionManager, reportInfo.report)
+	ml.UpdateMission(ms.MissionManager, reportInfo.report)
 }

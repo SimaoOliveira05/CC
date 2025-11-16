@@ -8,28 +8,11 @@ import (
 	"os"
 	"src/config"
 	"src/internal/ml"
-	"src/internal/ts"
-	"src/utils/packetsLogic"
-	"sync"
+	"src/internal/core"
 )
 
-
-type RoverState struct {
-	Addr        *net.UDPAddr
-	SeqNum      uint16
-	ExpectedSeq uint16
-	Buffer      map[uint16]ml.Packet
-	WindowLock  sync.Mutex
-	Window      *packetslogic.Window // Janela deslizante específica deste rover
-}
-
 type MotherShip struct {
-	conn           *net.UDPConn
-	rovers         map[uint8]*RoverState // key: IP (ou ID do rover)
-	missionManager *ml.MissionManager
-	missionQueue   chan ml.MissionState
-	mu             sync.Mutex
-	roverInfo      *ts.RoverManager
+    *core.MotherShip  // Embedding - herda todos os campos
 }
 
 func initConnection(mothershipAddr string) (*MotherShip, error) {
@@ -45,16 +28,11 @@ func initConnection(mothershipAddr string) (*MotherShip, error) {
 
 	// Cria o estado da Nave-Mãe
 	mothership := MotherShip{
-		conn:           mothershipConn,
-		rovers:         make(map[uint8]*RoverState),
-		missionManager: ml.NewMissionManager(),
-		missionQueue:   make(chan ml.MissionState, 100),
-		mu:             sync.Mutex{},
-		roverInfo:      ts.NewRoverManager(),
+		MotherShip: core.NewMotherShip(mothershipConn),
 	}
 
 	// Carrega missões iniciais de um ficheiro JSON
-	err = loadMissionsFromJSON("missions.json", mothership.missionQueue)
+	err = loadMissionsFromJSON("missions.json", mothership.MissionQueue)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao carregar missões iniciais: %v", err)
 	}

@@ -3,49 +3,45 @@ package main
 import (
 	"fmt"
 	"src/internal/ml"
-	"src/utils/packetsLogic"
+	pl "src/utils/packetsLogic"
 )
 
-
 // sendReport serializa e envia um report para a mothership
-func (rv *Rover) sendReport(mission ml.MissionData, final bool) {
+func (rover *Rover) sendReport(mission ml.MissionData, final bool) {
 	payload := buildReportPayload(mission, final)
 	if payload == nil {
 		return
 	}
 
-	rv.conn.seqNum++
+	rover.ML.SeqNum++
 	pkt := ml.Packet{
-		RoverId: rv.id,
-		MsgType: ml.MSG_REPORT,
-		SeqNum:  uint16(rv.conn.seqNum),
-		AckNum:  0,
+		RoverId:  rover.ID,
+		MsgType:  ml.MSG_REPORT,
+		SeqNum:   uint16(rover.ML.SeqNum),
+		AckNum:   0,
 		Checksum: 0,
-		Payload: payload,
+		Payload:  payload,
 	}
 
-	packetslogic.PacketManager(rv.conn.conn, rv.conn.addr, pkt, rv.window)
+	pl.PacketManager(rover.MLConn.Conn, rover.MLConn.Addr, pkt, rover.ML.Window)
 }
 
 // sendRequest envia um pedido de missão para a mothership
-func (rv *Rover) sendRequest() {
+func (rover *Rover) sendRequest() {
 
-	rv.conn.seqNum++
-	
+	rover.ML.SeqNum++
 
 	req := ml.Packet{
-		RoverId: rv.id,
-		MsgType: ml.MSG_REQUEST,
-		SeqNum:  uint16(rv.conn.seqNum),
-		AckNum:  0,
+		RoverId:  rover.ID,
+		MsgType:  ml.MSG_REQUEST,
+		SeqNum:   uint16(rover.ML.SeqNum),
+		AckNum:   0,
 		Checksum: 0,
-		Payload: []byte{},
+		Payload:  []byte{},
 	}
 
-	packetslogic.PacketManager(rv.conn.conn, rv.conn.addr, req, rv.window)
+	pl.PacketManager(rover.MLConn.Conn, rover.MLConn.Addr, req, rover.ML.Window)
 }
-
-
 
 // buildReportPayload cria o payload correto conforme o TaskType
 func buildReportPayload(mission ml.MissionData, final bool) []byte {
@@ -64,7 +60,7 @@ func buildReportPayload(mission ml.MissionData, final bool) []byte {
 				{Name: "SiO2", Percentage: 40.0},
 			}, IsLastReport: final,
 		}
-        
+
 		payload = r.ToBytes()
 	case ml.TASK_ENV_ANALYSIS:
 		r := ml.EnvReport{TaskType: ml.TASK_ENV_ANALYSIS, MissionID: mission.MsgID, Temp: 23.5, Oxygen: 20.9, IsLastReport: final}

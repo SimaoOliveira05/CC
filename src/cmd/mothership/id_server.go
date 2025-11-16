@@ -60,7 +60,7 @@ func (ms *MotherShip) handleIDRequest(conn net.Conn, idManager *IDManager) {
     }
 
     fmt.Printf("✅ ID %d atribuído a novo rover\n", id)
-    ms.roverInfo.AddRover(&ts.RoverInfo{
+    ms.RoverInfo.AddRover(&ts.RoverInfo{
     	ID: id,
     	State: "Desconhecido",
     	Battery: 100,

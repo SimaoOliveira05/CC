@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"src/internal/ml"
 	"src/utils/packetsLogic"
+	"src/internal/core"
 	"sync"
 )
 
@@ -12,7 +13,7 @@ func (ms *MotherShip) receiver() {
 	buf := make([]byte, 1024)
 
 	for {
-		n, addr, err := ms.conn.ReadFromUDP(buf)
+		n, addr, err := ms.Conn.ReadFromUDP(buf)
 		if err != nil {
 			fmt.Println("Erro a ler pacote:", err)
 			continue
@@ -21,10 +22,10 @@ func (ms *MotherShip) receiver() {
 		packet := ml.FromBytes(buf[:n])
 		roverID := packet.RoverId
 
-		ms.mu.Lock()
-		state, exists := ms.rovers[roverID]
+		ms.Mu.Lock()
+		state, exists := ms.Rovers[roverID]
 		if !exists {
-			state = &RoverState{
+			state = &core.RoverState{
 				Addr:        addr,
 				SeqNum:      0,
 				ExpectedSeq: packet.SeqNum,
@@ -35,10 +36,10 @@ func (ms *MotherShip) receiver() {
 					Mu:              sync.Mutex{},
 				},
 			}
-			ms.rovers[roverID] = state
+			ms.Rovers[roverID] = state
 			fmt.Printf("🆕 Novo rover registado: %d\n", roverID)
 		}
-		ms.mu.Unlock()
+		ms.Mu.Unlock()
 
 		// Criar goroutine para processar o pacote
 		go ms.handlePacket(state, packet)

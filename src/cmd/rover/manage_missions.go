@@ -5,54 +5,54 @@ import (
 	"time"
 )
 
-func (rv *Rover) manageMissions() {
+func (rover *Rover) manageMissions() {
 	// Espera até que não haja missões ativas
-		rv.cond.L.Lock()
-		for rv.GetActiveMissions() != 0 {
-			rv.cond.Wait() // Espera até todas as missões acabarem
-		}
-		rv.cond.L.Unlock()
+	rover.ML.Cond.L.Lock()
+	for rover.GetActiveMissions() != 0 {
+		rover.ML.Cond.Wait() // Espera até todas as missões acabarem
+	}
+	rover.ML.Cond.L.Unlock()
 
-		// Se não estiver à espera de missões, request de novas missões
-		if !rv.waiting {
-			rv.sendRequest()
-			print("")
-			received := <-rv.missionReceivedChan
-			if received { //Nave-mãe enviou missões
-				rv.waiting = true
-			} else {
-				// Nave mãe não tem missões para enviar, esperamos 5 segundos para pedir outra vez
-				fmt.Println("🚫 Sem missões disponíveis.")
-				time.Sleep(5 * time.Second)
-			}
+	// Se não estiver à espera de missões, request de novas missões
+	if !rover.ML.Waiting {
+		rover.sendRequest()
+		print("")
+		received := <-rover.ML.MissionReceivedChan
+		if received { //Nave-mãe enviou missões
+			rover.ML.Waiting = true
+		} else {
+			// Nave mãe não tem missões para enviar, esperamos 5 segundos para pedir outra vez
+			fmt.Println("🚫 Sem missões disponíveis.")
+			time.Sleep(5 * time.Second)
 		}
+	}
 }
 
 // Para alterar a flag:
-func (r *Rover) IncrementActiveMission() {
-    r.mu.Lock()
-    defer r.mu.Unlock()
-    r.activeMissions++
+func (rover *Rover) IncrementActiveMission() {
+	rover.ML.CondMu.Lock()
+	defer rover.ML.CondMu.Unlock()
+	rover.ML.ActiveMissions++
 }
 
 // Para ler a flag:
-func (r *Rover) GetActiveMissions() uint8 {
-    r.mu.Lock()
-    defer r.mu.Unlock()
-    return r.activeMissions
+func (rover *Rover) GetActiveMissions() uint8 {
+	rover.ML.CondMu.Lock()
+	defer rover.ML.CondMu.Unlock()
+	return rover.ML.ActiveMissions
 }
 
 // Para decrementar a flag:
-func (r *Rover) DecrementActiveMission() {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	if r.activeMissions > 0 {
-		r.activeMissions--
-		if r.activeMissions == 0 {
-			r.waiting = false
-			r.cond.L.Lock()
-			r.cond.Signal()
-			r.cond.L.Unlock()
+func (rover *Rover) DecrementActiveMission() {
+	rover.ML.CondMu.Lock()
+	defer rover.ML.CondMu.Unlock()
+	if rover.ML.ActiveMissions > 0 {
+		rover.ML.ActiveMissions--
+		if rover.ML.ActiveMissions == 0 {
+			rover.ML.Waiting = false
+			rover.ML.Cond.L.Lock()
+			rover.ML.Cond.Signal()
+			rover.ML.Cond.L.Unlock()
 		}
 	}
 }

@@ -4,33 +4,47 @@ import (
 	"fmt"
 	"net"
 	"src/config"
+	"src/internal/core"
 	"src/internal/ml"
-	"src/utils/packetsLogic"
+	"src/internal/ts"
+	pl "src/utils/packetsLogic"
 	"sync"
 	"time"
 )
 
-type RoverMlConection struct {
-	conn   *net.UDPConn // Conexão UDP com a nave-mãe
-	addr   *net.UDPAddr // Endereço da nave-mãe
-	seqNum uint32       // Número de sequência esperado para envio
-}
-
 type Rover struct {
-	id                  uint8
-	activeMissions      uint8
-	mu                  sync.Mutex
-	cond                *sync.Cond
-	waiting             bool
-	missionReceivedChan chan bool
-	conn                *RoverMlConection
-	window              *packetslogic.Window
-	expectedSeq         uint16
-	buffer              map[uint16]ml.Packet
-	bufferMu            sync.Mutex
+	*core.RoverBase
+	ML     *core.RoverMLState
+	TS     *ts.RoverInfo
+	MLConn *core.RoverMLConnection
 }
 
-func initConnection(mothershipAddr string) (*RoverMlConection, error) {
+func NewRover(id uint8, mlConn *core.RoverMLConnection) *Rover {
+	return &Rover{
+		RoverBase: &core.RoverBase{
+			ID: id,
+		},
+		ML: &core.RoverMLState{
+			ActiveMissions:      0,
+			Cond:                sync.NewCond(&sync.Mutex{}),
+			CondMu:              sync.Mutex{},
+			ExpectedSeq:         0,
+			Waiting:             false,
+			MissionReceivedChan: make(chan bool, 1),
+			Buffer:              make(map[uint16]ml.Packet),
+			BufferMu:            sync.Mutex{},
+			Window:              pl.NewWindow(),
+		},
+		TS: &ts.RoverInfo{
+			State:   "Idle",
+			Battery: 100,
+			Speed:   0.0,
+		},
+		MLConn: mlConn,
+	}
+}
+
+func initConnection(mothershipAddr string) (*core.RoverMLConnection, error) {
 	// Resolve o endereço da nave-mãe
 	motherAddr, err := net.ResolveUDPAddr("udp", mothershipAddr+":9999")
 	if err != nil {
@@ -45,10 +59,9 @@ func initConnection(mothershipAddr string) (*RoverMlConection, error) {
 
 	fmt.Printf("✅ Conexão UDP aberta na porta %d\n", roverConn.LocalAddr().(*net.UDPAddr).Port)
 
-	RoverMlConection := RoverMlConection{
-		conn:   roverConn,
-		addr:   motherAddr,
-		seqNum: 0,
+	RoverMlConection := core.RoverMLConnection{
+		Conn: roverConn,
+		Addr: motherAddr,
 	}
 
 	return &RoverMlConection, nil
@@ -70,31 +83,16 @@ func main() {
 		return
 	}
 
+	// Inicia conexão UDP com a nave-mãe
 	roverConn, err := initConnection(mothershipAddr)
 	if err != nil {
 		fmt.Println("❌ Erro ao inicializar conexão:", err)
 		return
 	}
-	defer roverConn.conn.Close()
+	defer roverConn.Conn.Close()
 
 	// Cria o Rover
-	rover := Rover{
-		id:                  roverID,
-		activeMissions:      0,
-		mu:                  sync.Mutex{},
-		cond:                sync.NewCond(&sync.Mutex{}),
-		waiting:             false,
-		missionReceivedChan: make(chan bool, 1), //Channel para saber se a nave mãe enviou missões
-		conn:                roverConn,
-		window: &packetslogic.Window{
-			LastAckReceived: -1,
-			Window:          make(map[uint32](chan int8)),
-			Mu:              sync.Mutex{},
-		},
-		expectedSeq: 0,
-		buffer:      make(map[uint16]ml.Packet),
-		bufferMu:    sync.Mutex{},
-	}
+	rover := NewRover(roverID, roverConn)
 
 	// Inicia o receiver de pacotes
 	go rover.receiver()
@@ -108,10 +106,10 @@ func main() {
 	}
 }
 
-func (rv *Rover) generate(mission ml.MissionData) {
+func (rover *Rover) generate(mission ml.MissionData) {
 
-	rv.IncrementActiveMission()
-	defer rv.DecrementActiveMission()
+	rover.IncrementActiveMission()
+	defer rover.DecrementActiveMission()
 
 	deadline := time.NewTimer(time.Duration(mission.Duration) * time.Second)
 	defer deadline.Stop()
@@ -126,18 +124,18 @@ func (rv *Rover) generate(mission ml.MissionData) {
 
 			case <-deadline.C:
 				// Termina quando Duration expirar
-				rv.sendReport(mission, true)
+				rover.sendReport(mission, true)
 				return
 			case <-ticker.C:
 				// Enviar report periódico
-				rv.sendReport(mission, false)
+				rover.sendReport(mission, false)
 			}
 		}
 	} else {
 		// Modo sem updates: apenas espera Duration e envia um report final
 		<-deadline.C
 		// Termina quando Duration expirar
-		rv.sendReport(mission, true)
+		rover.sendReport(mission, true)
 		return
 	}
 }
