@@ -1,0 +1,266 @@
+<template>
+  <div class="mission-detail">
+    <!-- Mission Header -->
+    <div class="detail-header">
+      <div class="mission-title">
+        <h2>Missão #{{ mission.id }}</h2>
+        <span class="state-badge" :class="sanitizeClass(mission.state)">{{ mission.state }}</span>
+      </div>
+
+      <div class="mission-meta">
+        <div class="meta-item">
+          <span class="meta-label">Rover Atribuído</span>
+          <span class="meta-value">#{{ mission.idRover }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Tipo de Tarefa</span>
+          <span class="meta-value">{{ getTaskTypeName(mission.taskType) }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Prioridade</span>
+          <span class="meta-value priority" :class="'p-' + mission.priority">{{ mission.priority }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Criada em</span>
+          <span class="meta-value">{{ formatDate(mission.createdAt) }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Última Atualização</span>
+          <span class="meta-value">{{ formatDate(mission.lastUpdate) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reports Section -->
+    <div class="reports-section">
+      <h3>Reports ({{ mission.reports.length }})</h3>
+
+      <div v-if="mission.reports.length === 0" class="no-reports">
+        <p>Nenhum report recebido ainda</p>
+      </div>
+
+      <div v-else class="reports-list">
+        <component 
+          v-for="(report, index) in mission.reports" 
+          :key="index"
+          :is="getReportComponent(report)"
+          :report="report"
+        />
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue';
+import ImageReportCard from './reports/ImageReportCard.vue';
+import SampleReportCard from './reports/SampleReportCard.vue';
+import EnvReportCard from './reports/EnvReportCard.vue';
+import RepairReportCard from './reports/RepairReportCard.vue';
+import TopoReportCard from './reports/TopoReportCard.vue';
+import InstallReportCard from './reports/InstallReportCard.vue';
+
+const props = defineProps({
+  mission: Object,
+  required: true
+});
+
+const taskTypes = {
+  0: 'Captura de Imagem',
+  1: 'Coleta de Amostra',
+  2: 'Análise Ambiental',
+  3: 'Reparação/Resgate',
+  4: 'Mapeamento Topográfico',
+  5: 'Instalação'
+};
+
+const getTaskTypeName = (type) => taskTypes[type] || 'Desconhecido';
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleString('pt-PT');
+};
+
+const sanitizeClass = (state) => {
+  // Converter para formato válido de classe CSS
+  if (!state) return '';
+  // Converter para minúsculas e substituir espaços por hífen
+  return state.toLowerCase().replace(/\s+/g, '-');
+};
+
+const getReportComponent = (report) => {
+  const components = {
+    'ImageReport': ImageReportCard,
+    'SampleReport': SampleReportCard,
+    'EnvReport': EnvReportCard,
+    'RepairReport': RepairReportCard,
+    'TopoReport': TopoReportCard,
+    'InstallReport': InstallReportCard
+  };
+  
+  // Detectar tipo pelo constructor name ou taskType
+  const typeName = report.constructor.name;
+  return components[typeName] || 'div';
+};
+</script>
+
+<style scoped>
+.mission-detail {
+  animation: slideIn 0.3s ease-out;
+}
+
+.detail-header {
+  background: linear-gradient(135deg, #1a3a52 0%, #132d48 100%);
+  border: 2px solid #00d4ff;
+  border-radius: 8px;
+  padding: 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+.mission-title {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.mission-title h2 {
+  color: #00d4ff;
+  font-size: 28px;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+  margin: 0;
+}
+
+.state-badge {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+/* Pending states */
+.state-badge.pending,
+.state-badge.Pending {
+  background: rgba(255, 170, 0, 0.2);
+  color: #ffaa00;
+  border: 1px solid #ffaa00;
+}
+
+/* In Progress states */
+.state-badge.in\ progress,
+.state-badge.In\ Progress,
+.state-badge.inprogress,
+.state-badge.InProgress {
+  background: rgba(255, 107, 31, 0.2);
+  color: #ff6b1f;
+  border: 1px solid #ff6b1f;
+}
+
+/* Completed states */
+.state-badge.completed,
+.state-badge.Completed {
+  background: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+  border: 1px solid #00ff88;
+}
+
+.mission-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meta-label {
+  color: #a8b5c8;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.meta-value {
+  color: #e8eef7;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.meta-value.priority {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.meta-value.priority.p-1 {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+}
+
+.meta-value.priority.p-2 {
+  background: rgba(255, 170, 0, 0.2);
+  color: #ffaa00;
+}
+
+.meta-value.priority.p-3 {
+  background: rgba(0, 212, 255, 0.2);
+  color: #00d4ff;
+}
+
+/* Reports Section */
+.reports-section {
+  margin-top: 30px;
+}
+
+.reports-section h3 {
+  color: #00d4ff;
+  font-size: 20px;
+  margin-bottom: 20px;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.no-reports {
+  text-align: center;
+  padding: 40px 20px;
+  color: #a8b5c8;
+  background: rgba(10, 30, 61, 0.5);
+  border: 2px dashed #1a3a52;
+  border-radius: 8px;
+}
+
+.reports-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .mission-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-list {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

@@ -32,17 +32,16 @@ type Report interface {
 
 // ImageReport representa um relatório parcial de imagem (chunk)
 type ImageReport struct {
-	TaskType     uint8
-	MissionID    uint16
-	ChunkID      uint16
-	Data         []byte // bytes da imagem (parcial)
-	IsLastReport bool   // indica se é o último report
+	TaskType     uint8  `json:"taskType"`
+	MissionID    uint16 `json:"missionId"`
+	ChunkID      uint16 `json:"chunkId"`
+	Data         []byte `json:"data"`         // bytes da imagem (parcial)
+	IsLastReport bool   `json:"isLastReport"` // indica se é o último report
 }
 
 func (r *ImageReport) GetMissionID() uint16 {
 	return r.MissionID
 }
-
 
 func (r *ImageReport) IsLast() bool {
 	return r.IsLastReport
@@ -53,12 +52,12 @@ func (r *ImageReport) ToBytes() []byte {
 	binary.Write(buf, binary.BigEndian, r.TaskType)
 	binary.Write(buf, binary.BigEndian, r.MissionID)
 	binary.Write(buf, binary.BigEndian, r.ChunkID)
-	buf.Write(r.Data)
 	var last uint8
 	if r.IsLastReport {
 		last = 1
 	}
 	binary.Write(buf, binary.BigEndian, last)
+	buf.Write(r.Data)
 	return buf.Bytes()
 }
 
@@ -69,8 +68,8 @@ func (r *ImageReport) FromBytes(b []byte) error {
 	r.TaskType = b[0]
 	r.MissionID = binary.BigEndian.Uint16(b[1:3])
 	r.ChunkID = binary.BigEndian.Uint16(b[3:5])
-	r.Data = b[5 : len(b)-1]
-	r.IsLastReport = b[len(b)-1] == 1
+	r.IsLastReport = b[5] == 1
+	r.Data = b[6:]
 	return nil
 }
 
@@ -85,19 +84,18 @@ func (r *ImageReport) String() string {
 
 // Component representa um componente químico com nome e percentagem
 type Component struct {
-	Name       string  // nome do componente (ex: "O2", "CO2", "H2O")
-	Percentage float32 // percentagem (0.0 a 100.0)
+	Name       string  `json:"name"`       // nome do componente (ex: "O2", "CO2", "H2O")
+	Percentage float32 `json:"percentage"` // percentagem (0.0 a 100.0)
 }
 
 // SampleReport representa um relatório de componentes químicos (t=0)
 type SampleReport struct {
-	TaskType     uint8
-	MissionID    uint16
-	NumSamples   uint8
-	Components   []Component // lista de (nome, %)
-	IsLastReport bool        // indica se é o último report
+	TaskType     uint8       `json:"taskType"`
+	MissionID    uint16      `json:"missionId"`
+	NumSamples   uint8       `json:"numSamples"`
+	Components   []Component `json:"components"`   // lista de (nome, %)
+	IsLastReport bool        `json:"isLastReport"` // indica se é o último report
 }
-
 
 func (r *SampleReport) GetMissionID() uint16 {
 	return r.MissionID
@@ -111,17 +109,17 @@ func (r *SampleReport) ToBytes() []byte {
 	binary.Write(buf, binary.BigEndian, r.TaskType)
 	binary.Write(buf, binary.BigEndian, r.MissionID)
 	binary.Write(buf, binary.BigEndian, r.NumSamples)
+	var last uint8
+	if r.IsLastReport {
+		last = 1
+	}
+	binary.Write(buf, binary.BigEndian, last)
 	for _, c := range r.Components {
 		nameLen := uint8(len(c.Name))
 		binary.Write(buf, binary.BigEndian, nameLen)
 		buf.WriteString(c.Name)
 		binary.Write(buf, binary.BigEndian, c.Percentage)
 	}
-	var last uint8
-	if r.IsLastReport {
-		last = 1
-	}
-	binary.Write(buf, binary.BigEndian, last)
 	return buf.Bytes()
 }
 
@@ -132,10 +130,11 @@ func (r *SampleReport) FromBytes(b []byte) error {
 	r.TaskType = b[0]
 	r.MissionID = binary.BigEndian.Uint16(b[1:3])
 	r.NumSamples = b[3]
+	r.IsLastReport = b[4] == 1
 	count := int(r.NumSamples)
 	r.Components = make([]Component, count)
 
-	buf := bytes.NewReader(b[4 : len(b)-1])
+	buf := bytes.NewReader(b[5:])
 	for i := 0; i < count; i++ {
 		var nameLen uint8
 		err := binary.Read(buf, binary.BigEndian, &nameLen)
@@ -153,7 +152,6 @@ func (r *SampleReport) FromBytes(b []byte) error {
 			return fmt.Errorf("erro ao ler percentagem: %w", err)
 		}
 	}
-	r.IsLastReport = b[len(b)-1] == 1
 	return nil
 }
 
@@ -176,17 +174,16 @@ func (r *SampleReport) String() string {
 
 // EnvReport representa medições atmosféricas (T, O2, P, humidade, vento, radiação)
 type EnvReport struct {
-	TaskType     uint8
-	MissionID    uint16
-	Temp         float32
-	Oxygen       float32
-	Pressure     float32
-	Humidity     float32
-	WindSpeed    float32
-	Radiation    float32
-	IsLastReport bool // indica se é o último report
+	TaskType     uint8   `json:"taskType"`
+	MissionID    uint16  `json:"missionId"`
+	Temp         float32 `json:"temp"`
+	Oxygen       float32 `json:"oxygen"`
+	Pressure     float32 `json:"pressure"`
+	Humidity     float32 `json:"humidity"`
+	WindSpeed    float32 `json:"windSpeed"`
+	Radiation    float32 `json:"radiation"`
+	IsLastReport bool    `json:"isLastReport"` // indica se é o último report
 }
-
 
 func (r *EnvReport) GetMissionID() uint16 {
 	return r.MissionID
@@ -199,17 +196,17 @@ func (r *EnvReport) ToBytes() []byte {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, r.TaskType)
 	binary.Write(buf, binary.BigEndian, r.MissionID)
+	var last uint8
+	if r.IsLastReport {
+		last = 1
+	}
+	binary.Write(buf, binary.BigEndian, last)
 	binary.Write(buf, binary.BigEndian, r.Temp)
 	binary.Write(buf, binary.BigEndian, r.Oxygen)
 	binary.Write(buf, binary.BigEndian, r.Pressure)
 	binary.Write(buf, binary.BigEndian, r.Humidity)
 	binary.Write(buf, binary.BigEndian, r.WindSpeed)
 	binary.Write(buf, binary.BigEndian, r.Radiation)
-	var last uint8
-	if r.IsLastReport {
-		last = 1
-	}
-	binary.Write(buf, binary.BigEndian, last)
 	return buf.Bytes()
 }
 
@@ -219,14 +216,14 @@ func (r *EnvReport) FromBytes(b []byte) error {
 	}
 	r.TaskType = b[0]
 	r.MissionID = binary.BigEndian.Uint16(b[1:3])
-	buf := bytes.NewReader(b[3:27])
+	r.IsLastReport = b[3] == 1
+	buf := bytes.NewReader(b[4:28])
 	binary.Read(buf, binary.BigEndian, &r.Temp)
 	binary.Read(buf, binary.BigEndian, &r.Oxygen)
 	binary.Read(buf, binary.BigEndian, &r.Pressure)
 	binary.Read(buf, binary.BigEndian, &r.Humidity)
 	binary.Read(buf, binary.BigEndian, &r.WindSpeed)
 	binary.Read(buf, binary.BigEndian, &r.Radiation)
-	r.IsLastReport = b[len(b)-1] == 1
 	return nil
 }
 
@@ -242,14 +239,12 @@ func (r *EnvReport) String() string {
 
 // RepairReport representa o resultado de uma tentativa de reparação (t=0)
 type RepairReport struct {
-	TaskType     uint8
-	MissionID    uint16
-	ProblemID    uint8
-	Repairable   bool
-	IsLastReport bool // indica se é o último report
+	TaskType     uint8  `json:"taskType"`
+	MissionID    uint16 `json:"missionId"`
+	ProblemID    uint8  `json:"problemId"`
+	Repairable   bool   `json:"repairable"`
+	IsLastReport bool   `json:"isLastReport"` // indica se é o último report
 }
-
-
 
 func (r *RepairReport) GetMissionID() uint16 {
 	return r.MissionID
@@ -263,16 +258,16 @@ func (r *RepairReport) ToBytes() []byte {
 	binary.Write(buf, binary.BigEndian, r.TaskType)
 	binary.Write(buf, binary.BigEndian, r.MissionID)
 	binary.Write(buf, binary.BigEndian, r.ProblemID)
-	var flag uint8
-	if r.Repairable {
-		flag = 1
-	}
-	binary.Write(buf, binary.BigEndian, flag)
 	var last uint8
 	if r.IsLastReport {
 		last = 1
 	}
 	binary.Write(buf, binary.BigEndian, last)
+	var flag uint8
+	if r.Repairable {
+		flag = 1
+	}
+	binary.Write(buf, binary.BigEndian, flag)
 	return buf.Bytes()
 }
 
@@ -283,8 +278,8 @@ func (r *RepairReport) FromBytes(b []byte) error {
 	r.TaskType = b[0]
 	r.MissionID = binary.BigEndian.Uint16(b[1:3])
 	r.ProblemID = b[3]
-	r.Repairable = b[4] == 1
-	r.IsLastReport = b[len(b)-1] == 1
+	r.IsLastReport = b[4] == 1
+	r.Repairable = b[5] == 1
 	return nil
 }
 
@@ -303,14 +298,13 @@ func (r *RepairReport) String() string {
 
 // TopoReport representa um ponto topográfico (coordenada e altura)
 type TopoReport struct {
-	TaskType     uint8
-	MissionID    uint16
-	Latitude     float32
-	Longitude    float32
-	Height       float32
-	IsLastReport bool // indica se é o último report
+	TaskType     uint8   `json:"taskType"`
+	MissionID    uint16  `json:"missionId"`
+	Latitude     float32 `json:"latitude"`
+	Longitude    float32 `json:"longitude"`
+	Height       float32 `json:"height"`
+	IsLastReport bool    `json:"isLastReport"` // indica se é o último report
 }
-
 
 func (r *TopoReport) GetMissionID() uint16 {
 	return r.MissionID
@@ -323,14 +317,14 @@ func (r *TopoReport) ToBytes() []byte {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, r.TaskType)
 	binary.Write(buf, binary.BigEndian, r.MissionID)
-	binary.Write(buf, binary.BigEndian, r.Latitude)
-	binary.Write(buf, binary.BigEndian, r.Longitude)
-	binary.Write(buf, binary.BigEndian, r.Height)
 	var last uint8
 	if r.IsLastReport {
 		last = 1
 	}
 	binary.Write(buf, binary.BigEndian, last)
+	binary.Write(buf, binary.BigEndian, r.Latitude)
+	binary.Write(buf, binary.BigEndian, r.Longitude)
+	binary.Write(buf, binary.BigEndian, r.Height)
 	return buf.Bytes()
 }
 
@@ -340,11 +334,11 @@ func (r *TopoReport) FromBytes(b []byte) error {
 	}
 	r.TaskType = b[0]
 	r.MissionID = binary.BigEndian.Uint16(b[1:3])
-	buf := bytes.NewReader(b[3:15])
+	r.IsLastReport = b[3] == 1
+	buf := bytes.NewReader(b[4:16])
 	binary.Read(buf, binary.BigEndian, &r.Latitude)
 	binary.Read(buf, binary.BigEndian, &r.Longitude)
 	binary.Read(buf, binary.BigEndian, &r.Height)
-	r.IsLastReport = b[len(b)-1] == 1
 	return nil
 }
 
@@ -359,12 +353,11 @@ func (r *TopoReport) String() string {
 
 // InstallReport representa o sucesso/insucesso da instalação (1 ou 0)
 type InstallReport struct {
-	TaskType     uint8
-	MissionID    uint16
-	Success      bool
-	IsLastReport bool // indica se é o último report
+	TaskType     uint8  `json:"taskType"`
+	MissionID    uint16 `json:"missionId"`
+	Success      bool   `json:"success"`
+	IsLastReport bool   `json:"isLastReport"` // indica se é o último report
 }
-
 
 func (r *InstallReport) GetMissionID() uint16 {
 	return r.MissionID
@@ -377,27 +370,27 @@ func (r *InstallReport) ToBytes() []byte {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, r.TaskType)
 	binary.Write(buf, binary.BigEndian, r.MissionID)
-	var flag uint8
-	if r.Success {
-		flag = 1
-	}
-	binary.Write(buf, binary.BigEndian, flag)
 	var last uint8
 	if r.IsLastReport {
 		last = 1
 	}
 	binary.Write(buf, binary.BigEndian, last)
+	var flag uint8
+	if r.Success {
+		flag = 1
+	}
+	binary.Write(buf, binary.BigEndian, flag)
 	return buf.Bytes()
 }
 
 func (r *InstallReport) FromBytes(b []byte) error {
-	if len(b) < 4 {
+	if len(b) < 5 {
 		return fmt.Errorf("report demasiado curto")
 	}
 	r.TaskType = b[0]
 	r.MissionID = binary.BigEndian.Uint16(b[1:3])
-	r.Success = b[3] == 1
-	r.IsLastReport = b[len(b)-1] == 1
+	r.IsLastReport = b[3] == 1
+	r.Success = b[4] == 1
 	return nil
 }
 

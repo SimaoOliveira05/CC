@@ -8,16 +8,16 @@ import (
 
 // MissionState represents the last updated state of a mission.
 type MissionState struct {
-	ID              uint16
-	IDRover         uint16
-	TaskType        uint8
-	Duration        time.Duration
-	UpdateFrequency time.Duration
-	LastUpdate      time.Time
-	CreatedAt       time.Time
-	Priority        uint8
-	Report          []Report
-	State           string // e.g, "Pending", "In Progress", "Completed"
+	ID              uint16        `json:"id"`
+	IDRover         uint16        `json:"idRover"`
+	TaskType        uint8         `json:"taskType"`
+	Duration        time.Duration `json:"duration"`
+	UpdateFrequency time.Duration `json:"updateFrequency"`
+	LastUpdate      time.Time     `json:"lastUpdate"`
+	CreatedAt       time.Time     `json:"createdAt"`
+	Priority        uint8         `json:"priority"`
+	Report          []Report      `json:"reports"`
+	State           string        `json:"state"` // e.g, "Pending", "In Progress", "Completed"
 }
 
 // MissionManager will manage all the active missions.
@@ -40,8 +40,10 @@ func (mm *MissionManager) AddMission(mission *MissionState) {
 }
 
 func UpdateMission(mm *MissionManager, report Report) {
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
 
-	mission := mm.GetMission(report.GetMissionID())
+	mission := mm.ActiveMissions[report.GetMissionID()]
 	if mission == nil {
 		return
 	}
@@ -49,6 +51,8 @@ func UpdateMission(mm *MissionManager, report Report) {
 	// Atualiza o estado genérico
 	mission.Report = append(mission.Report, report)
 	mission.LastUpdate = time.Now()
+	
+	// Atualizar estado baseado no report
 	if report.IsLast() {
 		mission.State = "Completed"
 	} else {
@@ -72,6 +76,18 @@ func (mm *MissionManager) GetMission(id uint16) *MissionState {
 	defer mm.mu.RUnlock() // When the function ends, unlock the mutex even in case of panic
 	return mm.ActiveMissions[id]
 }
+
+// ListMissions returns a list of all missions
+func (mm *MissionManager) ListMissions() []*MissionState {
+	mm.mu.RLock()
+	defer mm.mu.RUnlock()
+	list := make([]*MissionState, 0, len(mm.ActiveMissions))
+	for _, mission := range mm.ActiveMissions {
+		list = append(list, mission)
+	}
+	return list
+}
+
 
 // PrintMissions imprime todas as missões e seus estados
 func (mm *MissionManager) PrintMissions() {

@@ -3,7 +3,7 @@
     "ID": 1,
     "IDRover": 0,
     "TaskType": 1,
-    "Duration": 100,
+    "Duration": 10,
     "UpdateFrequency": 1,
     "Priority": 1,
     "State": "Pending"

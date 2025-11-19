@@ -6,10 +6,10 @@ import (
 )
 
 type RoverInfo struct {
-	ID      uint8
-	State   string
-	Battery uint8
-	Speed   float32
+	ID      uint8   `json:"id"`
+	State   string  `json:"state"`
+	Battery uint8   `json:"battery"`
+	Speed   float32 `json:"speed"`
 }
 
 func (r *RoverInfo) String() string {
@@ -30,17 +30,27 @@ func NewRoverManager() *RoverManager {
 func (rm *RoverManager) AddRover(rover *RoverInfo) {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
-	rm.rovers[rover.ID] = rover
+	if _, exists := rm.rovers[rover.ID]; !exists {
+		rm.rovers[rover.ID] = rover
+	}
 }
 
 func (rm *RoverManager) UpdateRover(id uint8, state string, battery uint8, speed float32) {
-    rm.mu.Lock()
-    defer rm.mu.Unlock()
-    if rover, ok := rm.rovers[id]; ok {
-        rover.State = state
-        rover.Battery = battery
-        rover.Speed = speed
-    }
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+	if rover, ok := rm.rovers[id]; ok {
+		rover.State = state
+		rover.Battery = battery
+		rover.Speed = speed
+	} else {
+		// Create rover if it doesn't exist
+		rm.rovers[id] = &RoverInfo{
+			ID:      id,
+			State:   state,
+			Battery: battery,
+			Speed:   speed,
+		}
+	}
 }
 
 func (rm *RoverManager) RemoveRover(id uint8) {

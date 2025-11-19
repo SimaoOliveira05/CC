@@ -124,6 +124,7 @@ func (rover *Rover) generate(mission ml.MissionData) {
 
 			case <-deadline.C:
 				// Termina quando Duration expirar
+				
 				rover.sendReport(mission, true)
 				return
 			case <-ticker.C:

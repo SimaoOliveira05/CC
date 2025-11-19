@@ -7,20 +7,21 @@ import (
 	"net"
 	"os"
 	"src/config"
-	"src/internal/ml"
 	"src/internal/core"
+	"src/internal/ml"
 )
 
 type MotherShip struct {
-    *core.MotherShip  // Embedding - herda todos os campos
+	*core.MotherShip            // Embedding - herda todos os campos
+	apiServer        *APIServer // ✅ Campo para o API Server
 }
 
 func initConnection(mothershipAddr string) (*MotherShip, error) {
 
 	mothershipConn, err := net.ListenUDP("udp", &net.UDPAddr{
-    											IP:   net.ParseIP(mothershipAddr),
-												Port: 9999,
-												})
+		IP:   net.ParseIP(mothershipAddr),
+		Port: 9999,
+	})
 
 	if err != nil {
 		return nil, fmt.Errorf("erro ao conectar: %v", err)
@@ -54,8 +55,12 @@ func main() {
 
 	idManager := NewIDManager()
 
-    // Servidor de atribuição de IDs (TCP)
-    go mothership.idAssignmentServer("9997", idManager)
+	// ✅ Inicia API Server para Ground Control
+	mothership.apiServer = NewAPIServer(mothership.MotherShip)
+	go mothership.apiServer.Start("8080")
+
+	// Servidor de atribuição de IDs (TCP)
+	go mothership.idAssignmentServer("9997", idManager)
 
 	// Goroutine para ler pacotes UDP
 	go mothership.receiver()
