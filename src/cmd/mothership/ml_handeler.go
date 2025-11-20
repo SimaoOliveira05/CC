@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"src/internal/core"
 	"src/internal/ml"
 	"src/internal/ts"
 	"src/utils"
 	pl "src/utils/packetsLogic"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -34,7 +36,27 @@ func (ms *MotherShip) handlePacket(state *core.RoverState, pkt ml.Packet) {
 }
 
 // receiver lê continuamente pacotes UDP
-func (ms *MotherShip) receiver() {
+func (ms *MotherShip) receiver(port string) {
+	// Converte string para int
+	portNum, err := strconv.Atoi(port)
+	
+	if err != nil {
+		fmt.Println("❌ Erro ao converter porta:", err)
+		return
+	}
+
+	// Cria o endereço UDP
+	mothershipConn, err := net.ListenUDP("udp", &net.UDPAddr{
+		IP:   net.ParseIP("0.0.0.0"),
+		Port: portNum,
+	})
+	if err != nil {
+		fmt.Println("❌ Erro ao iniciar receptor UDP:", err)
+		return
+	}
+	defer mothershipConn.Close()
+
+	ms.Conn = mothershipConn
 	buf := make([]byte, 1024)
 
 	for {
@@ -73,10 +95,10 @@ func (ms *MotherShip) receiver() {
 			})
 
 			// 🔥 Publish new rover event
-			if ms.apiServer != nil {
+			if ms.APIServer != nil {
 				rover := ms.RoverInfo.GetRover(roverID)
 				if rover != nil {
-					ms.apiServer.PublishUpdate("rover_connected", rover)
+					ms.APIServer.PublishUpdate("rover_connected", rover)
 				}
 			}
 		}
@@ -116,8 +138,8 @@ func (ms *MotherShip) handleMissionRequest(state *core.RoverState, roverID uint8
 		ms.MissionManager.AddMission(&missionState)
 
 		// 🔥 Publish mission created event
-		if ms.apiServer != nil {
-			ms.apiServer.PublishUpdate("mission_created", &missionState)
+		if ms.APIServer != nil {
+			ms.APIServer.PublishUpdate("mission_created", &missionState)
 		}
 		// Enviar missão para o rover
 		missionData := ml.MissionData{
@@ -212,10 +234,10 @@ func (ms *MotherShip) handleReport(p ml.Packet, state *core.RoverState) {
 	ml.UpdateMission(ms.MissionManager, reportInfo.report)
 
 	// 🔥 Publish mission update event
-	if ms.apiServer != nil {
+	if ms.APIServer != nil {
 		mission := ms.MissionManager.GetMission(reportInfo.report.GetMissionID())
 		if mission != nil {
-			ms.apiServer.PublishUpdate("mission_update", mission)
+			ms.APIServer.PublishUpdate("mission_update", mission)
 		}
 	}
 

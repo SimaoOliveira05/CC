@@ -24,7 +24,10 @@ func (idm *IDManager) GetNextID() uint8 {
     return id
 }
 
-func (ms *MotherShip) idAssignmentServer(port string, idManager *IDManager) {
+func (ms *MotherShip) idAssignmentServer(port string) {
+    
+    idManager := NewIDManager()
+
     listener, err := net.Listen("tcp", "0.0.0.0:"+port)
     if err != nil {
         fmt.Println("❌ Erro ao iniciar servidor de IDs:", err)

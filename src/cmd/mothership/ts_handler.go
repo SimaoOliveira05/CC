@@ -54,10 +54,10 @@ func (ms *MotherShip) handleTelemetryConnection(conn net.Conn) {
 		fmt.Println(ms.RoverInfo.String())
 
 		// 🔥 Publish real-time update via WebSocket
-		if ms.apiServer != nil {
+		if ms.APIServer != nil {
 			rover := ms.RoverInfo.GetRover(telemetry.RoverID)
 			if rover != nil {
-				ms.apiServer.PublishUpdate("rover_update", rover)
+				ms.APIServer.PublishUpdate("rover_update", rover)
 			}
 		}
 	}
