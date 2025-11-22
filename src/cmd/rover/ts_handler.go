@@ -15,7 +15,7 @@ func (rover *Rover) telemetrySender(mothershipAddr string) {
 	}
 	defer conn.Close()
 
-	ticker := time.NewTicker(5 * time.Second) // Envia a cada 5 segundos
+	ticker := time.NewTicker(1 * time.Second) // Envia a cada 1 segundo para movimento suave
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -24,7 +24,7 @@ func (rover *Rover) telemetrySender(mothershipAddr string) {
 			state = ts.STATE_IN_MISSION
 		}
 
-		telemetry := ts.GenerateTelemetry(rover.ID, uint8(state))
+		telemetry := ts.GenerateTelemetry(rover.ID, uint8(state), rover.CurrentPos, rover.Devices.Battery.GetLevel(), rover.Devices.GPS.GetSpeed())
 		data := telemetry.ToBytes()
 
 		_, err := conn.Write(data)
@@ -32,6 +32,6 @@ func (rover *Rover) telemetrySender(mothershipAddr string) {
 			fmt.Println("❌ Erro ao enviar telemetria:", err)
 			return
 		}
-		fmt.Printf("📡 Telemetria enviada: Estado=%d, Bateria=%d%%\n", telemetry.State, telemetry.Battery)
+		fmt.Printf("📡 Telemetria enviada: Posição=(%.6f, %.6f), Velocidade=%.2f, Estado=%d, Bateria=%d%%\n", telemetry.Position.Latitude, telemetry.Position.Longitude, telemetry.Speed, telemetry.State, telemetry.Battery)
 	}
 }

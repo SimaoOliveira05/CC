@@ -24,7 +24,7 @@
         <h2>Rovers Ativos</h2>
         <div class="rovers-grid">
           <RoverCard 
-            v-for="rover in rovers" 
+            v-for="rover in sortedRovers" 
             :key="rover.id" 
             :rover="rover"
           />
@@ -33,24 +33,60 @@
 
       <!-- Main Content -->
       <main class="main-content">
-        <!-- Missions List -->
-        <section v-if="!selectedMission" class="missions-section">
+        <!-- Tab Navigation -->
+        <div class="tabs">
+          <button 
+            class="tab" 
+            :class="{ active: activeTab === 'missions' }"
+            @click="activeTab = 'missions'"
+          >
+            📋 Missões
+          </button>
+          <button 
+            class="tab" 
+            :class="{ active: activeTab === 'map' }"
+            @click="activeTab = 'map'"
+          >
+            🗺️ Mapa
+          </button>
+        </div>
+
+        <!-- Missions Tab -->
+        <section v-if="activeTab === 'missions' && !selectedMission" class="missions-section">
           <h2>Missões Ativas</h2>
           <div class="missions-grid">
             <MissionCard 
-              v-for="mission in missions" 
+              v-for="mission in activeMissions" 
               :key="mission.id" 
               :mission="mission"
               @select="selectMission"
             />
           </div>
-          <div v-if="missions && missions.length === 0" class="empty-state">
+          <div v-if="activeMissions && activeMissions.length === 0" class="empty-state">
             <p>Nenhuma missão ativa no momento</p>
+          </div>
+
+          <h2 style="margin-top: 40px;">Missões Completas</h2>
+          <div class="missions-grid">
+            <MissionCard 
+              v-for="mission in completedMissions" 
+              :key="mission.id" 
+              :mission="mission"
+              @select="selectMission"
+            />
+          </div>
+          <div v-if="completedMissions && completedMissions.length === 0" class="empty-state">
+            <p>Nenhuma missão completa</p>
           </div>
         </section>
 
+        <!-- Map Tab -->
+        <section v-if="activeTab === 'map'" class="map-section">
+          <MapView :rovers="sortedRovers" :missions="missions" />
+        </section>
+
         <!-- Mission Detail -->
-        <section v-else class="mission-detail-section">
+        <section v-if="selectedMission" class="mission-detail-section">
           <button class="btn-back" @click="selectedMission = null">← Voltar</button>
           <MissionDetail :mission="selectedMission" />
         </section>
@@ -60,11 +96,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Rover, Mission } from './models.js';
 import RoverCard from './components/RoverCard.vue';
 import MissionCard from './components/MissionCard.vue';
 import MissionDetail from './components/MissionDetail.vue';
+import MapView from './components/MapView.vue';
 
 const API_BASE = 'http://localhost:8080/api';
 const WS_BASE = 'ws://localhost:8080/ws';
@@ -75,6 +112,26 @@ const apiConnected = ref(false);
 const lastUpdate = ref(null);
 const updateInterval = ref(null);
 const ws = ref(null);
+const activeTab = ref('missions');
+
+// Computed: Rovers ordenados por ID
+const sortedRovers = computed(() => {
+  return [...rovers.value].sort((a, b) => a.id - b.id);
+});
+
+// Computed: Missões ativas (não completas) ordenadas por ID
+const activeMissions = computed(() => {
+  return missions.value
+    .filter(m => m.state !== 'Completed')
+    .sort((a, b) => a.id - b.id); // Ordenadas por ID
+});
+
+// Computed: Missões completas ordenadas por ID
+const completedMissions = computed(() => {
+  return missions.value
+    .filter(m => m.state === 'Completed')
+    .sort((a, b) => a.id - b.id); // Ordenadas por ID
+});
 
 const selectMission = (mission) => {
   selectedMission.value = mission;
@@ -326,6 +383,39 @@ body, html {
   margin-bottom: 25px;
   font-size: 24px;
   text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+/* ===== TABS ===== */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  border-bottom: 2px solid rgba(0, 212, 255, 0.2);
+  padding-bottom: 10px;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 10px 20px;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: all 0.3s;
+  border-bottom: 3px solid transparent;
+}
+
+.tab:hover {
+  color: var(--accent-cyan);
+  background: rgba(0, 212, 255, 0.1);
+}
+
+.tab.active {
+  color: var(--accent-cyan);
+  background: rgba(0, 212, 255, 0.15);
+  border-bottom-color: var(--accent-cyan);
 }
 
 /* ===== MISSIONS SECTION ===== */

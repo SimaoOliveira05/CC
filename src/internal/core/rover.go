@@ -1,6 +1,7 @@
 package core
 
 import (
+	"src/internal/devices"
     "src/internal/ml"
 	"src/utils"
 	pl "src/utils/packetsLogic"
@@ -42,4 +43,10 @@ type RoverInfo struct {
 	State   string
 	Battery uint8
 	Speed   float32
+}
+
+type Devices struct {
+	GPS devices.GPS
+	Thermometer devices.Thermometer
+	Battery devices.Battery
 }

@@ -49,7 +49,7 @@ func (ms *MotherShip) handleTelemetryConnection(conn net.Conn) {
 			estado = "Ocioso"
 		}
 
-		ms.RoverInfo.UpdateRover(telemetry.RoverID, estado, telemetry.Battery, telemetry.Speed)
+		ms.RoverInfo.UpdateRover(telemetry.RoverID, estado, telemetry.Battery, telemetry.Speed, telemetry.Position)
 
 		fmt.Println(ms.RoverInfo.String())
 

@@ -1,16 +1,17 @@
 // Classe Rover
 export class Rover {
-  constructor({ id, state, battery, speed }) {
+  constructor({ id, state, battery, speed, position }) {
     this.id = id;
     this.state = state;
     this.battery = battery;
     this.speed = speed;
+    this.position = position || { latitude: 0, longitude: 0 };
   }
 }
 
 // Classe Mission
 export class Mission {
-  constructor({ id, idRover, taskType, duration, updateFrequency, lastUpdate, createdAt, priority, reports, state }) {
+  constructor({ id, idRover, taskType, duration, updateFrequency, lastUpdate, createdAt, priority, reports, state, coordinate }) {
     this.id = id;
     this.idRover = idRover;
     this.taskType = taskType;
@@ -21,6 +22,7 @@ export class Mission {
     this.priority = priority;
     this.reports = (reports || []).map(r => this.instantiateReport(r));
     this.state = state;
+    this.coordinate = coordinate || { latitude: 0, longitude: 0 };
   }
 
   instantiateReport(data) {

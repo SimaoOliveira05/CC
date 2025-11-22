@@ -21,6 +21,10 @@
           <span class="meta-value priority" :class="'p-' + mission.priority">{{ mission.priority }}</span>
         </div>
         <div class="meta-item">
+          <span class="meta-label">Coordenadas Destino</span>
+          <span class="meta-value coordinate">{{ formatCoordinate(mission.coordinate) }}</span>
+        </div>
+        <div class="meta-item">
           <span class="meta-label">Criada em</span>
           <span class="meta-value">{{ formatDate(mission.createdAt) }}</span>
         </div>
@@ -80,6 +84,11 @@ const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
   return date.toLocaleString('pt-PT');
+};
+
+const formatCoordinate = (coord) => {
+  if (!coord || coord.latitude === undefined || coord.longitude === undefined) return 'N/A';
+  return `(${coord.latitude.toFixed(4)}, ${coord.longitude.toFixed(4)})`;
 };
 
 const sanitizeClass = (state) => {
@@ -149,14 +158,24 @@ const getReportComponent = (report) => {
   border: 1px solid #ffaa00;
 }
 
+/* Moving to states */
+.state-badge.moving-to,
+.state-badge.moving\ to,
+.state-badge.Moving\ to {
+  background: rgba(255, 170, 0, 0.2);
+  color: #ff9500;
+  border: 1px solid #ff9500;
+}
+
 /* In Progress states */
 .state-badge.in\ progress,
 .state-badge.In\ Progress,
 .state-badge.inprogress,
-.state-badge.InProgress {
-  background: rgba(255, 107, 31, 0.2);
-  color: #ff6b1f;
-  border: 1px solid #ff6b1f;
+.state-badge.InProgress,
+.state-badge.in-progress {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+  border: 1px solid #ff4444;
 }
 
 /* Completed states */

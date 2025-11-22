@@ -5,8 +5,10 @@ import (
 	"net"
 	"src/config"
 	"src/internal/core"
+	"src/internal/devices"
 	"src/internal/ml"
 	"src/internal/ts"
+	"src/utils"
 	pl "src/utils/packetsLogic"
 	"sync"
 	"time"
@@ -14,9 +16,11 @@ import (
 
 type Rover struct {
 	*core.RoverBase
-	ML     *core.RoverMLState
-	TS     *ts.RoverInfo
-	MLConn *core.RoverMLConnection
+	ML         *core.RoverMLState
+	TS         *ts.RoverInfo
+	MLConn     *core.RoverMLConnection
+	Devices    *core.Devices
+	CurrentPos utils.Coordinate
 }
 
 func NewRover(id uint8, mlConn *core.RoverMLConnection) *Rover {
@@ -40,7 +44,21 @@ func NewRover(id uint8, mlConn *core.RoverMLConnection) *Rover {
 			Battery: 100,
 			Speed:   0.0,
 		},
+
 		MLConn: mlConn,
+		CurrentPos: utils.Coordinate{
+			Latitude:  1.000 + float64(id)*0.001,
+			Longitude: -1.000 + float64(id)*0.001,
+		},
+
+		Devices: &core.Devices{
+			GPS: devices.NewMockGPS(utils.Coordinate{
+				Latitude:  1.000 + float64(id)*0.001,
+				Longitude: -1.000 + float64(id)*0.001,
+			}),
+			Thermometer: devices.NewMockThermometer(),
+			Battery:     devices.NewMockBattery(100),
+		},
 	}
 }
 
@@ -111,6 +129,22 @@ func (rover *Rover) generate(mission ml.MissionData) {
 	rover.IncrementActiveMission()
 	defer rover.DecrementActiveMission()
 
+	fmt.Printf("🎯 Missão %d recebida: TaskType=%d\n", mission.MsgID, mission.TaskType)
+
+	// 1. Move para a localização da missão
+	fmt.Printf("🚀 Movendo para coordenadas (%.4f, %.4f)\n", mission.Coordinate.Latitude, mission.Coordinate.Longitude)
+	if err := core.MoveTo(
+		&rover.CurrentPos,
+		mission.Coordinate,
+		rover.Devices.GPS,
+		rover.Devices.Battery,
+	); err != nil {
+		fmt.Printf("❌ Erro ao mover: %v\n", err)
+		return
+	}
+	fmt.Printf("✅ Chegou ao destino. Iniciando tarefa...\n")
+
+	// 2. Executa a tarefa com timer
 	deadline := time.NewTimer(time.Duration(mission.Duration) * time.Second)
 	defer deadline.Stop()
 
@@ -124,7 +158,7 @@ func (rover *Rover) generate(mission ml.MissionData) {
 
 			case <-deadline.C:
 				// Termina quando Duration expirar
-				
+
 				rover.sendReport(mission, true)
 				return
 			case <-ticker.C:
@@ -137,6 +171,8 @@ func (rover *Rover) generate(mission ml.MissionData) {
 		<-deadline.C
 		// Termina quando Duration expirar
 		rover.sendReport(mission, true)
-		return
 	}
+
+	// 3. Consome bateria da execução da tarefa
+	core.ConsumeBattery(rover.Devices.Battery, uint8(core.TaskBatteryRate))
 }

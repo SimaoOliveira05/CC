@@ -1,60 +1,90 @@
 package ml
 
 import (
-    "bytes"
-    "encoding/binary"
+	"bytes"
+	"encoding/binary"
 )
 
 // Tipos de mensagens
 const (
-    MSG_REQUEST     = 0
-    MSG_MISSION     = 1
-    MSG_ACK         = 2
-    MSG_REPORT      = 3
-    MSG_NO_MISSION  = 4
+	MSG_REQUEST      = 0
+	MSG_MISSION      = 1
+	MSG_ACK          = 2
+	MSG_REPORT       = 3
+	MSG_NO_MISSION   = 4
+	MSG_STATE_UPDATE = 5
 )
 
 // Estrutura base do pacote
 type Packet struct {
-    RoverId  uint8
-    MsgType  uint8
-    SeqNum   uint16
-    AckNum   uint16
-    Checksum uint8
-    Payload  []byte
+	RoverId  uint8
+	MsgType  uint8
+	SeqNum   uint16
+	AckNum   uint16
+	Checksum uint8
+	Payload  []byte
 }
 
 // Serializa o pacote em bytes
 func (p *Packet) ToBytes() []byte {
-    buf := new(bytes.Buffer)
-    binary.Write(buf, binary.BigEndian, p.RoverId)
-    binary.Write(buf, binary.BigEndian, p.MsgType)
-    binary.Write(buf, binary.BigEndian, p.SeqNum)
-    binary.Write(buf, binary.BigEndian, p.AckNum)
-    binary.Write(buf, binary.BigEndian, p.Checksum)
-    buf.Write(p.Payload)
-    return buf.Bytes()
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, p.RoverId)
+	binary.Write(buf, binary.BigEndian, p.MsgType)
+	binary.Write(buf, binary.BigEndian, p.SeqNum)
+	binary.Write(buf, binary.BigEndian, p.AckNum)
+	binary.Write(buf, binary.BigEndian, p.Checksum)
+	buf.Write(p.Payload)
+	return buf.Bytes()
 }
 
 // Lê bytes e cria um Packet
 func FromBytes(data []byte) Packet {
-    var p Packet
-    buf := bytes.NewReader(data)
-    binary.Read(buf, binary.BigEndian, &p.RoverId)
-    binary.Read(buf, binary.BigEndian, &p.MsgType)
-    binary.Read(buf, binary.BigEndian, &p.SeqNum)
-    binary.Read(buf, binary.BigEndian, &p.AckNum)
-    binary.Read(buf, binary.BigEndian, &p.Checksum)
-    p.Payload = make([]byte, len(data)-6)
-    buf.Read(p.Payload)
-    return p
+	var p Packet
+	buf := bytes.NewReader(data)
+	binary.Read(buf, binary.BigEndian, &p.RoverId)
+	binary.Read(buf, binary.BigEndian, &p.MsgType)
+	binary.Read(buf, binary.BigEndian, &p.SeqNum)
+	binary.Read(buf, binary.BigEndian, &p.AckNum)
+	binary.Read(buf, binary.BigEndian, &p.Checksum)
+	p.Payload = make([]byte, len(data)-6)
+	buf.Read(p.Payload)
+	return p
 }
 
 // Checksum simples
 func Checksum(data []byte) uint8 {
-    var sum uint32
-    for _, b := range data {
-        sum += uint32(b)
-    }
-    return uint8(sum % 256)
+	var sum uint32
+	for _, b := range data {
+		sum += uint32(b)
+	}
+	return uint8(sum % 256)
+}
+
+// StateUpdate representa uma atualização de estado de missão
+type StateUpdate struct {
+	MissionID uint16
+	NewState  string
+}
+
+// ToBytes serializa StateUpdate
+func (su *StateUpdate) ToBytes() []byte {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, su.MissionID)
+	stateBytes := []byte(su.NewState)
+	binary.Write(buf, binary.BigEndian, uint16(len(stateBytes)))
+	buf.Write(stateBytes)
+	return buf.Bytes()
+}
+
+// StateUpdateFromBytes desserializa bytes para StateUpdate
+func StateUpdateFromBytes(data []byte) StateUpdate {
+	var su StateUpdate
+	buf := bytes.NewReader(data)
+	binary.Read(buf, binary.BigEndian, &su.MissionID)
+	var strLen uint16
+	binary.Read(buf, binary.BigEndian, &strLen)
+	stateBytes := make([]byte, strLen)
+	buf.Read(stateBytes)
+	su.NewState = string(stateBytes)
+	return su
 }

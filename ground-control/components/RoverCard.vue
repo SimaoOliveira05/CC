@@ -20,6 +20,11 @@
         <span class="label">Velocidade</span>
         <span class="value">{{ rover.speed.toFixed(2) }} m/s</span>
       </div>
+
+      <div class="metric">
+        <span class="label">Posição</span>
+        <span class="value coordinate">{{ formatPosition(rover.position) }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -34,6 +39,11 @@ const getBatteryColor = () => {
   if (props.rover.battery > 60) return '#00ff88';
   if (props.rover.battery > 30) return '#ffaa00';
   return '#ff4444';
+};
+
+const formatPosition = (pos) => {
+  if (!pos || pos.latitude === undefined || pos.longitude === undefined) return 'N/A';
+  return `(${pos.latitude.toFixed(4)}, ${pos.longitude.toFixed(4)})`;
 };
 </script>
 
@@ -131,5 +141,11 @@ const getBatteryColor = () => {
   height: 100%;
   transition: width 0.3s, background 0.3s;
   border-radius: 4px;
+}
+
+.coordinate {
+  color: #00d4ff;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
 }
 </style>

@@ -1,227 +1,202 @@
 [
   {
-    "ID": 1,
-    "IDRover": 0,
     "TaskType": 1,
     "Duration": 10,
     "UpdateFrequency": 1,
     "Priority": 1,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.523456, "Longitude": -0.821234}
   },
   {
-    "ID": 2,
-    "IDRover": 0,
     "TaskType": 2,
     "Duration": 100,
     "UpdateFrequency": 1,
     "Priority": 2,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.789012, "Longitude": -0.423567}
   },
   {
-    "ID": 3,
-    "IDRover": 0,
     "TaskType": 3,
     "Duration": 90,
     "UpdateFrequency": 15,
     "Priority": 1,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": -0.345678, "Longitude": 0.619234}
   },
   {
-    "ID": 4,
-    "IDRover": 0,
     "TaskType": 4,
     "Duration": 45,
     "UpdateFrequency": 5,
     "Priority": 3,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.912345, "Longitude": -0.725890}
   },
   {
-    "ID": 5,
-    "IDRover": 0,
     "TaskType": 5,
     "Duration": 80,
     "UpdateFrequency": 10,
     "Priority": 2,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": -0.234567, "Longitude": 0.822456}
   },
   {
-    "ID": 6,
-    "IDRover": 0,
     "TaskType": 1,
     "Duration": 100,
     "UpdateFrequency": 15,
     "Priority": 1,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.456789, "Longitude": -0.520123}
   },
   {
-    "ID": 7,
-    "IDRover": 0,
     "TaskType": 2,
     "Duration": 70,
     "UpdateFrequency": 10,
     "Priority": 2,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": -0.678901, "Longitude": 0.324678}
   },
   {
-    "ID": 8,
-    "IDRover": 0,
     "TaskType": 3,
     "Duration": 50,
     "UpdateFrequency": 8,
     "Priority": 1,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.801234, "Longitude": -0.918345}
   },
   {
-    "ID": 9,
-    "IDRover": 0,
     "TaskType": 4,
     "Duration": 110,
     "UpdateFrequency": 20,
     "Priority": 3,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": -0.543210, "Longitude": 0.726789}
   },
   {
-    "ID": 10,
-    "IDRover": 0,
     "TaskType": 5,
     "Duration": 95,
     "UpdateFrequency": 12,
     "Priority": 2,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.267890, "Longitude": -0.121456}
   },
   {
-    "ID": 11,
-    "IDRover": 0,
     "TaskType": 1,
     "Duration": 65,
     "UpdateFrequency": 7,
     "Priority": 1,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": -0.890123, "Longitude": 0.519678}
   },
   {
-    "ID": 12,
-    "IDRover": 0,
     "TaskType": 2,
     "Duration": 85,
     "UpdateFrequency": 14,
     "Priority": 2,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.634567, "Longitude": -0.823901}
   },
   {
-    "ID": 13,
-    "IDRover": 0,
     "TaskType": 3,
     "Duration": 55,
     "UpdateFrequency": 9,
     "Priority": 1,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": -0.456789, "Longitude": 0.625234}
   },
   {
-    "ID": 14,
-    "IDRover": 0,
     "TaskType": 4,
     "Duration": 130,
     "UpdateFrequency": 25,
     "Priority": 3,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.712345, "Longitude": -0.317890}
   },
   {
-    "ID": 15,
-    "IDRover": 0,
     "TaskType": 5,
     "Duration": 75,
     "UpdateFrequency": 11,
     "Priority": 2,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": -0.123456, "Longitude": 0.922567}
   },
   {
-    "ID": 16,
-    "IDRover": 0,
     "TaskType": 1,
     "Duration": 60,
     "UpdateFrequency": 10,
     "Priority": 1,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.345678, "Longitude": -0.620890}
   },
   {
-    "ID": 17,
-    "IDRover": 0,
     "TaskType": 2,
     "Duration": 90,
     "UpdateFrequency": 15,
     "Priority": 2,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": -0.789012, "Longitude": 0.424123}
   },
   {
-    "ID": 18,
-    "IDRover": 0,
     "TaskType": 3,
     "Duration": 105,
     "UpdateFrequency": 18,
     "Priority": 1,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.567890, "Longitude": -0.718456}
   },
   {
-    "ID": 19,
-    "IDRover": 0,
     "TaskType": 4,
     "Duration": 40,
     "UpdateFrequency": 6,
     "Priority": 3,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": -0.234567, "Longitude": 0.826789}
   },
   {
-    "ID": 20,
-    "IDRover": 0,
     "TaskType": 5,
     "Duration": 120,
     "UpdateFrequency": 22,
     "Priority": 2,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.890123, "Longitude": -0.521234}
   },
   {
-    "ID": 21,
-    "IDRover": 0,
     "TaskType": 1,
     "Duration": 78,
     "UpdateFrequency": 13,
     "Priority": 1,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": -0.678901, "Longitude": 0.319567}
   },
   {
-    "ID": 22,
-    "IDRover": 0,
     "TaskType": 2,
     "Duration": 62,
     "UpdateFrequency": 9,
     "Priority": 2,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.412345, "Longitude": -0.923890}
   },
   {
-    "ID": 23,
-    "IDRover": 0,
     "TaskType": 3,
     "Duration": 88,
     "UpdateFrequency": 16,
     "Priority": 1,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": -0.567890, "Longitude": 0.717234}
   },
   {
-    "ID": 24,
-    "IDRover": 0,
     "TaskType": 4,
     "Duration": 52,
     "UpdateFrequency": 8,
     "Priority": 3,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.723456, "Longitude": -0.425678}
   },
   {
-    "ID": 25,
-    "IDRover": 0,
     "TaskType": 5,
     "Duration": 140,
     "UpdateFrequency": 28,
     "Priority": 2,
-    "State": "Pending"
+    "State": "Pending",
+    "Coordinate": {"Latitude": -0.345678, "Longitude": 0.620901}
   }
 ]

@@ -25,6 +25,7 @@ type RoverState struct {
 	Buffer      map[uint16]ml.Packet
 	WindowLock  sync.Mutex
 	Window      *pl.Window // Janela deslizante específica deste rover
+	NumberOfMissions uint8	
 }
 
 type MotherShip struct {
@@ -80,8 +81,10 @@ func loadMissionsFromJSON(filename string, queue chan ml.MissionState) error {
 		return fmt.Errorf("erro ao fazer unmarshal do JSON: %v", err)
 	}
 
-	for _, mission := range missions {
-		queue <- mission
+	// Assign incremental IDs to missions
+	for i := range missions {
+		missions[i].ID = uint16(i + 1) // IDs start from 1
+		queue <- missions[i]
 	}
 
 	fmt.Printf("📋 %d missões enfileiradas\n", len(missions))

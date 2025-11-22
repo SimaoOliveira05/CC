@@ -7,14 +7,14 @@ import (
 )
 
 // GenerateTelemetry gera dados de telemetria simulados
-func GenerateTelemetry(roverID uint8, state uint8) *TelemetryPacket {
+func GenerateTelemetry(roverID uint8, state uint8, position utils.Coordinate, battery uint8, speed float32) *TelemetryPacket {
     return &TelemetryPacket{
         RoverID:     roverID,
         Timestamp:   time.Now().Unix(),
-        Position:    utils.Coordinate{Latitude: rand.Float64()*90, Longitude: rand.Float64()*180},
+        Position:    position,
         State:       state,
-        Battery:     uint8(75 + rand.Intn(25)), // 75-100%
-        Speed:       rand.Float32() * 2.0,      // 0-2 m/s
+        Battery:     battery,
+        Speed:       speed,
         Temperature: int16(20 + rand.Intn(30)), // 20-50°C
         WheelStatus: 0b1111,                    // Todas as rodas OK
     }

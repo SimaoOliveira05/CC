@@ -2,22 +2,24 @@ package ml
 
 import (
 	"fmt"
+	"src/utils"
 	"sync"
 	"time"
 )
 
 // MissionState represents the last updated state of a mission.
 type MissionState struct {
-	ID              uint16        `json:"id"`
-	IDRover         uint16        `json:"idRover"`
-	TaskType        uint8         `json:"taskType"`
-	Duration        time.Duration `json:"duration"`
-	UpdateFrequency time.Duration `json:"updateFrequency"`
-	LastUpdate      time.Time     `json:"lastUpdate"`
-	CreatedAt       time.Time     `json:"createdAt"`
-	Priority        uint8         `json:"priority"`
-	Report          []Report      `json:"reports"`
-	State           string        `json:"state"` // e.g, "Pending", "In Progress", "Completed"
+	ID              uint16           `json:"id"`
+	IDRover         uint16           `json:"idRover"`
+	TaskType        uint8            `json:"taskType"`
+	Duration        time.Duration    `json:"duration"`
+	UpdateFrequency time.Duration    `json:"updateFrequency"`
+	LastUpdate      time.Time        `json:"lastUpdate"`
+	CreatedAt       time.Time        `json:"createdAt"`
+	Priority        uint8            `json:"priority"`
+	Report          []Report         `json:"reports"`
+	State           string           `json:"state"` // e.g, "Pending", "Moving to", "In Progress", "Completed"
+	Coordinate      utils.Coordinate `json:"coordinate"`
 }
 
 // MissionManager will manage all the active missions.
@@ -51,7 +53,7 @@ func UpdateMission(mm *MissionManager, report Report) {
 	// Atualiza o estado genérico
 	mission.Report = append(mission.Report, report)
 	mission.LastUpdate = time.Now()
-	
+
 	// Atualizar estado baseado no report
 	if report.IsLast() {
 		mission.State = "Completed"
@@ -61,6 +63,18 @@ func UpdateMission(mm *MissionManager, report Report) {
 
 	// Aqui podes adicionar lógica para atualizar outros campos conforme o tipo de report
 	// Exemplo: mission.TaskType, mission.Priority, etc.
+} // UpdateMissionState atualiza apenas o estado de uma missão
+func (mm *MissionManager) UpdateMissionState(missionID uint16, newState string) {
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	mission := mm.ActiveMissions[missionID]
+	if mission == nil {
+		return
+	}
+
+	mission.State = newState
+	mission.LastUpdate = time.Now()
 }
 
 // DeleteMission removes a mission from the manager
@@ -87,7 +101,6 @@ func (mm *MissionManager) ListMissions() []*MissionState {
 	}
 	return list
 }
-
 
 // PrintMissions imprime todas as missões e seus estados
 func (mm *MissionManager) PrintMissions() {

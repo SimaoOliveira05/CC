@@ -26,6 +26,11 @@
       </div>
 
       <div class="info-row">
+        <span class="label">Coordenadas:</span>
+        <span class="value coordinate">{{ formatCoordinate(mission.coordinate) }}</span>
+      </div>
+
+      <div class="info-row">
         <span class="label">Reports:</span>
         <span class="value">{{ mission.reports.length }}</span>
       </div>
@@ -67,6 +72,11 @@ const formatTime = (dateString) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
   return date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+};
+
+const formatCoordinate = (coord) => {
+  if (!coord || coord.latitude === undefined) return 'N/A';
+  return `(${coord.latitude.toFixed(4)}, ${coord.longitude.toFixed(4)})`;
 };
 
 const sanitizeClass = (state) => {
@@ -126,14 +136,24 @@ const sanitizeClass = (state) => {
   border: 1px solid #ffaa00;
 }
 
+/* Moving to states */
+.mission-state.moving-to,
+.mission-state.moving\ to,
+.mission-state.Moving\ to {
+  background: rgba(255, 170, 0, 0.2);
+  color: #ff9500;
+  border: 1px solid #ff9500;
+}
+
 /* In Progress states */
 .mission-state.in\ progress,
 .mission-state.In\ Progress,
 .mission-state.inprogress,
-.mission-state.InProgress {
-  background: rgba(255, 107, 31, 0.2);
-  color: #ff6b1f;
-  border: 1px solid #ff6b1f;
+.mission-state.InProgress,
+.mission-state.in-progress {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+  border: 1px solid #ff4444;
 }
 
 /* Completed states */

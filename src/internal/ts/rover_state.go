@@ -2,14 +2,16 @@ package ts
 
 import (
 	"fmt"
+	"src/utils"
 	"sync"
 )
 
 type RoverInfo struct {
-	ID      uint8   `json:"id"`
-	State   string  `json:"state"`
-	Battery uint8   `json:"battery"`
-	Speed   float32 `json:"speed"`
+	ID       uint8            `json:"id"`
+	State    string           `json:"state"`
+	Battery  uint8            `json:"battery"`
+	Speed    float32          `json:"speed"`
+	Position utils.Coordinate `json:"position"`
 }
 
 func (r *RoverInfo) String() string {
@@ -35,20 +37,22 @@ func (rm *RoverManager) AddRover(rover *RoverInfo) {
 	}
 }
 
-func (rm *RoverManager) UpdateRover(id uint8, state string, battery uint8, speed float32) {
+func (rm *RoverManager) UpdateRover(id uint8, state string, battery uint8, speed float32, position utils.Coordinate) {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 	if rover, ok := rm.rovers[id]; ok {
 		rover.State = state
 		rover.Battery = battery
 		rover.Speed = speed
+		rover.Position = position
 	} else {
 		// Create rover if it doesn't exist
 		rm.rovers[id] = &RoverInfo{
-			ID:      id,
-			State:   state,
-			Battery: battery,
-			Speed:   speed,
+			ID:       id,
+			State:    state,
+			Battery:  battery,
+			Speed:    speed,
+			Position: position,
 		}
 	}
 }
