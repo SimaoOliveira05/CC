@@ -15,7 +15,7 @@ func (rover *Rover) telemetrySender(mothershipAddr string) {
 	}
 	defer conn.Close()
 
-	ticker := time.NewTicker(1 * time.Second) // Envia a cada 1 segundo para movimento suave
+	ticker := time.NewTicker(time.Duration(rover.TS.UpdateFrequency) * time.Second) // Envia a cada X segundos
 	defer ticker.Stop()
 
 	for range ticker.C {

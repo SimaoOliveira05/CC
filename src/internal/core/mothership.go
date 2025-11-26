@@ -12,20 +12,21 @@ import (
 	pl "src/utils/packetsLogic"
 	"sync"
 
-	"github.com/gorilla/mux"
 	"fmt"
-	"os"
 	"io/ioutil"
+	"os"
+
+	"github.com/gorilla/mux"
 )
 
 type RoverState struct {
-	Addr        *net.UDPAddr
-	SeqNum      uint16
-	ExpectedSeq uint16
-	Buffer      map[uint16]ml.Packet
-	WindowLock  sync.Mutex
-	Window      *pl.Window // Janela deslizante específica deste rover
-	NumberOfMissions uint8	
+	Addr             *net.UDPAddr
+	SeqNum           uint16
+	ExpectedSeq      uint16
+	Buffer           map[uint16]ml.Packet
+	WindowLock       sync.Mutex
+	Window           *pl.Window // Janela deslizante específica deste rover
+	NumberOfMissions uint8
 }
 
 type MotherShip struct {
@@ -90,7 +91,6 @@ func loadMissionsFromJSON(filename string, queue chan ml.MissionState) error {
 	fmt.Printf("📋 %d missões enfileiradas\n", len(missions))
 	return nil
 }
-
 
 // setupAPIEndpoints configura todos os endpoints REST da API
 func (ms *MotherShip) setupAPIEndpoints() {
@@ -157,7 +157,7 @@ func (ms *MotherShip) setupAPIEndpoints() {
 }
 
 // Funções auxiliares para estatísticas
-func (ms *MotherShip) countActiveRovers(rovers []*ts.RoverInfo) int {
+func (ms *MotherShip) countActiveRovers(rovers []*ts.RoverTSState) int {
 	count := 0
 	for _, r := range rovers {
 		if r.State == "Active" || r.State == "InMission" {

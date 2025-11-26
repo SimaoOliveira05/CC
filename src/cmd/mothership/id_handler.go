@@ -49,26 +49,25 @@ func (ms *MotherShip) idAssignmentServer(port string) {
 }
 
 func (ms *MotherShip) handleIDRequest(conn net.Conn, idManager *IDManager) {
-	defer conn.Close()
+    defer conn.Close()
 
-	// Atribui novo ID
-	id := idManager.GetNextID()
+    id := idManager.GetNextID()
+    var updateFrequency uint = 2 // exemplo: 2 segundos
 
-	// Envia ID para o rover
-	buf := make([]byte, 1)
-	buf[0] = id
-	_, err := conn.Write(buf)
-	if err != nil {
-		fmt.Println("❌ Erro ao enviar ID:", err)
-		return
-	}
+    buf := []byte{id, byte(updateFrequency)}
+    _, err := conn.Write(buf)
+    if err != nil {
+        fmt.Println("❌ Erro ao enviar ID/updateFrequency:", err)
+        return
+    }
 
-	fmt.Printf("✅ ID %d atribuído a novo rover\n", id)
-	ms.RoverInfo.AddRover(&ts.RoverInfo{
-		ID:       id,
-		State:    "Desconhecido",
-		Battery:  100,
-		Speed:    0.0,
-		Position: utils.Coordinate{Latitude: 0, Longitude: 0},
-	})
+    fmt.Printf("✅ ID %d atribuído a novo rover (updateFrequency=%d)\n", id, updateFrequency)
+    ms.RoverInfo.AddRover(&ts.RoverTSState{
+        ID:       id,
+        State:    "Desconhecido",
+        Battery:  100,
+        Speed:    0.0,
+        Position: utils.Coordinate{Latitude: 0, Longitude: 0},
+        UpdateFrequency: updateFrequency,
+    })
 }

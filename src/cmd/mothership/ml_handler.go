@@ -88,7 +88,7 @@ func (ms *MotherShip) receiver(port string) {
 			fmt.Printf("🆕 Novo rover registado: %d\n", roverID)
 
 			// 🔥 Register rover in RoverInfo manager
-			ms.RoverInfo.AddRover(&ts.RoverInfo{
+			ms.RoverInfo.AddRover(&ts.RoverTSState{
 				ID:       roverID,
 				State:    "Conectado",
 				Battery:  100,

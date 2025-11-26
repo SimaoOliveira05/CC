@@ -17,13 +17,13 @@ import (
 type Rover struct {
 	*core.RoverBase
 	ML         *core.RoverMLState
-	TS         *ts.RoverInfo
+	TS         *ts.RoverTSState
 	MLConn     *core.RoverMLConnection
 	Devices    *core.Devices
 	CurrentPos utils.Coordinate
 }
 
-func NewRover(id uint8, mlConn *core.RoverMLConnection) *Rover {
+func NewRover(id uint8, mlConn *core.RoverMLConnection, updateFrequency uint) *Rover {
 	return &Rover{
 		RoverBase: &core.RoverBase{
 			ID: id,
@@ -39,10 +39,11 @@ func NewRover(id uint8, mlConn *core.RoverMLConnection) *Rover {
 			BufferMu:            sync.Mutex{},
 			Window:              pl.NewWindow(),
 		},
-		TS: &ts.RoverInfo{
+		TS: &ts.RoverTSState{
 			State:   "Idle",
 			Battery: 100,
 			Speed:   0.0,
+			UpdateFrequency: updateFrequency,
 		},
 
 		MLConn: mlConn,
@@ -95,7 +96,7 @@ func main() {
 	mothershipAddr := config.GetMotherIP()
 
 	// 🆔 Solicita ID à nave-mãe via TCP
-	roverID, err := requestID(mothershipAddr)
+	roverID, updateFrequency, err := requestID(mothershipAddr)
 	if err != nil {
 		fmt.Println("❌ Erro ao obter ID:", err)
 		return
@@ -110,7 +111,7 @@ func main() {
 	defer roverConn.Conn.Close()
 
 	// Cria o Rover
-	rover := NewRover(roverID, roverConn)
+	rover := NewRover(roverID, roverConn, updateFrequency)
 
 	// Inicia o receiver de pacotes
 	go rover.receiver()

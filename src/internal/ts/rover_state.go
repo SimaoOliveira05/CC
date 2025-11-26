@@ -6,30 +6,32 @@ import (
 	"sync"
 )
 
-type RoverInfo struct {
-	ID       uint8            `json:"id"`
-	State    string           `json:"state"`
-	Battery  uint8            `json:"battery"`
-	Speed    float32          `json:"speed"`
-	Position utils.Coordinate `json:"position"`
+type RoverTSState struct {
+	ID              uint8            `json:"id"`
+	State           string           `json:"state"`
+	Battery         uint8            `json:"battery"`
+	Speed           float32          `json:"speed"`
+	Position        utils.Coordinate `json:"position"`
+	UpdateFrequency uint
+	MissedTelemetry int // contador de falhas consecutivas
 }
 
-func (r *RoverInfo) String() string {
+func (r *RoverTSState) String() string {
 	return fmt.Sprintf("Rover %d | Estado: %s | Bateria: %d%% | Velocidade: %.2f m/s", r.ID, r.State, r.Battery, r.Speed)
 }
 
 type RoverManager struct {
 	mu     sync.Mutex
-	rovers map[uint8]*RoverInfo
+	rovers map[uint8]*RoverTSState
 }
 
 func NewRoverManager() *RoverManager {
 	return &RoverManager{
-		rovers: make(map[uint8]*RoverInfo),
+		rovers: make(map[uint8]*RoverTSState),
 	}
 }
 
-func (rm *RoverManager) AddRover(rover *RoverInfo) {
+func (rm *RoverManager) AddRover(rover *RoverTSState) {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 	if _, exists := rm.rovers[rover.ID]; !exists {
@@ -37,7 +39,7 @@ func (rm *RoverManager) AddRover(rover *RoverInfo) {
 	}
 }
 
-func (rm *RoverManager) UpdateRover(id uint8, state string, battery uint8, speed float32, position utils.Coordinate) {
+func (rm *RoverManager) UpdateRover(id uint8, state string, battery uint8, speed float32, position utils.Coordinate, missedTelemetry int) {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 	if rover, ok := rm.rovers[id]; ok {
@@ -45,14 +47,16 @@ func (rm *RoverManager) UpdateRover(id uint8, state string, battery uint8, speed
 		rover.Battery = battery
 		rover.Speed = speed
 		rover.Position = position
+		rover.MissedTelemetry = missedTelemetry
 	} else {
 		// Create rover if it doesn't exist
-		rm.rovers[id] = &RoverInfo{
-			ID:       id,
-			State:    state,
-			Battery:  battery,
-			Speed:    speed,
-			Position: position,
+		rm.rovers[id] = &RoverTSState{
+			ID:              id,
+			State:           state,
+			Battery:         battery,
+			Speed:           speed,
+			Position:        position,
+			MissedTelemetry: missedTelemetry,
 		}
 	}
 }
@@ -63,16 +67,16 @@ func (rm *RoverManager) RemoveRover(id uint8) {
 	delete(rm.rovers, id)
 }
 
-func (rm *RoverManager) GetRover(id uint8) *RoverInfo {
+func (rm *RoverManager) GetRover(id uint8) *RoverTSState {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 	return rm.rovers[id]
 }
 
-func (rm *RoverManager) ListRovers() []*RoverInfo {
+func (rm *RoverManager) ListRovers() []*RoverTSState {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
-	list := make([]*RoverInfo, 0, len(rm.rovers))
+	list := make([]*RoverTSState, 0, len(rm.rovers))
 	for _, rover := range rm.rovers {
 		list = append(list, rover)
 	}
