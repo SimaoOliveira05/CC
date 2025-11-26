@@ -116,7 +116,7 @@ func (ms *MotherShip) dispatchPacket(pkt ml.Packet, state *core.RoverState) {
 	switch pkt.MsgType {
 
 	case ml.MSG_REQUEST:
-		ms.handleMissionRequest(state, pkt.RoverId)
+		ms.handleMissionRequest(state)
 	case ml.MSG_ACK:
 		pl.HandleAck(pkt, state.Window)
 	case ml.MSG_REPORT:
@@ -127,7 +127,7 @@ func (ms *MotherShip) dispatchPacket(pkt ml.Packet, state *core.RoverState) {
 }
 
 // handleMissionRequest processa pedidos de missão do rover
-func (ms *MotherShip) handleMissionRequest(state *core.RoverState, roverID uint8) {
+func (ms *MotherShip) handleMissionRequest(state *core.RoverState) {
 	// Gera um ID único para a missão
 	select {
 	case missionState := <-ms.MissionQueue:
@@ -146,7 +146,7 @@ func (ms *MotherShip) handleMissionRequest(state *core.RoverState, roverID uint8
 			return
 		}
 		// Missão obtida
-		missionState.IDRover = uint16(targetRoverID) // 🔥 Atribuir o rover à missão
+		missionState.IDRover = targetRoverID // 🔥 Atribuir o rover à missão
 		missionState.CreatedAt = time.Now()
 		missionState.LastUpdate = time.Now()
 		missionState.State = "Pending"

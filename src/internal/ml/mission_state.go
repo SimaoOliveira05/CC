@@ -10,7 +10,7 @@ import (
 // MissionState represents the last updated state of a mission.
 type MissionState struct {
 	ID              uint16           `json:"id"`
-	IDRover         uint16           `json:"idRover"`
+	IDRover         uint8            `json:"idRover"`
 	TaskType        uint8            `json:"taskType"`
 	Duration        time.Duration    `json:"duration"`
 	UpdateFrequency time.Duration    `json:"updateFrequency"`
