@@ -61,7 +61,7 @@ func absDuration(x time.Duration) time.Duration {
 func SendPacketUDP(conn *net.UDPConn, addr *net.UDPAddr, packet ml.Packet) error {
 	// Encodes the packet
 	packet.Checksum = ml.Checksum(packet.Payload)
-	encodedPacket := packet.ToBytes()
+	encodedPacket := packet.Encode()
 
 
 	// Sends the encoded data to the specified address port

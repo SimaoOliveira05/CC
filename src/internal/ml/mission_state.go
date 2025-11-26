@@ -9,17 +9,17 @@ import (
 
 // MissionState represents the last updated state of a mission.
 type MissionState struct {
-	ID              uint16           `json:"id"`
-	IDRover         uint8            `json:"idRover"`
-	TaskType        uint8            `json:"taskType"`
-	Duration        time.Duration    `json:"duration"`
-	UpdateFrequency time.Duration    `json:"updateFrequency"`
-	LastUpdate      time.Time        `json:"lastUpdate"`
-	CreatedAt       time.Time        `json:"createdAt"`
-	Priority        uint8            `json:"priority"`
-	Report          []Report         `json:"reports"`
+	ID              uint16           `json:"id"` // Unique mission ID
+	IDRover         uint8            `json:"idRover"` // ID of the rover assigned to the mission
+	TaskType        uint8            `json:"taskType"` // e.g., 1 = MoveTo, 2 = SampleCollection, etc.
+	Duration        time.Duration    `json:"duration"` // Duration since mission start
+	UpdateFrequency time.Duration    `json:"updateFrequency"` // Frequency of updates
+	LastUpdate      time.Time        `json:"lastUpdate"` // Time of the last update
+	CreatedAt       time.Time        `json:"createdAt"` // Time when the mission was created
+	Priority        uint8            `json:"priority"` // Priority level of the mission
+	Report          []Report         `json:"reports"` // Reports related to the mission
 	State           string           `json:"state"` // e.g, "Pending", "Moving to", "In Progress", "Completed"
-	Coordinate      utils.Coordinate `json:"coordinate"`
+	Coordinate      utils.Coordinate `json:"coordinate"` // Target coordinate for the mission	
 }
 
 // MissionManager will manage all the active missions.
@@ -28,19 +28,21 @@ type MissionManager struct {
 	mu             sync.RWMutex
 }
 
+// NewMissionManager creates a new MissionManager.
 func NewMissionManager() *MissionManager {
 	return &MissionManager{
 		ActiveMissions: make(map[uint16]*MissionState),
 	}
 }
 
-// AddMission adds a new mission to the manager
+// AddMission adds a new mission to the manager.
 func (mm *MissionManager) AddMission(mission *MissionState) {
 	mm.mu.Lock()
 	defer mm.mu.Unlock()
 	mm.ActiveMissions[mission.ID] = mission
 }
 
+// UpdateMission updates the mission state based on a report.
 func UpdateMission(mm *MissionManager, report Report) {
 	mm.mu.Lock()
 	defer mm.mu.Unlock()
@@ -50,20 +52,19 @@ func UpdateMission(mm *MissionManager, report Report) {
 		return
 	}
 
-	// Atualiza o estado genérico
+	// Actualize generic state
 	mission.Report = append(mission.Report, report)
 	mission.LastUpdate = time.Now()
 
-	// Atualizar estado baseado no report
+	// Actualize state based on the report
 	if report.IsLast() {
 		mission.State = "Completed"
 	} else {
 		mission.State = "In Progress"
 	}
+}
 
-	// Aqui podes adicionar lógica para atualizar outros campos conforme o tipo de report
-	// Exemplo: mission.TaskType, mission.Priority, etc.
-} // UpdateMissionState atualiza apenas o estado de uma missão
+// UpdateMissionState actualize the state of a mission.
 func (mm *MissionManager) UpdateMissionState(missionID uint16, newState string) {
 	mm.mu.Lock()
 	defer mm.mu.Unlock()
@@ -80,18 +81,18 @@ func (mm *MissionManager) UpdateMissionState(missionID uint16, newState string) 
 // DeleteMission removes a mission from the manager
 func (mm *MissionManager) DeleteMission(id uint16) {
 	mm.mu.Lock()
-	defer mm.mu.Unlock() // When the function ends, unlock the mutex even in case of panic
+	defer mm.mu.Unlock() 
 	delete(mm.ActiveMissions, id)
 }
 
 // GetMission gets a mission by ID
 func (mm *MissionManager) GetMission(id uint16) *MissionState {
 	mm.mu.RLock()
-	defer mm.mu.RUnlock() // When the function ends, unlock the mutex even in case of panic
+	defer mm.mu.RUnlock()
 	return mm.ActiveMissions[id]
 }
 
-// ListMissions returns a list of all missions
+// ListMissions returns a list of all missions.
 func (mm *MissionManager) ListMissions() []*MissionState {
 	mm.mu.RLock()
 	defer mm.mu.RUnlock()
@@ -102,18 +103,18 @@ func (mm *MissionManager) ListMissions() []*MissionState {
 	return list
 }
 
-// PrintMissions imprime todas as missões e seus estados
+// PrintMissions prints all missions and their states.
 func (mm *MissionManager) PrintMissions() {
 	mm.mu.RLock()
 	defer mm.mu.RUnlock()
-	fmt.Println("===== Missões Ativas =====")
+	fmt.Println("===== Active Missions =====")
 	for id, m := range mm.ActiveMissions {
-		fmt.Printf("ID: %d | Rover: %d | TaskType: %d | Estado: %s | Duração: %v | Última atualização: %v\n",
+		fmt.Printf("ID: %d | Rover: %d | TaskType: %d | State: %s | Duration: %v | Last Update: %v\n",
 			id, m.IDRover, m.TaskType, m.State, m.Duration, m.LastUpdate)
 		if len(m.Report) == 0 {
-			fmt.Println("  Nenhum relatório recebido")
+			fmt.Println("  No reports received")
 		} else {
-			fmt.Println("  Relatórios recebidos:")
+			fmt.Println("  Reports received:")
 			for i, rep := range m.Report {
 				fmt.Printf("    [%d] %s\n", i+1, rep.String())
 			}

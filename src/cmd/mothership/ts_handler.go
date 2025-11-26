@@ -57,16 +57,13 @@ func (ms *MotherShip) handleTelemetryConnection(conn net.Conn) {
 		}
 
 		// Recebemos algo → tratar telemetria
-		telemetry, err := ts.FromBytes(buf[:n])
-		if err != nil {
-			fmt.Println("❌ Erro ao deserializar telemetria:", err)
-			continue
-		}
+		var telemetry ts.TelemetryPacket
+		telemetry.Decode(buf[:n])
 
 		roverID = telemetry.RoverID
 		missed = 0 // reset
 
-		ms.updateRoverTelemetry(telemetry)
+		ms.updateRoverTelemetry(&telemetry)
 
 		// Enviar atualização para WebSocket
 		if ms.APIServer != nil {

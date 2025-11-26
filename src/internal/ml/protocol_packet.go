@@ -1,11 +1,10 @@
 package ml
 
 import (
-	"bytes"
 	"encoding/binary"
 )
 
-// Tipos de mensagens
+// Message types.
 const (
 	MSG_REQUEST      = 0
 	MSG_MISSION      = 1
@@ -15,7 +14,7 @@ const (
 	MSG_STATE_UPDATE = 5
 )
 
-// Estrutura base do pacote
+// Packet is the base structure of the packet.
 type Packet struct {
 	RoverId  uint8
 	MsgType  uint8
@@ -25,66 +24,45 @@ type Packet struct {
 	Payload  []byte
 }
 
-// Serializa o pacote em bytes
-func (p *Packet) ToBytes() []byte {
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, p.RoverId)
-	binary.Write(buf, binary.BigEndian, p.MsgType)
-	binary.Write(buf, binary.BigEndian, p.SeqNum)
-	binary.Write(buf, binary.BigEndian, p.AckNum)
-	binary.Write(buf, binary.BigEndian, p.Checksum)
-	buf.Write(p.Payload)
-	return buf.Bytes()
+// PacketHeaderSize is the size of the packet header in bytes.
+const PacketHeaderSize = 7 // 1 (RoverId) + 1 (MsgType) + 2 (SeqNum) + 2 (AckNum) + 1 (Checksum) - Payload é variável
+
+
+// Enconde serializes the packet into bytes.
+func (p *Packet) Encode() []byte {
+	// Calculate total size of the packet
+    totalSize := PacketHeaderSize + len(p.Payload)
+    data := make([]byte, totalSize)
+    
+    data[0] = p.RoverId
+    data[1] = p.MsgType
+    binary.BigEndian.PutUint16(data[2:], p.SeqNum)
+    binary.BigEndian.PutUint16(data[4:], p.AckNum)
+    data[6] = p.Checksum
+    copy(data[7:], p.Payload)
+    
+    return data
 }
 
-// Lê bytes e cria um Packet
-func FromBytes(data []byte) Packet {
-	var p Packet
-	buf := bytes.NewReader(data)
-	binary.Read(buf, binary.BigEndian, &p.RoverId)
-	binary.Read(buf, binary.BigEndian, &p.MsgType)
-	binary.Read(buf, binary.BigEndian, &p.SeqNum)
-	binary.Read(buf, binary.BigEndian, &p.AckNum)
-	binary.Read(buf, binary.BigEndian, &p.Checksum)
-	p.Payload = make([]byte, len(data)-6)
-	buf.Read(p.Payload)
-	return p
+// Decode deserializes bytes into a Packet (BigEndian).
+func (p *Packet) Decode(data []byte) {  
+    p.RoverId = data[0]
+    p.MsgType = data[1]
+    p.SeqNum = binary.BigEndian.Uint16(data[2:])
+    p.AckNum = binary.BigEndian.Uint16(data[4:])
+    p.Checksum = data[6]
+    
+    if len(data) > PacketHeaderSize {
+        p.Payload = make([]byte, len(data)-PacketHeaderSize)
+        copy(p.Payload, data[7:])
+    }
 }
 
-// Checksum simples
+// Simple checksum calculation.
 func Checksum(data []byte) uint8 {
 	var sum uint32
 	for _, b := range data {
 		sum += uint32(b)
 	}
 	return uint8(sum % 256)
-}
-
-// StateUpdate representa uma atualização de estado de missão
-type StateUpdate struct {
-	MissionID uint16
-	NewState  string
-}
-
-// ToBytes serializa StateUpdate
-func (su *StateUpdate) ToBytes() []byte {
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, su.MissionID)
-	stateBytes := []byte(su.NewState)
-	binary.Write(buf, binary.BigEndian, uint16(len(stateBytes)))
-	buf.Write(stateBytes)
-	return buf.Bytes()
-}
-
-// StateUpdateFromBytes desserializa bytes para StateUpdate
-func StateUpdateFromBytes(data []byte) StateUpdate {
-	var su StateUpdate
-	buf := bytes.NewReader(data)
-	binary.Read(buf, binary.BigEndian, &su.MissionID)
-	var strLen uint16
-	binary.Read(buf, binary.BigEndian, &strLen)
-	stateBytes := make([]byte, strLen)
-	buf.Read(stateBytes)
-	su.NewState = string(stateBytes)
-	return su
 }

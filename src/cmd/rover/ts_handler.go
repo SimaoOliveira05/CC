@@ -25,7 +25,7 @@ func (rover *Rover) telemetrySender(mothershipAddr string) {
 		}
 
 		telemetry := ts.GenerateTelemetry(rover.ID, uint8(state), rover.CurrentPos, rover.Devices.Battery.GetLevel(), rover.Devices.GPS.GetSpeed())
-		data := telemetry.ToBytes()
+		data := telemetry.Encode()
 
 		_, err := conn.Write(data)
 		if err != nil {

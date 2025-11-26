@@ -66,7 +66,8 @@ func (ms *MotherShip) receiver(port string) {
 			continue
 		}
 
-		packet := ml.FromBytes(buf[:n])
+		var packet ml.Packet
+		packet.Decode(buf[:n])
 		roverID := packet.RoverId
 
 		ms.Mu.Lock()
@@ -169,7 +170,7 @@ func (ms *MotherShip) handleMissionRequest(state *core.RoverState) {
 			Priority:        missionState.Priority,
 		}
 
-		payload := missionData.ToBytes()
+		payload := missionData.Encode()
 
 		state.WindowLock.Lock()
 

@@ -39,7 +39,9 @@ func (rover *Rover) handlePacket(pkt ml.Packet) {
 // processMission extrai e processa a missão
 func (rover *Rover) processMission(pkt ml.Packet) {
 	rover.ML.MissionReceivedChan <- true
-	go rover.generate(ml.DataFromBytes(pkt.Payload))
+	var mission ml.MissionData
+	mission = mission.Decode(pkt.Payload)
+	go rover.generate(mission)
 }
 
 func (rover *Rover) receiver() {
@@ -53,7 +55,8 @@ func (rover *Rover) receiver() {
 		}
 
 		// Constrói o pacote a partir dos bytes recebidos e trata-o
-		pkt := ml.FromBytes(buf[:n])
+		var pkt ml.Packet
+		pkt.Decode(buf[:n])
 		rover.handlePacket(pkt)
 	}
 }
