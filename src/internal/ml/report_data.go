@@ -1,131 +1,138 @@
 package ml
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
+	"math"
 )
 
-// Tipos de tarefas (3 bits no protocolo)
 const (
+	// Task types .
 	TASK_IMAGE_CAPTURE     = 0
 	TASK_SAMPLE_COLLECTION = 1
 	TASK_ENV_ANALYSIS      = 2
 	TASK_REPAIR_RESCUE     = 3
 	TASK_TOPO_MAPPING      = 4
 	TASK_INSTALLATION      = 5
+	// Fixed sizes of binary reports.
+	IMAGE_REPORT_HEADER_SIZE = 6
+	REPAIR_REPORT_SIZE       = 6
+	INSTALL_REPORT_SIZE      = 5
+	TOPO_REPORT_SIZE         = 16
+	ENV_REPORT_SIZE          = 28
 )
 
-// Report define a interface comum a todos os tipos de relatório enviados pelos rovers
+// Report is the common interface for all rover report types.
 type Report interface {
-	ToBytes() []byte
-	FromBytes([]byte) error
+	Encode() []byte
+	Decode([]byte) error
 	GetTaskType() uint8
 	String() string
 	IsLast() bool
 	GetMissionID() uint16
 }
 
+// ====== IMAGE CAPTURE REPORT ======
 //
-// ====== CAPTURA DE IMAGEM ======
-//
-
-// ImageReport representa um relatório parcial de imagem (chunk)
+// ImageReport is a partial image (chunk) report.
 type ImageReport struct {
-	TaskType     uint8  `json:"taskType"`
-	MissionID    uint16 `json:"missionId"`
-	ChunkID      uint16 `json:"chunkId"`
-	Data         []byte `json:"data"`         // bytes da imagem (parcial)
-	IsLastReport bool   `json:"isLastReport"` // indica se é o último report
+	TaskType     uint8  `json:"taskType"`     // Type of the report (always TASK_IMAGE_CAPTURE)
+	MissionID    uint16 `json:"missionId"`    // Unique mission identifier
+	ChunkID      uint16 `json:"chunkId"`      // Image chunk identifier
+	Data         []byte `json:"data"`         // Image chunk bytes
+	IsLastReport bool   `json:"isLastReport"` // True if this is the last chunk for the mission
 }
 
-func (r *ImageReport) GetMissionID() uint16 {
-	return r.MissionID
+// GetMissionID returns the mission ID for the image report.
+func (r *ImageReport) GetMissionID() uint16 { return r.MissionID }
+
+// IsLast returns true if this is the last image report.
+func (r *ImageReport) IsLast() bool { return r.IsLastReport }
+
+// Encode serializes the image report to binary format.
+func (r *ImageReport) Encode() []byte {
+	data := make([]byte, IMAGE_REPORT_HEADER_SIZE+len(r.Data))
+	data[0] = r.TaskType
+	binary.BigEndian.PutUint16(data[1:3], r.MissionID)
+	binary.BigEndian.PutUint16(data[3:5], r.ChunkID)
+	data[5] = boolToByte(r.IsLastReport)
+	copy(data[IMAGE_REPORT_HEADER_SIZE:], r.Data)
+	return data
 }
 
-func (r *ImageReport) IsLast() bool {
-	return r.IsLastReport
-}
-
-func (r *ImageReport) ToBytes() []byte {
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, r.TaskType)
-	binary.Write(buf, binary.BigEndian, r.MissionID)
-	binary.Write(buf, binary.BigEndian, r.ChunkID)
-	var last uint8
-	if r.IsLastReport {
-		last = 1
-	}
-	binary.Write(buf, binary.BigEndian, last)
-	buf.Write(r.Data)
-	return buf.Bytes()
-}
-
-func (r *ImageReport) FromBytes(b []byte) error {
-	if len(b) < 6 {
-		return fmt.Errorf("report demasiado curto")
-	}
+// Decode deserializes binary data into the image report.
+func (r *ImageReport) Decode(b []byte) error {
 	r.TaskType = b[0]
 	r.MissionID = binary.BigEndian.Uint16(b[1:3])
 	r.ChunkID = binary.BigEndian.Uint16(b[3:5])
 	r.IsLastReport = b[5] == 1
-	r.Data = b[6:]
+	r.Data = make([]byte, len(b)-IMAGE_REPORT_HEADER_SIZE)
+	copy(r.Data, b[IMAGE_REPORT_HEADER_SIZE:])
 	return nil
 }
 
+// GetTaskType returns the task type for image report.
 func (r *ImageReport) GetTaskType() uint8 { return TASK_IMAGE_CAPTURE }
+
+// String returns a human-readable summary of the image report.
 func (r *ImageReport) String() string {
-	return fmt.Sprintf("[Imagem] Missão %d - Chunk %d (%d bytes)", r.MissionID, r.ChunkID, len(r.Data))
+	return fmt.Sprintf("[Image] Mission %d - Chunk %d (%d bytes)", r.MissionID, r.ChunkID, len(r.Data))
 }
 
 //
-// ====== COLETA DE AMOSTRAS ======
+// ====== Sample collection ======
 //
 
-// Component representa um componente químico com nome e percentagem
+// Component is a chemical component with name and percentage.
 type Component struct {
-	Name       string  `json:"name"`       // nome do componente (ex: "O2", "CO2", "H2O")
-	Percentage float32 `json:"percentage"` // percentagem (0.0 a 100.0)
+	Name       string  `json:"name"`       // Chemical name (e.g., "O2", "CO2", "H2O")
+	Percentage float32 `json:"percentage"` // Percentage (0.0 to 100.0)
 }
 
-// SampleReport representa um relatório de componentes químicos (t=0)
+// SampleReport is a chemical components report.
 type SampleReport struct {
-	TaskType     uint8       `json:"taskType"`
-	MissionID    uint16      `json:"missionId"`
-	NumSamples   uint8       `json:"numSamples"`
-	Components   []Component `json:"components"`   // lista de (nome, %)
-	IsLastReport bool        `json:"isLastReport"` // indica se é o último report
+	TaskType     uint8       `json:"taskType"`     // Type of the report (always TASK_SAMPLE_COLLECTION)
+	MissionID    uint16      `json:"missionId"`    // Unique mission identifier
+	NumSamples   uint8       `json:"numSamples"`   // Number of chemical components
+	Components   []Component `json:"components"`   // List of chemical components
+	IsLastReport bool        `json:"isLastReport"` // True if this is the last sample report for the mission
 }
 
-func (r *SampleReport) GetMissionID() uint16 {
-	return r.MissionID
-}
+// GetMissionID returns the mission ID for the sample report.
+func (r *SampleReport) GetMissionID() uint16 { return r.MissionID }
 
-func (r *SampleReport) IsLast() bool {
-	return r.IsLastReport
-}
-func (r *SampleReport) ToBytes() []byte {
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, r.TaskType)
-	binary.Write(buf, binary.BigEndian, r.MissionID)
-	binary.Write(buf, binary.BigEndian, r.NumSamples)
-	var last uint8
-	if r.IsLastReport {
-		last = 1
+// IsLast returns true if this is the last sample report.
+func (r *SampleReport) IsLast() bool { return r.IsLastReport }
+
+// Encode serializes the sample report to binary format.
+func (r *SampleReport) Encode() []byte {
+	// Calculate total length
+	totalLen := 5
+	for _, c := range r.Components {
+		totalLen += 1 + len(c.Name) + 4
 	}
-	binary.Write(buf, binary.BigEndian, last)
+	data := make([]byte, totalLen)
+	data[0] = r.TaskType
+	binary.BigEndian.PutUint16(data[1:3], r.MissionID)
+	data[3] = r.NumSamples
+	data[4] = boolToByte(r.IsLastReport)
+	idx := 5
 	for _, c := range r.Components {
 		nameLen := uint8(len(c.Name))
-		binary.Write(buf, binary.BigEndian, nameLen)
-		buf.WriteString(c.Name)
-		binary.Write(buf, binary.BigEndian, c.Percentage)
+		data[idx] = nameLen
+		idx++
+		copy(data[idx:idx+int(nameLen)], []byte(c.Name))
+		idx += int(nameLen)
+		binary.BigEndian.PutUint32(data[idx:idx+4], math.Float32bits(c.Percentage))
+		idx += 4
 	}
-	return buf.Bytes()
+	return data
 }
 
-func (r *SampleReport) FromBytes(b []byte) error {
+// Decode deserializes binary data into the sample report.
+func (r *SampleReport) Decode(b []byte) error {
 	if len(b) < 5 {
-		return fmt.Errorf("report demasiado curto")
+		return fmt.Errorf("report too short")
 	}
 	r.TaskType = b[0]
 	r.MissionID = binary.BigEndian.Uint16(b[1:3])
@@ -133,30 +140,28 @@ func (r *SampleReport) FromBytes(b []byte) error {
 	r.IsLastReport = b[4] == 1
 	count := int(r.NumSamples)
 	r.Components = make([]Component, count)
-
-	buf := bytes.NewReader(b[5:])
+	idx := 5
 	for i := 0; i < count; i++ {
-		var nameLen uint8
-		err := binary.Read(buf, binary.BigEndian, &nameLen)
-		if err != nil {
-			return fmt.Errorf("erro ao ler tamanho do nome: %w", err)
+		if idx >= len(b) {
+			return fmt.Errorf("insufficient data for component")
 		}
-		nameBytes := make([]byte, nameLen)
-		_, err = buf.Read(nameBytes)
-		if err != nil {
-			return fmt.Errorf("erro ao ler nome: %w", err)
+		nameLen := int(b[idx])
+		idx++
+		if idx+nameLen+4 > len(b) {
+			return fmt.Errorf("insufficient data for name or percentage")
 		}
-		r.Components[i].Name = string(nameBytes)
-		err = binary.Read(buf, binary.BigEndian, &r.Components[i].Percentage)
-		if err != nil {
-			return fmt.Errorf("erro ao ler percentagem: %w", err)
-		}
+		r.Components[i].Name = string(b[idx : idx+nameLen])
+		idx += nameLen
+		r.Components[i].Percentage = math.Float32frombits(binary.BigEndian.Uint32(b[idx : idx+4]))
+		idx += 4
 	}
 	return nil
 }
 
+// GetTaskType returns the task type for sample report.
 func (r *SampleReport) GetTaskType() uint8 { return TASK_SAMPLE_COLLECTION }
 
+// String returns a human-readable summary of the sample report.
 func (r *SampleReport) String() string {
 	compStr := ""
 	for i, c := range r.Components {
@@ -165,115 +170,111 @@ func (r *SampleReport) String() string {
 		}
 		compStr += fmt.Sprintf("%s=%.2f%%", c.Name, c.Percentage)
 	}
-	return fmt.Sprintf("[Amostra] Missão %d - %d componentes [%s]", r.MissionID, r.NumSamples, compStr)
+	return fmt.Sprintf("[Sample] Mission %d - %d components [%s]", r.MissionID, r.NumSamples, compStr)
 }
 
 //
-// ====== ANÁLISE AMBIENTAL ======
+// ====== ENVIRONMENTAL ANALYSIS REPORT ======
 //
 
-// EnvReport representa medições atmosféricas (T, O2, P, humidade, vento, radiação)
+// EnvReport contains atmospheric measurements.
 type EnvReport struct {
-	TaskType     uint8   `json:"taskType"`
-	MissionID    uint16  `json:"missionId"`
-	Temp         float32 `json:"temp"`
-	Oxygen       float32 `json:"oxygen"`
-	Pressure     float32 `json:"pressure"`
-	Humidity     float32 `json:"humidity"`
-	WindSpeed    float32 `json:"windSpeed"`
-	Radiation    float32 `json:"radiation"`
-	IsLastReport bool    `json:"isLastReport"` // indica se é o último report
+	TaskType     uint8   `json:"taskType"`     // Type of the report (always TASK_ENV_ANALYSIS)
+	MissionID    uint16  `json:"missionId"`    // Unique mission identifier
+	Temp         float32 `json:"temp"`         // Temperature (Celsius)
+	Oxygen       float32 `json:"oxygen"`       // Oxygen percentage
+	Pressure     float32 `json:"pressure"`     // Atmospheric pressure
+	Humidity     float32 `json:"humidity"`     // Humidity percentage
+	WindSpeed    float32 `json:"windSpeed"`    // Wind speed
+	Radiation    float32 `json:"radiation"`    // Radiation level
+	IsLastReport bool    `json:"isLastReport"` // True if this is the last environment report for the mission
 }
 
-func (r *EnvReport) GetMissionID() uint16 {
-	return r.MissionID
+// GetMissionID returns the mission ID for the environment report.
+func (r *EnvReport) GetMissionID() uint16 { return r.MissionID }
+
+// IsLast returns true if this is the last environment report.
+func (r *EnvReport) IsLast() bool { return r.IsLastReport }
+
+// Encode serializes the environment report to binary format.
+func (r *EnvReport) Encode() []byte {
+	data := make([]byte, ENV_REPORT_SIZE)
+	data[0] = r.TaskType
+	binary.BigEndian.PutUint16(data[1:3], r.MissionID)
+	data[3] = boolToByte(r.IsLastReport)
+	binary.BigEndian.PutUint32(data[4:8], math.Float32bits(r.Temp))
+	binary.BigEndian.PutUint32(data[8:12], math.Float32bits(r.Oxygen))
+	binary.BigEndian.PutUint32(data[12:16], math.Float32bits(r.Pressure))
+	binary.BigEndian.PutUint32(data[16:20], math.Float32bits(r.Humidity))
+	binary.BigEndian.PutUint32(data[20:24], math.Float32bits(r.WindSpeed))
+	binary.BigEndian.PutUint32(data[24:28], math.Float32bits(r.Radiation))
+	return data
 }
 
-func (r *EnvReport) IsLast() bool {
-	return r.IsLastReport
-}
-func (r *EnvReport) ToBytes() []byte {
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, r.TaskType)
-	binary.Write(buf, binary.BigEndian, r.MissionID)
-	var last uint8
-	if r.IsLastReport {
-		last = 1
-	}
-	binary.Write(buf, binary.BigEndian, last)
-	binary.Write(buf, binary.BigEndian, r.Temp)
-	binary.Write(buf, binary.BigEndian, r.Oxygen)
-	binary.Write(buf, binary.BigEndian, r.Pressure)
-	binary.Write(buf, binary.BigEndian, r.Humidity)
-	binary.Write(buf, binary.BigEndian, r.WindSpeed)
-	binary.Write(buf, binary.BigEndian, r.Radiation)
-	return buf.Bytes()
-}
-
-func (r *EnvReport) FromBytes(b []byte) error {
-	if len(b) < 28 {
-		return fmt.Errorf("report demasiado curto")
+// Decode deserializes binary data into the environment report.
+func (r *EnvReport) Decode(b []byte) error {
+	if len(b) < ENV_REPORT_SIZE {
+		return fmt.Errorf("report too short")
 	}
 	r.TaskType = b[0]
 	r.MissionID = binary.BigEndian.Uint16(b[1:3])
 	r.IsLastReport = b[3] == 1
-	buf := bytes.NewReader(b[4:28])
-	binary.Read(buf, binary.BigEndian, &r.Temp)
-	binary.Read(buf, binary.BigEndian, &r.Oxygen)
-	binary.Read(buf, binary.BigEndian, &r.Pressure)
-	binary.Read(buf, binary.BigEndian, &r.Humidity)
-	binary.Read(buf, binary.BigEndian, &r.WindSpeed)
-	binary.Read(buf, binary.BigEndian, &r.Radiation)
+	r.Temp = math.Float32frombits(binary.BigEndian.Uint32(b[4:8]))
+	r.Oxygen = math.Float32frombits(binary.BigEndian.Uint32(b[8:12]))
+	r.Pressure = math.Float32frombits(binary.BigEndian.Uint32(b[12:16]))
+	r.Humidity = math.Float32frombits(binary.BigEndian.Uint32(b[16:20]))
+	r.WindSpeed = math.Float32frombits(binary.BigEndian.Uint32(b[20:24]))
+	r.Radiation = math.Float32frombits(binary.BigEndian.Uint32(b[24:28]))
 	return nil
 }
 
+// GetTaskType returns the task type for environment report.
 func (r *EnvReport) GetTaskType() uint8 { return TASK_ENV_ANALYSIS }
+
+// String returns a human-readable summary of the environment report.
 func (r *EnvReport) String() string {
-	return fmt.Sprintf("[Ambiente] Missão %d - T=%.2f°C, O2=%.2f%%, P=%.2fhPa, H=%.2f%%, V=%.2fm/s, R=%.2fµSv",
+	return fmt.Sprintf("[Environment] Mission %d - T=%.2f°C, O2=%.2f%%, P=%.2fhPa, H=%.2f%%, V=%.2fm/s, R=%.2fµSv",
 		r.MissionID, r.Temp, r.Oxygen, r.Pressure, r.Humidity, r.WindSpeed, r.Radiation)
 }
 
 //
-// ====== REPARAÇÃO / RESGATE ======
+// ====== REPAIR/RESCUE REPORT ======
 //
 
-// RepairReport representa o resultado de uma tentativa de reparação (t=0)
+// RepairReport is the result of a repair attempt.
 type RepairReport struct {
-	TaskType     uint8  `json:"taskType"`
-	MissionID    uint16 `json:"missionId"`
-	ProblemID    uint8  `json:"problemId"`
-	Repairable   bool   `json:"repairable"`
-	IsLastReport bool   `json:"isLastReport"` // indica se é o último report
+	TaskType     uint8  `json:"taskType"`     // Type of the report (always TASK_REPAIR_RESCUE)
+	MissionID    uint16 `json:"missionId"`    // Unique mission identifier
+	ProblemID    uint8  `json:"problemId"`    // Problem identifier
+	Repairable   bool   `json:"repairable"`   // True if the problem was repaired
+	IsLastReport bool   `json:"isLastReport"` // True if this is the last repair report for the mission
 }
 
+// GetMissionID returns the mission ID for the repair report.
 func (r *RepairReport) GetMissionID() uint16 {
 	return r.MissionID
 }
 
+// IsLast returns true if this is the last repair report.
 func (r *RepairReport) IsLast() bool {
 	return r.IsLastReport
 }
-func (r *RepairReport) ToBytes() []byte {
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, r.TaskType)
-	binary.Write(buf, binary.BigEndian, r.MissionID)
-	binary.Write(buf, binary.BigEndian, r.ProblemID)
-	var last uint8
-	if r.IsLastReport {
-		last = 1
-	}
-	binary.Write(buf, binary.BigEndian, last)
-	var flag uint8
-	if r.Repairable {
-		flag = 1
-	}
-	binary.Write(buf, binary.BigEndian, flag)
-	return buf.Bytes()
+
+// Encode serializes the repair report to binary format.
+func (r *RepairReport) Encode() []byte {
+	data := make([]byte, REPAIR_REPORT_SIZE)
+	data[0] = r.TaskType
+	binary.BigEndian.PutUint16(data[1:3], r.MissionID)
+	data[3] = r.ProblemID
+	data[4] = boolToByte(r.IsLastReport)
+	data[5] = boolToByte(r.Repairable)
+	return data
 }
 
-func (r *RepairReport) FromBytes(b []byte) error {
-	if len(b) < 6 {
-		return fmt.Errorf("report demasiado curto")
+// Decode deserializes binary data into the repair report.
+func (r *RepairReport) Decode(b []byte) error {
+	if len(b) < REPAIR_REPORT_SIZE {
+		return fmt.Errorf("report too short")
 	}
 	r.TaskType = b[0]
 	r.MissionID = binary.BigEndian.Uint16(b[1:3])
@@ -283,109 +284,108 @@ func (r *RepairReport) FromBytes(b []byte) error {
 	return nil
 }
 
+// GetTaskType returns the task type for repair report.
 func (r *RepairReport) GetTaskType() uint8 { return TASK_REPAIR_RESCUE }
+
+// String returns a human-readable summary of the repair report.
 func (r *RepairReport) String() string {
-	status := "não reparável"
+	status := "not repairable"
 	if r.Repairable {
-		status = "reparado"
+		status = "repaired"
 	}
-	return fmt.Sprintf("[Reparação] Missão %d - Problema %d (%s)", r.MissionID, r.ProblemID, status)
+	return fmt.Sprintf("[Repair] Mission %d - Problem %d (%s)", r.MissionID, r.ProblemID, status)
 }
 
 //
-// ====== MAPEAMENTO TOPOGRÁFICO ======
+// ====== TOPOGRAPHIC MAPPING REPORT ======
 //
 
-// TopoReport representa um ponto topográfico (coordenada e altura)
+// TopoReport is a topographic point (coordinate and height).
 type TopoReport struct {
-	TaskType     uint8   `json:"taskType"`
-	MissionID    uint16  `json:"missionId"`
-	Latitude     float32 `json:"latitude"`
-	Longitude    float32 `json:"longitude"`
-	Height       float32 `json:"height"`
-	IsLastReport bool    `json:"isLastReport"` // indica se é o último report
+	TaskType     uint8   `json:"taskType"`     // Type of the report (always TASK_TOPO_MAPPING)
+	MissionID    uint16  `json:"missionId"`    // Unique mission identifier
+	Latitude     float32 `json:"latitude"`     // Latitude coordinate
+	Longitude    float32 `json:"longitude"`    // Longitude coordinate
+	Height       float32 `json:"height"`       // Height value
+	IsLastReport bool    `json:"isLastReport"` // True if this is the last topographic report for the mission
 }
 
+// GetMissionID returns the mission ID for the topographic report.
 func (r *TopoReport) GetMissionID() uint16 {
 	return r.MissionID
 }
 
+// IsLast returns true if this is the last topographic report.
 func (r *TopoReport) IsLast() bool {
 	return r.IsLastReport
 }
-func (r *TopoReport) ToBytes() []byte {
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, r.TaskType)
-	binary.Write(buf, binary.BigEndian, r.MissionID)
-	var last uint8
-	if r.IsLastReport {
-		last = 1
-	}
-	binary.Write(buf, binary.BigEndian, last)
-	binary.Write(buf, binary.BigEndian, r.Latitude)
-	binary.Write(buf, binary.BigEndian, r.Longitude)
-	binary.Write(buf, binary.BigEndian, r.Height)
-	return buf.Bytes()
+
+// Encode serializes the topographic report to binary format.
+func (r *TopoReport) Encode() []byte {
+	data := make([]byte, TOPO_REPORT_SIZE)
+	data[0] = r.TaskType
+	binary.BigEndian.PutUint16(data[1:3], r.MissionID)
+	data[3] = boolToByte(r.IsLastReport)
+	binary.BigEndian.PutUint32(data[4:8], math.Float32bits(r.Latitude))
+	binary.BigEndian.PutUint32(data[8:12], math.Float32bits(r.Longitude))
+	binary.BigEndian.PutUint32(data[12:16], math.Float32bits(r.Height))
+	return data
 }
 
-func (r *TopoReport) FromBytes(b []byte) error {
-	if len(b) < 16 {
-		return fmt.Errorf("report demasiado curto")
+// Decode deserializes binary data into the topographic report.
+func (r *TopoReport) Decode(b []byte) error {
+	if len(b) < TOPO_REPORT_SIZE {
+		return fmt.Errorf("report too short")
 	}
 	r.TaskType = b[0]
 	r.MissionID = binary.BigEndian.Uint16(b[1:3])
 	r.IsLastReport = b[3] == 1
-	buf := bytes.NewReader(b[4:16])
-	binary.Read(buf, binary.BigEndian, &r.Latitude)
-	binary.Read(buf, binary.BigEndian, &r.Longitude)
-	binary.Read(buf, binary.BigEndian, &r.Height)
+	r.Latitude = math.Float32frombits(binary.BigEndian.Uint32(b[4:8]))
+	r.Longitude = math.Float32frombits(binary.BigEndian.Uint32(b[8:12]))
+	r.Height = math.Float32frombits(binary.BigEndian.Uint32(b[12:16]))
 	return nil
 }
 
+// GetTaskType returns the task type for topographic report.
 func (r *TopoReport) GetTaskType() uint8 { return TASK_TOPO_MAPPING }
+
+// String returns a human-readable summary of the topographic report.
 func (r *TopoReport) String() string {
-	return fmt.Sprintf("[Topografia] Missão %d - (%.4f, %.4f) h=%.2fm", r.MissionID, r.Latitude, r.Longitude, r.Height)
+	return fmt.Sprintf("[Topography] Mission %d - (%.4f, %.4f) h=%.2fm", r.MissionID, r.Latitude, r.Longitude, r.Height)
 }
 
 //
-// ====== INSTALAÇÃO DE INSTRUMENTOS ======
+// ====== INSTRUMENT INSTALLATION REPORT ======
 //
 
-// InstallReport representa o sucesso/insucesso da instalação (1 ou 0)
+// InstallReport indicates success/failure of installation.
 type InstallReport struct {
-	TaskType     uint8  `json:"taskType"`
-	MissionID    uint16 `json:"missionId"`
-	Success      bool   `json:"success"`
-	IsLastReport bool   `json:"isLastReport"` // indica se é o último report
+	TaskType     uint8  `json:"taskType"`     // Type of the report (always TASK_INSTALLATION)
+	MissionID    uint16 `json:"missionId"`    // Unique mission identifier
+	Success      bool   `json:"success"`      // True if installation succeeded
+	IsLastReport bool   `json:"isLastReport"` // True if this is the last installation report for the mission
 }
 
-func (r *InstallReport) GetMissionID() uint16 {
-	return r.MissionID
+// GetMissionID returns the mission ID for the installation report.
+func (r *InstallReport) GetMissionID() uint16 { return r.MissionID }
+
+// IsLast returns true if this is the last installation report.
+func (r *InstallReport) IsLast() bool { return r.IsLastReport }
+
+// Encode serializes the installation report to binary format.
+func (r *InstallReport) Encode() []byte {
+	data := make([]byte, INSTALL_REPORT_SIZE)
+	data[0] = r.TaskType
+	binary.BigEndian.PutUint16(data[1:3], r.MissionID)
+	data[3] = boolToByte(r.IsLastReport)
+	data[4] = boolToByte(r.Success)
+	return data
 }
 
-func (r *InstallReport) IsLast() bool {
-	return r.IsLastReport
-}
-func (r *InstallReport) ToBytes() []byte {
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, r.TaskType)
-	binary.Write(buf, binary.BigEndian, r.MissionID)
-	var last uint8
-	if r.IsLastReport {
-		last = 1
-	}
-	binary.Write(buf, binary.BigEndian, last)
-	var flag uint8
-	if r.Success {
-		flag = 1
-	}
-	binary.Write(buf, binary.BigEndian, flag)
-	return buf.Bytes()
-}
-
-func (r *InstallReport) FromBytes(b []byte) error {
-	if len(b) < 5 {
-		return fmt.Errorf("report demasiado curto")
+// Decode deserializes binary data into the installation report.
+func (r *InstallReport) Decode(b []byte) error {
+	if len(b) < INSTALL_REPORT_SIZE {
+		return fmt.Errorf("report too short")
 	}
 	r.TaskType = b[0]
 	r.MissionID = binary.BigEndian.Uint16(b[1:3])
@@ -394,10 +394,20 @@ func (r *InstallReport) FromBytes(b []byte) error {
 	return nil
 }
 
+// GetTaskType returns the task type for installation report.
 func (r *InstallReport) GetTaskType() uint8 { return TASK_INSTALLATION }
+
+// String returns a human-readable summary of the installation report.
 func (r *InstallReport) String() string {
 	if r.Success {
-		return fmt.Sprintf("[Instalação] Missão %d - concluída com sucesso", r.MissionID)
+		return fmt.Sprintf("[Installation] Mission %d - completed successfully", r.MissionID)
 	}
-	return fmt.Sprintf("[Instalação] Missão %d - falhou", r.MissionID)
+	return fmt.Sprintf("[Installation] Mission %d - failed", r.MissionID)
+}
+
+func boolToByte(b bool) byte {
+	if b {
+		return 1
+	}
+	return 0
 }

@@ -104,7 +104,7 @@ func buildReportPayload(mission ml.MissionData, final bool) []byte {
 	switch mission.TaskType {
 	case ml.TASK_IMAGE_CAPTURE:
 		r := ml.ImageReport{TaskType: ml.TASK_IMAGE_CAPTURE, MissionID: mission.MsgID, ChunkID: 1, Data: []byte("..."), IsLastReport: final}
-		payload = r.ToBytes()
+		payload = r.Encode()
 	case ml.TASK_SAMPLE_COLLECTION:
 		r := ml.SampleReport{
 			TaskType:   ml.TASK_SAMPLE_COLLECTION,
@@ -116,19 +116,19 @@ func buildReportPayload(mission ml.MissionData, final bool) []byte {
 			}, IsLastReport: final,
 		}
 
-		payload = r.ToBytes()
+		payload = r.Encode()
 	case ml.TASK_ENV_ANALYSIS:
 		r := ml.EnvReport{TaskType: ml.TASK_ENV_ANALYSIS, MissionID: mission.MsgID, Temp: 23.5, Oxygen: 20.9, IsLastReport: final}
-		payload = r.ToBytes()
+		payload = r.Encode()
 	case ml.TASK_REPAIR_RESCUE:
 		r := ml.RepairReport{TaskType: ml.TASK_REPAIR_RESCUE, MissionID: mission.MsgID, ProblemID: 1, Repairable: true, IsLastReport: final}
-		payload = r.ToBytes()
+		payload = r.Encode()
 	case ml.TASK_TOPO_MAPPING:
 		r := ml.TopoReport{TaskType: ml.TASK_TOPO_MAPPING, MissionID: mission.MsgID, Latitude: 41.545, Longitude: -8.421, Height: 54.3, IsLastReport: final}
-		payload = r.ToBytes()
+		payload = r.Encode()
 	case ml.TASK_INSTALLATION:
 		r := ml.InstallReport{TaskType: ml.TASK_INSTALLATION, MissionID: mission.MsgID, Success: true, IsLastReport: final}
-		payload = r.ToBytes()
+		payload = r.Encode()
 	default:
 		fmt.Printf("⚠️ TaskType desconhecido: %d\n", mission.TaskType)
 		return nil

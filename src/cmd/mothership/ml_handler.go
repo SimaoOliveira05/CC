@@ -282,7 +282,7 @@ func (ms *MotherShip) handleReport(p ml.Packet, state *core.RoverState) {
 		return
 	}
 
-	if err := reportInfo.report.FromBytes(p.Payload); err != nil {
+	if err := reportInfo.report.Decode(p.Payload); err != nil {
 		fmt.Printf("❌ Erro ao desserializar %s: %v\n", reportInfo.name, err)
 		return
 	}
