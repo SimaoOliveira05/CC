@@ -1,10 +1,10 @@
 package ml
 
 import (
-	"src/utils"
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"src/utils"
 )
 
 type MissionData struct {
@@ -16,8 +16,8 @@ type MissionData struct {
 	Priority        uint8
 }
 
-
 // ToBytes serializa a estrutura Data em bytes (BigEndian).
+// TaskType e Priority são combinados num único byte: [4 bits TaskType | 4 bits Priority]
 func (d *MissionData) ToBytes() []byte {
 	buf := new(bytes.Buffer)
 	// MsgID
@@ -25,28 +25,31 @@ func (d *MissionData) ToBytes() []byte {
 	// Coordinate (Latitude, Longitude)
 	_ = binary.Write(buf, binary.BigEndian, d.Coordinate.Latitude)
 	_ = binary.Write(buf, binary.BigEndian, d.Coordinate.Longitude)
-	// TaskType
-	_ = binary.Write(buf, binary.BigEndian, d.TaskType)
+	// TaskType (4 bits superiores) + Priority (4 bits inferiores) em 1 byte
+	taskTypeAndPriority := (d.TaskType << 4) | (d.Priority & 0x0F)
+	_ = binary.Write(buf, binary.BigEndian, taskTypeAndPriority)
 	// Duration
 	_ = binary.Write(buf, binary.BigEndian, d.Duration)
 	// UpdateFrequency
 	_ = binary.Write(buf, binary.BigEndian, d.UpdateFrequency)
-	// Priority
-	_ = binary.Write(buf, binary.BigEndian, d.Priority)
 	return buf.Bytes()
 }
 
 // FromBytes desserializa bytes em Data (espera BigEndian e a mesma ordem usada em ToBytes).
+// TaskType e Priority são extraídos de 1 byte combinado: [4 bits TaskType | 4 bits Priority]
 func DataFromBytes(data []byte) MissionData {
 	var d MissionData
 	buf := bytes.NewReader(data)
 	_ = binary.Read(buf, binary.BigEndian, &d.MsgID)
 	_ = binary.Read(buf, binary.BigEndian, &d.Coordinate.Latitude)
 	_ = binary.Read(buf, binary.BigEndian, &d.Coordinate.Longitude)
-	_ = binary.Read(buf, binary.BigEndian, &d.TaskType)
+	// Lê o byte combinado e separa TaskType e Priority
+	var taskTypeAndPriority uint8
+	_ = binary.Read(buf, binary.BigEndian, &taskTypeAndPriority)
+	d.TaskType = (taskTypeAndPriority >> 4) & 0x0F // 4 bits superiores
+	d.Priority = taskTypeAndPriority & 0x0F        // 4 bits inferiores
 	_ = binary.Read(buf, binary.BigEndian, &d.Duration)
 	_ = binary.Read(buf, binary.BigEndian, &d.UpdateFrequency)
-	_ = binary.Read(buf, binary.BigEndian, &d.Priority)
 	return d
 }
 
@@ -79,4 +82,3 @@ type ReportData struct {
 	EndMission bool
 	ReportInfo Report
 }
-
