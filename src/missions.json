@@ -1,8 +1,8 @@
 [
   {
     "TaskType": 1,
-    "Duration": 10,
-    "UpdateFrequency": 1,
+    "Duration": 20,
+    "UpdateFrequency": 5,
     "Priority": 1,
     "State": "Pending",
     "Coordinate": {"Latitude": 0.523456, "Longitude": -0.821234}

@@ -9,7 +9,6 @@ import (
 	"src/utils"
 	pl "src/utils/packetsLogic"
 	"strconv"
-	"sync"
 	"time"
 )
 
@@ -20,6 +19,8 @@ func (ms *MotherShip) handlePacket(state *core.RoverState, pkt ml.Packet) {
 	processor := func(p ml.Packet) {
 		ms.dispatchPacket(p, state)
 	}
+
+	shouldAutoAck := pkt.MsgType != ml.MSG_REQUEST
 
 	pl.HandleOrderedPacket(
 		pkt,
@@ -32,6 +33,7 @@ func (ms *MotherShip) handlePacket(state *core.RoverState, pkt ml.Packet) {
 		0,
 		processor,
 		pkt.MsgType == ml.MSG_ACK,
+		shouldAutoAck,
 	)
 }
 
@@ -47,7 +49,7 @@ func (ms *MotherShip) receiver(port string) {
 
 	// Cria o endereço UDP
 	mothershipConn, err := net.ListenUDP("udp", &net.UDPAddr{
-		IP:   net.ParseIP("0.0.0.0"),
+		IP:   nil, // Ouve em todas as interfaces IPV4 ou IPV6
 		Port: portNum,
 	})
 	if err != nil {
@@ -77,11 +79,7 @@ func (ms *MotherShip) receiver(port string) {
 				SeqNum:      0,
 				ExpectedSeq: packet.SeqNum,
 				Buffer:      make(map[uint16]ml.Packet),
-				Window: &pl.Window{
-					LastAckReceived: -1,
-					Window:          make(map[uint32](chan int8)),
-					Mu:              sync.Mutex{},
-				},
+				Window:      pl.NewWindow(),
 				NumberOfMissions: 0,
 			}
 			ms.Rovers[roverID] = state
@@ -116,7 +114,7 @@ func (ms *MotherShip) dispatchPacket(pkt ml.Packet, state *core.RoverState) {
 	switch pkt.MsgType {
 
 	case ml.MSG_REQUEST:
-		ms.handleMissionRequest(state)
+		ms.handleMissionRequest(pkt.SeqNum, state)
 	case ml.MSG_ACK:
 		pl.HandleAck(pkt, state.Window)
 	case ml.MSG_REPORT:
@@ -127,7 +125,7 @@ func (ms *MotherShip) dispatchPacket(pkt ml.Packet, state *core.RoverState) {
 }
 
 // handleMissionRequest processa pedidos de missão do rover
-func (ms *MotherShip) handleMissionRequest(state *core.RoverState) {
+func (ms *MotherShip) handleMissionRequest(pktSeqNum uint16, state *core.RoverState) {
 	// Gera um ID único para a missão
 	select {
 	case missionState := <-ms.MissionQueue:
@@ -177,7 +175,7 @@ func (ms *MotherShip) handleMissionRequest(state *core.RoverState) {
 			RoverId: 0,
 			MsgType: ml.MSG_MISSION,
 			SeqNum:  state.SeqNum,
-			AckNum:  0,
+			AckNum:  pktSeqNum + 1, // MISSION PACKETS ACTS AS A SYN-ACK
 			Payload: payload,
 		}
 
@@ -203,7 +201,7 @@ func (ms *MotherShip) handleMissionRequest(state *core.RoverState) {
 			RoverId: 0,
 			MsgType: ml.MSG_NO_MISSION,
 			SeqNum:  state.SeqNum,
-			AckNum:  0,
+			AckNum:  pktSeqNum + 1, // NO_MISSION ACTS AS A SYN-ACK
 			Payload: []byte{},
 		}
 

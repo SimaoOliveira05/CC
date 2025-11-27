@@ -103,8 +103,11 @@ import MissionCard from './components/MissionCard.vue';
 import MissionDetail from './components/MissionDetail.vue';
 import MapView from './components/MapView.vue';
 
-const API_BASE = 'http://localhost:8080/api';
-const WS_BASE = 'ws://localhost:8080/ws';
+// Substitui 10.0.6.20 pelo IP que aparecer no terminal do nó
+const CORE_IP = '10.0.7.21'; 
+
+const API_BASE = `http://${CORE_IP}:8080/api`;
+const WS_BASE = `ws://${CORE_IP}:8080/ws`; // (Confirma se a rota do WS é /ws ou /ws/telemetry)
 const rovers = ref([]);
 const missions = ref([]);
 const selectedMission = ref(null);

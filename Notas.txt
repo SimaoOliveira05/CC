@@ -26,3 +26,8 @@ No caso da Nave-Mãe, o envio é reativo (responde a eventos, como um REPORT ou 
 A Nave-Mãe não precisa de uma goroutine que lê continuamente de um canal sendChan,
 porque ela só envia algo quando acontece um evento específico:
 
+
+export DISPLAY=: 1
+firefox
+
+

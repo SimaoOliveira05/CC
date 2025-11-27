@@ -107,6 +107,6 @@ func (ms *MotherShip) updateRoverTelemetry(t *ts.TelemetryPacket) {
 		0,
 	)
 
-	fmt.Println(ms.RoverInfo.String())
+	//fmt.Println(ms.RoverInfo.String())
 }
 

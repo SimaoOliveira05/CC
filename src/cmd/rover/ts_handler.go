@@ -32,6 +32,6 @@ func (rover *Rover) telemetrySender(mothershipAddr string) {
 			fmt.Println("❌ Erro ao enviar telemetria:", err)
 			return
 		}
-		fmt.Printf("📡 Telemetria enviada: Posição=(%.6f, %.6f), Velocidade=%.2f, Estado=%d, Bateria=%d%%\n", telemetry.Position.Latitude, telemetry.Position.Longitude, telemetry.Speed, telemetry.State, telemetry.Battery)
+		//fmt.Printf("📡 Telemetria enviada: Posição=(%.6f, %.6f), Velocidade=%.2f, Estado=%d, Bateria=%d%%\n", telemetry.Position.Latitude, telemetry.Position.Longitude, telemetry.Speed, telemetry.State, telemetry.Battery)
 	}
 }
