@@ -68,7 +68,8 @@ func (ms *MotherShip) receiver(port string) {
 			continue
 		}
 
-		packet := ml.FromBytes(buf[:n])
+		var packet ml.Packet
+		packet.Decode(buf[:n])
 		roverID := packet.RoverId
 
 		ms.Mu.Lock()
@@ -167,7 +168,7 @@ func (ms *MotherShip) handleMissionRequest(pktSeqNum uint16, state *core.RoverSt
 			Priority:        missionState.Priority,
 		}
 
-		payload := missionData.ToBytes()
+		payload := missionData.Encode()
 
 		state.WindowLock.Lock()
 
@@ -279,7 +280,7 @@ func (ms *MotherShip) handleReport(p ml.Packet, state *core.RoverState) {
 		return
 	}
 
-	if err := reportInfo.report.FromBytes(p.Payload); err != nil {
+	if err := reportInfo.report.Decode(p.Payload); err != nil {
 		fmt.Printf("❌ Erro ao desserializar %s: %v\n", reportInfo.name, err)
 		return
 	}
