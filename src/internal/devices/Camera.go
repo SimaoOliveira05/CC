@@ -2,7 +2,6 @@ package devices
 
 import (
 	"math/rand"
-	"os"
 )
 
 type Camera interface {
@@ -16,17 +15,17 @@ func NewMockCamera() *MockCamera {
 }
 
 func (c *MockCamera) ReadImageChunk() []byte {
-	path := "image.jpg"
-	data, err := os.ReadFile(path)
-	if err == nil && len(data) > 0 {
-		if len(data) > 256 {
-			return data[:256]
-		}
-		return data
+	// Simula a leitura de um chunk de imagem retornando bytes aleatórios
+	size := 1024
+	chunk := make([]byte, size)
+	_, err := rand.Read(chunk)
+	if err != nil {
+		// Em caso de erro, retorna um slice vazio
+		return []byte{}
 	}
-	fake := make([]byte, 256)
-	for i := range fake {
-		fake[i] = byte(rand.Intn(256))
+	// Simula uma chance de falha na leitura
+	if rand.Float32() < 0.1 {
+		return []byte{}
 	}
-	return fake
+	return chunk
 }

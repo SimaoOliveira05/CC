@@ -59,7 +59,7 @@ func (ms *MotherShip) receiver(port string) {
 	defer mothershipConn.Close()
 
 	ms.Conn = mothershipConn
-	buf := make([]byte, 1024)
+	buf := make([]byte, 65535)
 
 	for {
 		n, addr, err := ms.Conn.ReadFromUDP(buf)
