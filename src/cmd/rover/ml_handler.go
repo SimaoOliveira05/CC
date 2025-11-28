@@ -13,8 +13,10 @@ func (rover *Rover) handlePacket(pkt ml.Packet) {
 	processor := func(p ml.Packet) {
 		switch p.MsgType {
 		case ml.MSG_MISSION:
+			pl.HandleAck(p, rover.ML.Window)
 			rover.processMission(p)
 		case ml.MSG_NO_MISSION:
+			pl.HandleAck(p, rover.ML.Window)
 			rover.ML.MissionReceivedChan <- false
 		case ml.MSG_ACK:
 			pl.HandleAck(p, rover.ML.Window) // ✅ Usa 'p' (parâmetro da closure)
@@ -34,6 +36,7 @@ func (rover *Rover) handlePacket(pkt ml.Packet) {
 		rover.ID,
 		processor,
 		pkt.MsgType == ml.MSG_ACK, // ✅ Skip ordering para ACKs
+		true,
 	)
 }
 

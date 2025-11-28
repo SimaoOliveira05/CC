@@ -79,7 +79,7 @@ func SendPacketUDP(conn *net.UDPConn, addr *net.UDPAddr, packet ml.Packet) error
 		case ml.MSG_REQUEST:
 			pktType = "MSG_REQUEST"
 	}
-	fmt.Printf("[PACKET-LOGIC] Sent packet of type %s with packetID: %d to %s\n", pktType, packet.SeqNum, addr.String())
+	fmt.Printf("[PACKET-LOGIC] Sent packet of type %s with seq: %d to %s\n", pktType, packet.SeqNum, addr.String())
 	return error
 }
 
@@ -87,7 +87,7 @@ func SendPacketUDP(conn *net.UDPConn, addr *net.UDPAddr, packet ml.Packet) error
 func PacketManager(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *Window) {
 
 	if(pkt.MsgType == ml.MSG_ACK){
-		fmt.Printf("📤 ACK enviado, SeqNum: %d\n", pkt.SeqNum)
+		fmt.Printf("📤 ACK enviado, AckNum: %d\n", pkt.AckNum)
 		if err := SendPacketUDP(conn, addr, pkt); err != nil {
 			fmt.Println("❌ Erro ao enviar pacote:", err)
 			return
@@ -111,7 +111,7 @@ func PacketManager(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *
 			return
 		}
 
-				// Ler timeout com lock (mínimo possível)
+		// Ler timeout com lock (mínimo possível)
 		window.Mu.Lock()
 		rto := window.RTO
 		window.Mu.Unlock()

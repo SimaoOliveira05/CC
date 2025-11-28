@@ -46,6 +46,7 @@ func HandleOrderedPacket(
 	roverID uint8,
 	processor PacketProcessor,
 	skipOrdering bool,
+	autoAck bool,
 ) {
 	// 1. Verificar checksum ANTES de adquirir lock
 	expectedChecksum := ml.Checksum(pkt.Payload)
@@ -73,7 +74,9 @@ func HandleOrderedPacket(
 		// Pacote esperado - processa e avança janela
 		go processor(pkt)
 		*expectedSeq++
-		SendAck(conn, addr, seq, window, roverID)
+		if autoAck {
+			SendAck(conn, addr, seq, window, roverID)
+		}
 
 		// Processa pacotes bufferizados consecutivos
 		for {

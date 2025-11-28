@@ -2,16 +2,16 @@ build:
 	go build -o bin/mothership ./cmd/mothership
 	go build -o bin/rover ./cmd/rover
 
-run-mothership: build
+run-mothership:
 	@if [ -z "$(IP)" ]; then IP=127.0.0.1; fi; \
-	gnome-terminal -- bash -c "./bin/mothership --mother-ip=$$IP; exec bash"
+    ./bin/mothership --mother-ip=$(IP)
 
-run-rover: build
+run-rover:
 	@if [ -z "$(MIP)" ]; then MIP=127.0.0.1; fi; \
 	if [ -z "$(RIP)" ]; then RIP=127.0.0.1; fi; \
-	gnome-terminal -- bash -c "./bin/rover --mother-ip=$$MIP --rover-ip=$$RIP; exec bash"
+	./bin/rover --mother-ip=$(MIP) --rover-ip=$(RIP)
 
-run-all: build
+run-all:
 	@if [ -z "$(IPS)" ]; then IPS="127.0.0.1"; fi; \
 	gnome-terminal -- bash -c "./bin/mothership --mother-ip=$$(echo $(IPS) | awk '{print $$1}'); exec bash"; \
 	for ip in $(IPS); do \
