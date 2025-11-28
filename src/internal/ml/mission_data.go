@@ -14,7 +14,7 @@ type MissionData struct {
 	TaskType        uint8            // Type of task to be performed [0-15 representing different tasks]
 	Duration        uint32           // Duration of the mission in seconds
 	UpdateFrequency uint32           // Frequency at which mission updates should be sent [0 seconds - aproximately 136 years]
-	Priority        uint8            // Priority level of the mission [0-15]
+	Priority        uint8            // Priority level of the mission [0-15]							
 }
 
 //MissionDataSize is the size in bytes of the MissionData struct when serialized.

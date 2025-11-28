@@ -258,54 +258,36 @@ func (ms *MotherShip) sendNoMission(state *core.RoverState) {
 // handleReport processa relatórios dos rovers
 func (ms *MotherShip) handleReport(p ml.Packet, state *core.RoverState) {
 	fmt.Printf("📊 Relatório recebido de %s\n", state.Addr)
-	if len(p.Payload) < 1 {
-		fmt.Println("❌ Payload vazio")
+	if len(p.Payload) < ml.REPORT_HEADER_SIZE {
+		fmt.Println("❌ Payload vazio ou incompleto")
 		return
 	}
 
-	taskType := p.Payload[0]
-	reportTypes := map[uint8]struct {
-		name   string
-		report ml.Report
-	}{
-		ml.TASK_SAMPLE_COLLECTION: {"[Amostra]", &ml.SampleReport{}},
-		ml.TASK_IMAGE_CAPTURE:     {"[Imagem]", &ml.ImageReport{}},
-		ml.TASK_ENV_ANALYSIS:      {"[Ambiente]", &ml.EnvReport{}},
-		ml.TASK_REPAIR_RESCUE:     {"[Reparação]", &ml.RepairReport{}},
-		ml.TASK_TOPO_MAPPING:      {"[Topografia]", &ml.TopoReport{}},
-		ml.TASK_INSTALLATION:      {"[Instalação]", &ml.InstallReport{}},
-	}
-
-	reportInfo, exists := reportTypes[taskType]
-	if !exists {
-		fmt.Printf("⚠️ TaskType desconhecido: %d\n", taskType)
+	var report ml.Report
+	if err := report.Decode(p.Payload); err != nil {
+		fmt.Printf("❌ Erro ao desserializar report: %v\n", err)
 		return
 	}
 
-	if err := reportInfo.report.Decode(p.Payload); err != nil {
-		fmt.Printf("❌ Erro ao desserializar %s: %v\n", reportInfo.name, err)
-		return
-	}
+	fmt.Printf("✅ Report recebido: TaskType=%d, MissionID=%d, IsLast=%v, PayloadLen=%d\n",
+		report.Header.TaskType, report.Header.MissionID, report.Header.IsLastReport, len(report.Payload))
 
-	if reportInfo.report.IsLast() {
+	if report.Header.IsLastReport {
 		fmt.Printf("🏁 Último relatório recebido.\n")
 		ms.Mu.Lock()
 		if state.NumberOfMissions > 0 {
 			state.NumberOfMissions--
 		}
 		ms.Mu.Unlock()
-
 		ms.MissionManager.PrintMissions()
 	}
 
-	fmt.Printf("✅ %s %s\n", reportInfo.name, reportInfo.report.String())
-
 	// Atualiza o estado da missão no Mission Manager
-	ml.UpdateMission(ms.MissionManager, reportInfo.report)
+	ml.UpdateMission(ms.MissionManager, report)
 
 	// 🔥 Publish mission update event
 	if ms.APIServer != nil {
-		mission := ms.MissionManager.GetMission(reportInfo.report.GetMissionID())
+		mission := ms.MissionManager.GetMission(report.Header.MissionID)
 		if mission != nil {
 			ms.APIServer.PublishUpdate("mission_update", mission)
 		}

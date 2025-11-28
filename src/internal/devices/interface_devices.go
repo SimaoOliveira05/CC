@@ -9,7 +9,13 @@ type GPS interface {
 }
 
 type Thermometer interface {
+	// Methods to read full environmental data used in EnvReportData
 	GetTemperature() float32
+	GetOxygen() float32
+	GetPressure() float32
+	GetHumidity() float32
+	GetWindSpeed() float32
+	GetRadiation() float32
 }
 
 type Battery interface {

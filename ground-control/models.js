@@ -26,7 +26,8 @@ export class Mission {
   }
 
   instantiateReport(data) {
-    if (!data || !data.taskType) return null;
+    // `taskType` can be 0 (image), so explicitly check for undefined/null
+    if (!data || data.taskType === undefined || data.taskType === null) return null;
     
     switch(data.taskType) {
       case 0:
@@ -51,11 +52,27 @@ export class Mission {
 
 // Classe ImageReport
 export class ImageReport {
-  constructor({ taskType, missionId, chunkId, data, isLastReport }) {
+  constructor({ taskType, missionId, chunkId, data, isLastReport, assembledImage }) {
     this.taskType = taskType;
     this.missionId = missionId;
     this.chunkId = chunkId;
-    this.data = data;
+    // If backend sent bytes as a base64 string (Go's json encodes []byte as base64), decode to Uint8Array
+    if (typeof data === 'string') {
+      try {
+        const binary = atob(data);
+        const len = binary.length;
+        const arr = new Uint8Array(len);
+        for (let i = 0; i < len; i++) arr[i] = binary.charCodeAt(i);
+        this.data = arr;
+      } catch (e) {
+        // If decoding fails, keep original value
+        this.data = data;
+      }
+    } else {
+      this.data = data;
+    }
+    // Keep assembled image base64 if provided by API (for final reconstructed image)
+    this.assembledImage = assembledImage || null;
     this.isLastReport = isLastReport;
   }
 

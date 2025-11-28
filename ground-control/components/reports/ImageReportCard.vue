@@ -24,13 +24,56 @@
 </template>
 
 <script setup>
-defineProps({
+import { ref, watch, onMounted, onUnmounted } from 'vue';
+
+const props = defineProps({
   report: Object,
   required: true
 });
 
+const imageUrl = ref(null);
+
+const updateImageUrl = (data) => {
+  // Revoke previous URL if any
+  if (imageUrl.value && imageUrl.value.startsWith && imageUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(imageUrl.value);
+  }
+  if (!data) {
+    imageUrl.value = null;
+    return;
+  }
+  // If assembled image is present on the report, prefer it
+  const assembled = props.report && (props.report.assembledImage || props.report.assembledImageBase64);
+  if (assembled) {
+    imageUrl.value = `data:image/jpeg;base64,${assembled}`;
+    return;
+  }
+  if (typeof data === 'string') {
+    // already base64
+    imageUrl.value = `data:image/jpeg;base64,${data}`;
+    return;
+  }
+  try {
+    // data is expected to be Uint8Array or ArrayBuffer-like
+    const blob = new Blob([data], { type: 'image/jpeg' });
+    imageUrl.value = URL.createObjectURL(blob);
+  } catch (e) {
+    imageUrl.value = null;
+  }
+};
+
+watch(() => props.report && props.report.data, (newData) => {
+  updateImageUrl(newData);
+}, { immediate: true });
+
+onUnmounted(() => {
+  if (imageUrl.value && imageUrl.value.startsWith && imageUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(imageUrl.value);
+  }
+});
+
 const formatBytes = (bytes) => {
-  if (bytes === 0) return '0 B';
+  if (!bytes || bytes === 0) return '0 B';
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));

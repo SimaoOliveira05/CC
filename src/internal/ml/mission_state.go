@@ -2,6 +2,7 @@ package ml
 
 import (
 	"fmt"
+	"sort"
 	"src/utils"
 	"sync"
 	"time"
@@ -9,17 +10,17 @@ import (
 
 // MissionState represents the last updated state of a mission.
 type MissionState struct {
-	ID              uint16           `json:"id"` // Unique mission ID
-	IDRover         uint8            `json:"idRover"` // ID of the rover assigned to the mission
-	TaskType        uint8            `json:"taskType"` // e.g., 1 = MoveTo, 2 = SampleCollection, etc.
-	Duration        time.Duration    `json:"duration"` // Duration since mission start
+	ID              uint16           `json:"id"`              // Unique mission ID
+	IDRover         uint8            `json:"idRover"`         // ID of the rover assigned to the mission
+	TaskType        uint8            `json:"taskType"`        // e.g., 1 = MoveTo, 2 = SampleCollection, etc.
+	Duration        time.Duration    `json:"duration"`        // Duration since mission start
 	UpdateFrequency time.Duration    `json:"updateFrequency"` // Frequency of updates
-	LastUpdate      time.Time        `json:"lastUpdate"` // Time of the last update
-	CreatedAt       time.Time        `json:"createdAt"` // Time when the mission was created
-	Priority        uint8            `json:"priority"` // Priority level of the mission
-	Report          []Report         `json:"reports"` // Reports related to the mission
-	State           string           `json:"state"` // e.g, "Pending", "Moving to", "In Progress", "Completed"
-	Coordinate      utils.Coordinate `json:"coordinate"` // Target coordinate for the mission	
+	LastUpdate      time.Time        `json:"lastUpdate"`      // Time of the last update
+	CreatedAt       time.Time        `json:"createdAt"`       // Time when the mission was created
+	Priority        uint8            `json:"priority"`        // Priority level of the mission
+	Report          []Report         `json:"reports"`         // Reports related to the mission
+	State           string           `json:"state"`           // e.g, "Pending", "Moving to", "In Progress", "Completed"
+	Coordinate      utils.Coordinate `json:"coordinate"`      // Target coordinate for the mission
 }
 
 // MissionManager will manage all the active missions.
@@ -81,7 +82,7 @@ func (mm *MissionManager) UpdateMissionState(missionID uint16, newState string) 
 // DeleteMission removes a mission from the manager
 func (mm *MissionManager) DeleteMission(id uint16) {
 	mm.mu.Lock()
-	defer mm.mu.Unlock() 
+	defer mm.mu.Unlock()
 	delete(mm.ActiveMissions, id)
 }
 
@@ -121,4 +122,33 @@ func (mm *MissionManager) PrintMissions() {
 		}
 	}
 	fmt.Println("==========================")
+}
+
+// AssembleImage concatenates all image chunks (by ChunkID order) for the mission into a single byte slice.
+func (m *MissionState) AssembleImage() []byte {
+	// Collect chunks by id
+	chunks := make(map[uint16][]byte)
+	var ids []int
+	for _, rep := range m.Report {
+		if rep.Header.TaskType == TASK_IMAGE_CAPTURE {
+			var img ImageReportData
+			img.DecodePayload(rep.Payload)
+			// copy data to avoid referencing underlying slices
+			dataCopy := make([]byte, len(img.Data))
+			copy(dataCopy, img.Data)
+			chunks[img.ChunkID] = dataCopy
+			ids = append(ids, int(img.ChunkID))
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	sort.Ints(ids)
+	// Concatenate in order
+	var result []byte
+	for _, id := range ids {
+		c := chunks[uint16(id)]
+		result = append(result, c...)
+	}
+	return result
 }

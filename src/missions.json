@@ -1,5 +1,13 @@
 [
   {
+    "TaskType": 0,
+    "Duration": 0,
+    "UpdateFrequency": 1,
+    "Priority": 1,
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.593725, "Longitude": -0.253956}
+  },
+  {
     "TaskType": 1,
     "Duration": 10,
     "UpdateFrequency": 1,
@@ -38,6 +46,14 @@
     "Priority": 2,
     "State": "Pending",
     "Coordinate": {"Latitude": -0.234567, "Longitude": 0.822456}
+  },
+  {
+    "TaskType": 0,
+    "Duration": 10,
+    "UpdateFrequency": 1,
+    "Priority": 1,
+    "State": "Pending",
+    "Coordinate": {"Latitude": -0.613325, "Longitude": 0.753656}
   },
   {
     "TaskType": 1,
@@ -80,6 +96,14 @@
     "Coordinate": {"Latitude": 0.267890, "Longitude": -0.121456}
   },
   {
+    "TaskType": 0,
+    "Duration": 10,
+    "UpdateFrequency": 1,
+    "Priority": 1,
+    "State": "Pending",
+    "Coordinate": {"Latitude": -0.148295, "Longitude": -0.474015}
+  },
+  {
     "TaskType": 1,
     "Duration": 65,
     "UpdateFrequency": 7,
@@ -120,6 +144,14 @@
     "Coordinate": {"Latitude": -0.123456, "Longitude": 0.922567}
   },
   {
+    "TaskType": 0,
+    "Duration": 10,
+    "UpdateFrequency": 1,
+    "Priority": 1,
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.789012, "Longitude": -0.423567}
+  },
+  {
     "TaskType": 1,
     "Duration": 60,
     "UpdateFrequency": 10,
@@ -158,6 +190,14 @@
     "Priority": 2,
     "State": "Pending",
     "Coordinate": {"Latitude": 0.890123, "Longitude": -0.521234}
+  },
+  {
+    "TaskType": 0,
+    "Duration": 10,
+    "UpdateFrequency": 1,
+    "Priority": 1,
+    "State": "Pending",
+    "Coordinate": {"Latitude": 0.496832, "Longitude": 0.205931}
   },
   {
     "TaskType": 1,

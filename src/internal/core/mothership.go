@@ -1,10 +1,9 @@
 package core
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"net"
-	"net/http"
-	"strconv"
 
 	"src/internal/api"
 	"src/internal/ml"
@@ -13,10 +12,7 @@ import (
 	"sync"
 
 	"fmt"
-	"io/ioutil"
 	"os"
-
-	"github.com/gorilla/mux"
 )
 
 type RoverState struct {
@@ -72,7 +68,7 @@ func loadMissionsFromJSON(filename string, queue chan ml.MissionState) error {
 	}
 	defer file.Close()
 
-	data, err := ioutil.ReadAll(file)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return fmt.Errorf("erro ao ler ficheiro: %v", err)
 	}
@@ -101,98 +97,128 @@ func (ms *MotherShip) setupAPIEndpoints() {
 
 	// Endpoint: Lista todas as missões
 	ms.APIServer.RegisterEndpoint("/api/missions", "GET", func() interface{} {
-		return ms.MissionManager.ListMissions()
-	})
-
-	// Endpoint: Estatísticas gerais
-	ms.APIServer.RegisterEndpoint("/api/stats", "GET", func() interface{} {
-		rovers := ms.RoverInfo.ListRovers()
 		missions := ms.MissionManager.ListMissions()
-
-		return map[string]interface{}{
-			"total_rovers":         len(rovers),
-			"total_missions":       len(missions),
-			"active_rovers":        ms.countActiveRovers(rovers),
-			"completed_missions":   ms.countCompletedMissions(missions),
-			"pending_missions":     ms.countPendingMissions(missions),
-			"missions_in_progress": ms.countInProgressMissions(missions),
+		var result []map[string]interface{}
+		for _, m := range missions {
+			var parsedReports []interface{}
+			for _, rep := range m.Report {
+				switch rep.Header.TaskType {
+				case ml.TASK_IMAGE_CAPTURE:
+					var img ml.ImageReportData
+					img.DecodePayload(rep.Payload)
+					parsedReports = append(parsedReports, map[string]interface{}{
+						"taskType":     rep.Header.TaskType,
+						"missionId":    rep.Header.MissionID,
+						"chunkId":      img.ChunkID,
+						"data":         img.Data,
+						"isLastReport": rep.Header.IsLastReport,
+					})
+				case ml.TASK_SAMPLE_COLLECTION:
+					var sample ml.SampleReportData
+					sample.DecodePayload(rep.Payload)
+					comps := make([]map[string]interface{}, len(sample.Components))
+					for i, c := range sample.Components {
+						comps[i] = map[string]interface{}{
+							"name":       c.Name,
+							"percentage": c.Percentage,
+						}
+					}
+					parsedReports = append(parsedReports, map[string]interface{}{
+						"taskType":     rep.Header.TaskType,
+						"missionId":    rep.Header.MissionID,
+						"numSamples":   len(sample.Components),
+						"components":   comps,
+						"isLastReport": rep.Header.IsLastReport,
+					})
+				case ml.TASK_ENV_ANALYSIS:
+					var env ml.EnvReportData
+					env.DecodePayload(rep.Payload)
+					parsedReports = append(parsedReports, map[string]interface{}{
+						"taskType":     rep.Header.TaskType,
+						"missionId":    rep.Header.MissionID,
+						"temp":         env.Temp,
+						"oxygen":       env.Oxygen,
+						"pressure":     env.Pressure,
+						"humidity":     env.Humidity,
+						"windSpeed":    env.WindSpeed,
+						"radiation":    env.Radiation,
+						"isLastReport": rep.Header.IsLastReport,
+					})
+				case ml.TASK_REPAIR_RESCUE:
+					var repair ml.RepairReportData
+					repair.DecodePayload(rep.Payload)
+					parsedReports = append(parsedReports, map[string]interface{}{
+						"taskType":     rep.Header.TaskType,
+						"missionId":    rep.Header.MissionID,
+						"problemId":    repair.ProblemID,
+						"repairable":   repair.Repairable,
+						"isLastReport": rep.Header.IsLastReport,
+					})
+				case ml.TASK_TOPO_MAPPING:
+					var topo ml.TopoReportData
+					topo.DecodePayload(rep.Payload)
+					parsedReports = append(parsedReports, map[string]interface{}{
+						"taskType":     rep.Header.TaskType,
+						"missionId":    rep.Header.MissionID,
+						"latitude":     topo.Latitude,
+						"longitude":    topo.Longitude,
+						"height":       topo.Height,
+						"isLastReport": rep.Header.IsLastReport,
+					})
+				case ml.TASK_INSTALLATION:
+					var inst ml.InstallReportData
+					inst.DecodePayload(rep.Payload)
+					parsedReports = append(parsedReports, map[string]interface{}{
+						"taskType":     rep.Header.TaskType,
+						"missionId":    rep.Header.MissionID,
+						"success":      inst.Success,
+						"isLastReport": rep.Header.IsLastReport,
+					})
+				}
+			}
+			// If mission completed and has image chunks, assemble and include base64 image
+			assembled := m.AssembleImage()
+			entry := map[string]interface{}{
+				"id":         m.ID,
+				"state":      m.State,
+				"idRover":    m.IDRover,
+				"reports":    parsedReports,
+				"taskType":   m.TaskType,
+				"coordinate": m.Coordinate,
+			}
+			if len(assembled) > 0 {
+				b64 := base64.StdEncoding.EncodeToString(assembled)
+				// Attach assembled image to the last image report if present
+				for i, pr := range parsedReports {
+					if prmap, ok := pr.(map[string]interface{}); ok {
+						// Extract numeric taskType safely from interface{}
+						var tt uint8
+						switch v := prmap["taskType"].(type) {
+						case uint8:
+							tt = v
+						case uint16:
+							tt = uint8(v)
+						case int:
+							tt = uint8(v)
+						case float64:
+							tt = uint8(v)
+						default:
+							tt = 255
+						}
+						if tt == ml.TASK_IMAGE_CAPTURE {
+							if isLast, ok2 := prmap["isLastReport"].(bool); ok2 && isLast {
+								prmap["assembledImage"] = b64
+								parsedReports[i] = prmap
+								break
+							}
+						}
+					}
+				}
+				entry["assembledImage"] = b64
+			}
+			result = append(result, entry)
 		}
+		return result
 	})
 
-	// Endpoint: Obter rover específico por ID (com parâmetros)
-	ms.APIServer.RegisterEndpointWithParams("/api/rovers/{id}", "GET", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		vars := mux.Vars(r)
-		id, err := strconv.Atoi(vars["id"])
-		if err != nil {
-			http.Error(w, "ID inválido", http.StatusBadRequest)
-			return
-		}
-
-		rover := ms.RoverInfo.GetRover(uint8(id))
-		if rover == nil {
-			http.Error(w, "Rover não encontrado", http.StatusNotFound)
-			return
-		}
-		json.NewEncoder(w).Encode(rover)
-	})
-
-	// Endpoint: Obter missão específica por ID (com parâmetros)
-	ms.APIServer.RegisterEndpointWithParams("/api/missions/{id}", "GET", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		vars := mux.Vars(r)
-		id, err := strconv.Atoi(vars["id"])
-		if err != nil {
-			http.Error(w, "ID inválido", http.StatusBadRequest)
-			return
-		}
-
-		mission := ms.MissionManager.GetMission(uint16(id))
-		if mission == nil {
-			http.Error(w, "Missão não encontrada", http.StatusNotFound)
-			return
-		}
-		json.NewEncoder(w).Encode(mission)
-	})
-}
-
-// Funções auxiliares para estatísticas
-func (ms *MotherShip) countActiveRovers(rovers []*ts.RoverTSState) int {
-	count := 0
-	for _, r := range rovers {
-		if r.State == "Active" || r.State == "InMission" {
-			count++
-		}
-	}
-	return count
-}
-
-func (ms *MotherShip) countCompletedMissions(missions []*ml.MissionState) int {
-	count := 0
-	for _, m := range missions {
-		if m.State == "Completed" {
-			count++
-		}
-	}
-	return count
-}
-
-func (ms *MotherShip) countPendingMissions(missions []*ml.MissionState) int {
-	count := 0
-	for _, m := range missions {
-		if m.State == "Pending" {
-			count++
-		}
-	}
-	return count
-}
-
-func (ms *MotherShip) countInProgressMissions(missions []*ml.MissionState) int {
-	count := 0
-	for _, m := range missions {
-		if m.State == "InProgress" {
-			count++
-		}
-	}
-	return count
 }

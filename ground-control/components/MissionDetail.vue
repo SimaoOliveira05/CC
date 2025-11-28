@@ -107,10 +107,31 @@ const getReportComponent = (report) => {
     'TopoReport': TopoReportCard,
     'InstallReport': InstallReportCard
   };
-  
-  // Detectar tipo pelo constructor name ou taskType
-  const typeName = report.constructor.name;
-  return components[typeName] || 'div';
+
+  if (!report) return 'div';
+
+  // First try: instances constructed on the client (have constructor names)
+  const typeName = report.constructor && report.constructor.name;
+  if (typeName && components[typeName]) return components[typeName];
+
+  // Fallback: API returns plain objects; use numeric `taskType` field
+  const tt = report.taskType;
+  switch (tt) {
+    case 0:
+      return ImageReportCard;
+    case 1:
+      return SampleReportCard;
+    case 2:
+      return EnvReportCard;
+    case 3:
+      return RepairReportCard;
+    case 4:
+      return TopoReportCard;
+    case 5:
+      return InstallReportCard;
+    default:
+      return 'div';
+  }
 };
 </script>
 

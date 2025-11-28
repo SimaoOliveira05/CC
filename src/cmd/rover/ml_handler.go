@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"src/internal/ml"
 	pl "src/utils/packetsLogic"
 )
@@ -63,7 +64,7 @@ func (rover *Rover) receiver() {
 
 // sendReport serializa e envia um report para a mothership
 func (rover *Rover) sendReport(mission ml.MissionData, final bool) {
-	payload := buildReportPayload(mission, final)
+	payload := rover.buildReportPayload(mission, final)
 	if payload == nil {
 		return
 	}
@@ -98,40 +99,91 @@ func (rover *Rover) sendRequest() {
 	pl.PacketManager(rover.MLConn.Conn, rover.MLConn.Addr, req, rover.ML.Window)
 }
 
-// buildReportPayload cria o payload correto conforme o TaskType
-func buildReportPayload(mission ml.MissionData, final bool) []byte {
+func (rover *Rover) buildPayload(mission ml.MissionData) []byte {
 	var payload []byte
 	switch mission.TaskType {
 	case ml.TASK_IMAGE_CAPTURE:
-		r := ml.ImageReport{TaskType: ml.TASK_IMAGE_CAPTURE, MissionID: mission.MsgID, ChunkID: 1, Data: []byte("..."), IsLastReport: final}
-		payload = r.Encode()
-	case ml.TASK_SAMPLE_COLLECTION:
-		r := ml.SampleReport{
-			TaskType:   ml.TASK_SAMPLE_COLLECTION,
-			MissionID:  mission.MsgID,
-			NumSamples: 2,
-			Components: []ml.Component{
-				{Name: "H2O", Percentage: 60.0},
-				{Name: "SiO2", Percentage: 40.0},
-			}, IsLastReport: final,
+		img := ml.ImageReportData{
+			ChunkID: 1,
+			Data:    rover.Devices.Camera.ReadImageChunk(),
 		}
-
-		payload = r.Encode()
+		payload = img.EncodePayload()
+	case ml.TASK_SAMPLE_COLLECTION:
+		comps := rover.Devices.ChemicalAnalyzer.Analyze()
+		// Converter para ml.Component se necessário
+		mlComps := make([]ml.Component, len(comps))
+		for i, c := range comps {
+			mlComps[i] = ml.Component{Name: c.Name, Percentage: c.Percentage}
+		}
+		sample := ml.SampleReportData{
+			Components: mlComps,
+		}
+		payload = sample.EncodePayload()
 	case ml.TASK_ENV_ANALYSIS:
-		r := ml.EnvReport{TaskType: ml.TASK_ENV_ANALYSIS, MissionID: mission.MsgID, Temp: 23.5, Oxygen: 20.9, IsLastReport: final}
-		payload = r.Encode()
+		temp := rover.Devices.Thermometer.GetTemperature()
+		oxygen := rover.Devices.Thermometer.GetOxygen()
+		pressure := rover.Devices.Thermometer.GetPressure()
+		humidity := rover.Devices.Thermometer.GetHumidity()
+		wind := rover.Devices.Thermometer.GetWindSpeed()
+		radiation := rover.Devices.Thermometer.GetRadiation()
+		env := ml.EnvReportData{
+			Temp:      temp,
+			Oxygen:    oxygen,
+			Pressure:  pressure,
+			Humidity:  humidity,
+			WindSpeed: wind,
+			Radiation: radiation,
+		}
+		payload = env.EncodePayload()
 	case ml.TASK_REPAIR_RESCUE:
-		r := ml.RepairReport{TaskType: ml.TASK_REPAIR_RESCUE, MissionID: mission.MsgID, ProblemID: 1, Repairable: true, IsLastReport: final}
-		payload = r.Encode()
+		repair := ml.RepairReportData{
+			ProblemID:  uint8(rover.ID),
+			Repairable: true,
+		}
+		payload = repair.EncodePayload()
 	case ml.TASK_TOPO_MAPPING:
-		r := ml.TopoReport{TaskType: ml.TASK_TOPO_MAPPING, MissionID: mission.MsgID, Latitude: 41.545, Longitude: -8.421, Height: 54.3, IsLastReport: final}
-		payload = r.Encode()
+		pos := rover.Devices.GPS.GetPosition()
+		topo := ml.TopoReportData{
+			Latitude:  float32(pos.Latitude),
+			Longitude: float32(pos.Longitude),
+			Height:    rover.Devices.GPS.GetAltitude() + rand.Float32()*10.0,
+		}
+		payload = topo.EncodePayload()
 	case ml.TASK_INSTALLATION:
-		r := ml.InstallReport{TaskType: ml.TASK_INSTALLATION, MissionID: mission.MsgID, Success: true, IsLastReport: final}
-		payload = r.Encode()
+		// Installation can fail depending on battery level and randomness
+		battery := rover.Devices.Battery.GetLevel()
+		successChance := 0.9
+		if battery < 20 {
+			successChance = 0.7
+		} else if battery < 50 {
+			successChance = 0.8
+		}
+		success := rand.Float32() < float32(successChance)
+		inst := ml.InstallReportData{
+			Success: success,
+		}
+		payload = inst.EncodePayload()
 	default:
-		fmt.Printf("⚠️ TaskType desconhecido: %d\n", mission.TaskType)
-		return nil
+		payload = []byte("generic report")
 	}
+
 	return payload
+}
+
+// buildReportPayload creates a generic report payload for any mission type
+func (rover *Rover) buildReportPayload(mission ml.MissionData, final bool) []byte {
+	header := ml.ReportHeader{
+		TaskType:     mission.TaskType,
+		MissionID:    mission.MsgID,
+		IsLastReport: final,
+	}
+
+	payload := rover.buildPayload(mission)
+
+	report := ml.Report{
+		Header:  header,
+		Payload: payload,
+	}
+
+	return report.Encode()
 }

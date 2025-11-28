@@ -40,9 +40,9 @@ func NewRover(id uint8, mlConn *core.RoverMLConnection, updateFrequency uint) *R
 			Window:              pl.NewWindow(),
 		},
 		TS: &ts.RoverTSState{
-			State:   "Idle",
-			Battery: 100,
-			Speed:   0.0,
+			State:           "Idle",
+			Battery:         100,
+			Speed:           0.0,
 			UpdateFrequency: updateFrequency,
 		},
 
@@ -57,8 +57,10 @@ func NewRover(id uint8, mlConn *core.RoverMLConnection, updateFrequency uint) *R
 				Latitude:  1.000 + float64(id)*0.001,
 				Longitude: -1.000 + float64(id)*0.001,
 			}),
-			Thermometer: devices.NewMockThermometer(),
-			Battery:     devices.NewMockBattery(100),
+			Thermometer:      devices.NewMockThermometer(),
+			Battery:          devices.NewMockBattery(100),
+			Camera:           devices.NewMockCamera(),
+			ChemicalAnalyzer: devices.NewMockChemicalAnalyzer(),
 		},
 	}
 }
