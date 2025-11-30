@@ -17,14 +17,12 @@ type Event struct {
 type EventLogger struct {
     mu      sync.Mutex
     history []Event            // últimos N eventos
-    stream  chan Event         // eventos em tempo real
 	api *api.APIServer
 }
 
 func NewEventLogger(size int, api *api.APIServer) *EventLogger {
 	return &EventLogger{
 		history: make([]Event, 0, size), // manter histórico dos últimos N eventos
-		stream:  make(chan Event, 100),  // buffer para eventos em tempo real
 		api:    api,
 	}
 }
