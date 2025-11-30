@@ -103,11 +103,19 @@ import MissionCard from './components/MissionCard.vue';
 import MissionDetail from './components/MissionDetail.vue';
 import MapView from './components/MapView.vue';
 
-// Substitui 10.0.6.20 pelo IP que aparecer no terminal do nó
-const CORE_IP = '10.0.7.21'; 
+// Onde defines o URL da API
+// Antes tinhas algo como: const API_URL = "http://localhost:8080";
 
-const API_BASE = `http://${CORE_IP}:8080/api`;
-const WS_BASE = `ws://${CORE_IP}:8080/ws`; // (Confirma se a rota do WS é /ws ou /ws/telemetry)
+// Agora usa isto:
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
+console.log("Conectando à Nave Mãe em:", API_URL);
+
+// Usa API_URL nas tuas chamadas fetch ou WebSocket
+// Exemplo: new WebSocket(API_URL.replace("http", "ws") + "/ws");
+
+const API_BASE = `${API_URL}/api`;
+const WS_BASE = `${API_URL.replace("http", "ws")}/ws`; // (Confirma se a rota do WS é /ws ou /ws/telemetry)
 const rovers = ref([]);
 const missions = ref([]);
 const selectedMission = ref(null);

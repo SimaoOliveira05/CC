@@ -1,23 +1,31 @@
+# --- Configuração ---
+# Apenas o IP da Nave Mãe é variável. Default é localhost.
+MS_IP ?= 127.0.0.1
+
+# --- Build ---
 build:
+	@echo "🛠️  A compilar..."
 	go build -o bin/mothership ./cmd/mothership
 	go build -o bin/rover ./cmd/rover
 
+# --- Run ---
+
+# make run-mothership
 run-mothership:
-	@if [ -z "$(IP)" ]; then IP=127.0.0.1; fi; \
-    ./bin/mothership --mother-ip=$(IP)
+	@echo "🚀 Nave Mãe (IP Local / 0.0.0.0)"
+	./bin/mothership
 
+# make run-rover MS_IP=<IP_DA_NAVE_MAE>
 run-rover:
-	@if [ -z "$(MIP)" ]; then MIP=127.0.0.1; fi; \
-	if [ -z "$(RIP)" ]; then RIP=127.0.0.1; fi; \
-	./bin/rover --mother-ip=$(MIP) --rover-ip=$(RIP)
+	@echo "🤖 Rover a conectar a $(MS_IP)..."
+	./bin/rover -ms-ip=$(MS_IP)
 
-run-all:
-	@if [ -z "$(IPS)" ]; then IPS="127.0.0.1"; fi; \
-	gnome-terminal -- bash -c "./bin/mothership --mother-ip=$$(echo $(IPS) | awk '{print $$1}'); exec bash"; \
-	for ip in $(IPS); do \
-		gnome-terminal -- bash -c "./bin/rover --mother-ip=$$(echo $(IPS) | awk '{print $$1}') --rover-ip=$$ip; exec bash"; \
-		sleep 3; \
-	done
+# make run-gc MS_IP=<IP_DA_NAVE_MAE>
+run-gc:
+	@echo "🌍 Ground Control a conectar a http://$(MS_IP):8080..."
+	cd ../ground-control && \
+	VITE_API_URL="http://$(MS_IP):8080" \
+	npm run dev
 
 clean:
-	rm -f bin/mothership bin/rover
+	rm -rf bin/

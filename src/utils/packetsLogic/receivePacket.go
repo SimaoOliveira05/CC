@@ -1,7 +1,6 @@
 package packetslogic
 
 import (
-	"fmt"
 	"net"
 	"src/internal/ml"
 	"sync"
@@ -47,12 +46,16 @@ func HandleOrderedPacket(
 	processor PacketProcessor,
 	skipOrdering bool,
 	autoAck bool,
+	logf func(level string, msg string, meta any),
 ) {
 	// 1. Verificar checksum ANTES de adquirir lock
 	expectedChecksum := ml.Checksum(pkt.Payload)
 	if pkt.Checksum != expectedChecksum {
-		fmt.Printf("❌ Checksum inválido de %s: esperado %d, recebido %d. Pacote descartado.\n",
-			addr, expectedChecksum, pkt.Checksum)
+		logf("ERROR", "Checksum inválido, pacote descartado", map[string]any{
+			"addr":     addr.String(),
+			"expected": expectedChecksum,
+			"received": pkt.Checksum,
+		})
 		return
 	}
 
@@ -75,7 +78,7 @@ func HandleOrderedPacket(
 		go processor(pkt)
 		*expectedSeq++
 		if autoAck {
-			SendAck(conn, addr, seq, window, roverID)
+			SendAck(conn, addr, seq, window, roverID, logf)
 		}
 
 		// Processa pacotes bufferizados consecutivos
@@ -83,7 +86,7 @@ func HandleOrderedPacket(
 			if bufferedPkt, ok := buffer[*expectedSeq]; ok {
 				delete(buffer, *expectedSeq)
 				go processor(bufferedPkt)
-				SendAck(conn, addr, *expectedSeq, window, roverID)
+				SendAck(conn, addr, *expectedSeq, window, roverID, logf)
 				*expectedSeq++
 			} else {
 				break
@@ -93,10 +96,10 @@ func HandleOrderedPacket(
 	case seq > expected:
 		// Pacote fora de ordem - bufferiza e envia ACK cumulativo
 		buffer[seq] = pkt
-		SendAck(conn, addr, expected, window, roverID)
+		SendAck(conn, addr, expected, window, roverID, logf)
 
 	case seq < expected:
 		// Pacote duplicado - reenvia ACK
-		SendAck(conn, addr, seq, window, roverID)
+		SendAck(conn, addr, seq, window, roverID, logf)
 	}
 }

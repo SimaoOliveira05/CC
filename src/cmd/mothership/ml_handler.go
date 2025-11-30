@@ -34,7 +34,10 @@ func (ms *MotherShip) handlePacket(state *core.RoverState, pkt ml.Packet) {
 		processor,
 		pkt.MsgType == ml.MSG_ACK,
 		shouldAutoAck,
-	)
+		func(level, msg string, meta any) {
+			ms.EventLogger.Log(level, "ML", msg, meta)
+    	})
+	
 }
 
 // receiver lê continuamente pacotes UDP
@@ -183,7 +186,14 @@ func (ms *MotherShip) handleMissionRequest(pktSeqNum uint16, state *core.RoverSt
 		state.SeqNum++
 		state.WindowLock.Unlock()
 
-		pl.PacketManager(ms.Conn, state.Addr, pkt, state.Window)
+		pl.PacketManager(ms.Conn, 
+						state.Addr, 
+						pkt, 
+						state.Window, 
+						func(level, msg string, meta any) {
+        					ms.EventLogger.Log(level, "ML", msg, meta)
+    					})
+
 		fmt.Printf("✅ Missão %d enviada para %s\n", missionState.ID, state.Addr)
 
 		// Muda estado para "Moving to" após enviar a missão
@@ -209,7 +219,14 @@ func (ms *MotherShip) handleMissionRequest(pktSeqNum uint16, state *core.RoverSt
 		state.SeqNum++
 		state.WindowLock.Unlock()
 
-		pl.PacketManager(ms.Conn, state.Addr, noMissionPkt, state.Window)
+		pl.PacketManager(ms.Conn, 
+						state.Addr, 
+						noMissionPkt, 
+						state.Window,
+						func(level, msg string, meta any) {
+        					ms.EventLogger.Log(level, "ML", msg, meta)
+    					})
+
 		return
 	}
 }
@@ -250,7 +267,13 @@ func (ms *MotherShip) sendNoMission(state *core.RoverState) {
 	state.SeqNum++
 	state.WindowLock.Unlock()
 
-	pl.PacketManager(ms.Conn, state.Addr, noMissionPkt, state.Window)
+	pl.PacketManager(ms.Conn, 
+					state.Addr, 
+					noMissionPkt, 
+					state.Window,
+					func(level, msg string, meta any) {
+						ms.EventLogger.Log(level, "ML", msg, meta)
+					})
 }
 
 // handleReport processa relatórios dos rovers

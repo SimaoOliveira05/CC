@@ -37,6 +37,9 @@ func (rover *Rover) handlePacket(pkt ml.Packet) {
 		processor,
 		pkt.MsgType == ml.MSG_ACK, // ✅ Skip ordering para ACKs
 		true,
+		func(level, msg string, meta any) {
+        	fmt.Printf("[%s] %s %+v\n", level, msg, meta)
+    	},
 	)
 }
 
@@ -82,7 +85,13 @@ func (rover *Rover) sendReport(mission ml.MissionData, final bool) {
 		Payload:  payload,
 	}
 
-	pl.PacketManager(rover.MLConn.Conn, rover.MLConn.Addr, pkt, rover.ML.Window)
+	pl.PacketManager(rover.MLConn.Conn, 
+					rover.MLConn.Addr, 
+					pkt, 
+					rover.ML.Window,
+					func(level, msg string, meta any) {
+						fmt.Printf("[%s] %s %+v\n", level, msg, meta)
+					})
 }
 
 // sendRequest envia um pedido de missão para a mothership
@@ -99,7 +108,13 @@ func (rover *Rover) sendRequest() {
 		Payload:  []byte{},
 	}
 
-	pl.PacketManager(rover.MLConn.Conn, rover.MLConn.Addr, req, rover.ML.Window)
+	pl.PacketManager(rover.MLConn.Conn, 
+					rover.MLConn.Addr, 
+					req, 
+					rover.ML.Window,	
+					func(level, msg string, meta any) {
+						fmt.Printf("[%s] %s %+v\n", level, msg, meta)
+					})
 }
 
 func (rover *Rover) buildPayload(mission ml.MissionData) []byte {

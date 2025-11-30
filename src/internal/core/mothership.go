@@ -10,6 +10,7 @@ import (
 	"src/internal/ts"
 	pl "src/utils/packetsLogic"
 	"sync"
+	el "src/internal/eventLogger"
 
 	"fmt"
 	"os"
@@ -32,6 +33,7 @@ type MotherShip struct {
 	MissionQueue   chan ml.MissionState
 	Mu             sync.Mutex
 	RoverInfo      *ts.RoverManager
+	EventLogger    *el.EventLogger
 	APIServer      *api.APIServer // ✅ Campo para o API Server
 }
 
@@ -43,6 +45,7 @@ func NewMotherShip() *MotherShip {
 		MissionQueue:   make(chan ml.MissionState, 100),
 		Mu:             sync.Mutex{},
 		RoverInfo:      ts.NewRoverManager(),
+		APIServer:      api.NewAPIServer(),
 	}
 
 	err := loadMissionsFromJSON("missions.json", ms.MissionQueue)
@@ -51,8 +54,7 @@ func NewMotherShip() *MotherShip {
 		return nil
 	}
 
-	// Inicializa o APIServer
-	ms.APIServer = api.NewAPIServer()
+	ms.EventLogger = el.NewEventLogger(1000, ms.APIServer)
 
 	// Configura os endpoints com os dados da mothership
 	ms.setupAPIEndpoints()
@@ -93,6 +95,10 @@ func (ms *MotherShip) setupAPIEndpoints() {
 	// Endpoint: Lista todos os rovers
 	ms.APIServer.RegisterEndpoint("/api/rovers", "GET", func() interface{} {
 		return ms.RoverInfo.ListRovers()
+	})
+
+	ms.APIServer.RegisterEndpoint("/logs", "GET", func() interface{} {
+		return ms.EventLogger.GetHistory()
 	})
 
 	// Endpoint: Lista todas as missões

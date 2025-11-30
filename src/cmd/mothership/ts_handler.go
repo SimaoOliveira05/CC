@@ -82,6 +82,7 @@ func (ms *MotherShip) handleMissedTelemetry(roverID uint8, missed, maxMissed int
 
 	if missed >= maxMissed {
 		ms.RoverInfo.UpdateRover(roverID, "Inoperacional", rover.Battery, rover.Speed, rover.Position, missed)
+		ms.EventLogger.Log("ERROR", "TS", fmt.Sprintf("Rover %d declarado inoperacional por falta de telemetria", roverID), nil)
 		fmt.Printf("❌ Rover %d marcado como inoperacional\n", roverID)
 	} else {
 		// Atualização parcial sem mexer no resto

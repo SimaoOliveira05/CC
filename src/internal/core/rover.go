@@ -13,7 +13,6 @@ import (
 type RoverBase struct {
 	ID          uint8
 	Coordinates utils.Coordinate // Mover de utils para core
-	mu          sync.RWMutex
 }
 
 type RoverMLState struct {

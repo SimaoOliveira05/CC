@@ -84,12 +84,13 @@ func SendPacketUDP(conn *net.UDPConn, addr *net.UDPAddr, packet ml.Packet) error
 }
 
 // packetManager gerencia o envio e retransmissão de um pacote até receber o ACK
-func PacketManager(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *Window) {
+func PacketManager(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *Window, logf func(level string, msg string, meta any)) {
 
 	if(pkt.MsgType == ml.MSG_ACK){
 		fmt.Printf("📤 ACK enviado, AckNum: %d\n", pkt.AckNum)
 		if err := SendPacketUDP(conn, addr, pkt); err != nil {
 			fmt.Println("❌ Erro ao enviar pacote:", err)
+			logf("ERROR", "Falha ao enviar ACK", err)
 			return
 		}
 		return
@@ -108,6 +109,7 @@ func PacketManager(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *
 
         if err := SendPacketUDP(conn, addr, pkt); err != nil {
 			fmt.Println("❌ Erro ao enviar pacote:", err)
+			logf("ERROR", "Falha ao enviar pacote", err)
 			return
 		}
 
@@ -133,15 +135,24 @@ func PacketManager(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *
 			retries++
 			if retries > maxRetries {
 				fmt.Printf("❌ Falha ao receber ACK para SeqNum %d após %d tentativas. Abortando...\n", pkt.SeqNum, maxRetries)
+				logf("ERROR", "Falha após todas as tentativas", map[string]any{
+					"seq": pkt.SeqNum,
+					"maxRetries": maxRetries,
+				})
 				return
 			}
 			fmt.Printf("⏱️ Timeout esperando ACK para SeqNum %d. Retransmitindo (tentativa %d)...\n", pkt.SeqNum, retries)
+			logf("WARN", "Timeout, retransmissão", map[string]any{
+				"seq": pkt.SeqNum,
+				"retry": retries,
+				"rto": rto,
+			})
         }
     }
 }
 
 
-func SendAck(conn *net.UDPConn, addr *net.UDPAddr, ackNum uint16, window *Window, roverId uint8) {
+func SendAck(conn *net.UDPConn, addr *net.UDPAddr, ackNum uint16, window *Window, roverId uint8, logf func(level string, msg string, meta any)) {
 	ackPacket := ml.Packet{
 		RoverId: roverId,
 		MsgType: ml.MSG_ACK,
@@ -150,7 +161,7 @@ func SendAck(conn *net.UDPConn, addr *net.UDPAddr, ackNum uint16, window *Window
 		Payload: []byte{},
 	}
 
-	PacketManager(conn, addr, ackPacket, window)
+	PacketManager(conn, addr, ackPacket, window, logf)
 }
 
 

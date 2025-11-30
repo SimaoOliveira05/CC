@@ -2,130 +2,43 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"src/config"
 	"src/internal/core"
-	"src/internal/devices"
 	"src/internal/ml"
-	"src/internal/ts"
-	"src/utils"
-	pl "src/utils/packetsLogic"
-	"sync"
 	"time"
 )
 
 type Rover struct {
-	*core.RoverBase
-	ML         *core.RoverMLState
-	TS         *ts.RoverTSState
-	MLConn     *core.RoverMLConnection
-	Devices    *core.Devices
-	CurrentPos utils.Coordinate
+	*core.RoverSystem
 }
 
-func NewRover(id uint8, mlConn *core.RoverMLConnection, updateFrequency uint) *Rover {
-	return &Rover{
-		RoverBase: &core.RoverBase{
-			ID: id,
-		},
-		ML: &core.RoverMLState{
-			ActiveMissions:      0,
-			Cond:                sync.NewCond(&sync.Mutex{}),
-			CondMu:              sync.Mutex{},
-			ExpectedSeq:         0,
-			Waiting:             false,
-			MissionReceivedChan: make(chan bool, 1),
-			Buffer:              make(map[uint16]ml.Packet),
-			BufferMu:            sync.Mutex{},
-			Window:              pl.NewWindow(),
-		},
-		TS: &ts.RoverTSState{
-			State:           "Idle",
-			Battery:         100,
-			Speed:           0.0,
-			UpdateFrequency: updateFrequency,
-		},
 
-		MLConn: mlConn,
-		CurrentPos: utils.Coordinate{
-			Latitude:  1.000 + float64(id)*0.001,
-			Longitude: -1.000 + float64(id)*0.001,
-		},
-
-		Devices: &core.Devices{
-			GPS: devices.NewMockGPS(utils.Coordinate{
-				Latitude:  1.000 + float64(id)*0.001,
-				Longitude: -1.000 + float64(id)*0.001,
-			}),
-			Thermometer:      devices.NewMockThermometer(),
-			Battery:          devices.NewMockBattery(100),
-			Camera:           devices.NewMockCamera(),
-			ChemicalAnalyzer: devices.NewMockChemicalAnalyzer(),
-		},
-	}
-}
-
-func initConnection(mothershipAddr string) (*core.RoverMLConnection, error) {
-	// Resolve o endereço da nave-mãe
-	motherAddr, err := net.ResolveUDPAddr("udp", mothershipAddr+":9999")
-	if err != nil {
-		return nil, fmt.Errorf("erro ao resolver endereço UDP da nave-mãe: %v", err)
-	}
-
-	// Abre uma porta UDP local (porta 0 = qualquer porta livre)
-	roverConn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 0})
-	if err != nil {
-		return nil, fmt.Errorf("erro ao criar conexão UDP: %v", err)
-	}
-
-	fmt.Printf("✅ Conexão UDP aberta na porta %d\n", roverConn.LocalAddr().(*net.UDPAddr).Port)
-
-	RoverMlConection := core.RoverMLConnection{
-		Conn: roverConn,
-		Addr: motherAddr,
-	}
-
-	return &RoverMlConection, nil
-}
 
 func main() {
-
-	// Inicializa configuração (isRover = true)
-	config.InitConfig(true)
+	config.InitConfig(true) // Lê flag -ms-ip
 	config.PrintConfig()
 
-	// Inicia conexão com a nave-mãe
-	mothershipAddr := config.GetMotherIP()
+	// 1. Obter endereço da mãe (IP da flag + Porta Fixa 9999)
+	motherUDPAddr := config.GetMotherUDPAddr()
+	motherIP := config.GlobalConfig.MotherIP
 
-	// 🆔 Solicita ID à nave-mãe via TCP
-	roverID, updateFrequency, err := requestID(mothershipAddr)
-	if err != nil {
-		fmt.Println("❌ Erro ao obter ID:", err)
-		return
+	rover := Rover{
+		RoverSystem: core.NewRoverSystem(
+			motherUDPAddr,
+			motherIP,
+		),
 	}
 
-	// Inicia conexão UDP com a nave-mãe
-	roverConn, err := initConnection(mothershipAddr)
-	if err != nil {
-		fmt.Println("❌ Erro ao inicializar conexão:", err)
-		return
-	}
-	defer roverConn.Conn.Close()
-
-	// Cria o Rover
-	rover := NewRover(roverID, roverConn, updateFrequency)
-
-	// Inicia o receiver de pacotes
 	go rover.receiver()
+	go rover.telemetrySender(motherIP) // Telemetria usa porta fixa 9998 internamente?
 
-	go rover.telemetrySender(config.GetMotherIP())
-
-	// Loop principal
 	for {
-		// Gerencia missões
 		rover.manageMissions()
 	}
 }
+
+
+
 
 func (rover *Rover) generate(mission ml.MissionData) {
 

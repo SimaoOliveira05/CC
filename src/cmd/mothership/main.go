@@ -7,34 +7,25 @@ import (
 )
 
 type MotherShip struct {
-	*core.MotherShip // Embedding - herda todos os campos
+	*core.MotherShip
 }
 
-
-
 func main() {
+	// A mothership pode não usar o IP para nada crítico, mas inicializamos o config na mesma
 	config.InitConfig(false)
 	config.PrintConfig()
 
-	fmt.Println("🛰️ Nave-Mãe à escuta...")
+	fmt.Println("🛰️ Nave-Mãe a iniciar nos portos padrão...")
 
-	// Cria o estado da Nave-Mãe
 	mothership := MotherShip{
 		MotherShip: core.NewMotherShip(),
 	}
 
-	// ✅ Inicia API Server para Ground Control (já foi criado no construtor)
-	
-	go mothership.APIServer.Start("8080")
+	// 🔒 PORTAS FIXAS (Hardcoded)
+	go mothership.APIServer.Start("8080")       // API Ground Control
+	go mothership.idAssignmentServer("9997")    // TCP ID Attribution
+	go mothership.receiver("9999")              // UDP Communication
+	go mothership.telemetryReceiver("9998")     // TCP Telemetry
 
-	// Servidor de atribuição de IDs (TCP)
-	go mothership.idAssignmentServer("9997")
-
-	// Goroutine para ler pacotes UDP
-	go mothership.receiver("9999")
-
-	go mothership.telemetryReceiver("9998")
-
-	// Loop infinito
 	select {}
 }
