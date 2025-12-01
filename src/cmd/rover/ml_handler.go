@@ -162,8 +162,8 @@ func (rover *Rover) buildPayload(mission ml.MissionData) []byte {
 	case ml.TASK_TOPO_MAPPING:
 		pos := rover.Devices.GPS.GetPosition()
 		topo := ml.TopoReportData{
-			Latitude:  float32(pos.Latitude),
-			Longitude: float32(pos.Longitude),
+			Latitude:  pos.Latitude,
+			Longitude: pos.Longitude,
 			Height:    rover.Devices.GPS.GetAltitude() + rand.Float32()*10.0,
 		}
 		payload = topo.EncodePayload()

@@ -4,26 +4,30 @@ import (
 	"math/rand"
 )
 
+// Camera interface
 type Camera interface {
 	ReadImageChunk() []byte
 }
 
+// MockCamera simulate a device camera for testing purposes
 type MockCamera struct{}
 
+// NewMockCamera creates a new MockCamera
 func NewMockCamera() *MockCamera {
 	return &MockCamera{}
 }
 
+// ReadImageChunk simulates reading a chunk of image data
 func (c *MockCamera) ReadImageChunk() []byte {
-	// Simula a leitura de um chunk de imagem retornando bytes aleatórios
+	// Simulate reading a chunk of image data by returning random bytes
 	size := 1024
 	chunk := make([]byte, size)
 	_, err := rand.Read(chunk)
 	if err != nil {
-		// Em caso de erro, retorna um slice vazio
+		// In case of error, return an empty slice
 		return []byte{}
 	}
-	// Simula uma chance de falha na leitura
+	// Simulate a chance of read failure
 	if rand.Float32() < 0.1 {
 		return []byte{}
 	}

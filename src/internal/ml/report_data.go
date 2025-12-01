@@ -259,25 +259,25 @@ func (r *RepairReportData) DecodePayload(payload []byte) {
 // ====== TOPOGRAPHIC MAPPING DATA ======
 // TopoReportData holds data for topographic mapping reports.
 type TopoReportData struct {
-    Latitude  float32   // Latitude of the mapped point
-    Longitude float32   // Longitude of the mapped point
+    Latitude  float64   // Latitude of the mapped point
+    Longitude float64   // Longitude of the mapped point
     Height    float32   // Height/elevation in meters
 }
 
 // EncodePayload serializes the TopoReportData into bytes.
 func (t *TopoReportData) EncodePayload() []byte {
     payload := make([]byte, 12)
-    binary.BigEndian.PutUint32(payload[0:4], math.Float32bits(t.Latitude))
-    binary.BigEndian.PutUint32(payload[4:8], math.Float32bits(t.Longitude))
-    binary.BigEndian.PutUint32(payload[8:12], math.Float32bits(t.Height))
+    binary.BigEndian.PutUint64(payload[0:8], math.Float64bits(t.Latitude))
+    binary.BigEndian.PutUint64(payload[8:16], math.Float64bits(t.Longitude))
+    binary.BigEndian.PutUint32(payload[16:20], math.Float32bits(t.Height))
     return payload
 }
 
 // DecodePayload deserializes bytes into TopoReportData.
 func (t *TopoReportData) DecodePayload(payload []byte) {
-    t.Latitude = math.Float32frombits(binary.BigEndian.Uint32(payload[0:4]))
-    t.Longitude = math.Float32frombits(binary.BigEndian.Uint32(payload[4:8]))
-    t.Height = math.Float32frombits(binary.BigEndian.Uint32(payload[8:12]))
+    t.Latitude = math.Float64frombits(binary.BigEndian.Uint64(payload[0:8]))
+    t.Longitude = math.Float64frombits(binary.BigEndian.Uint64(payload[8:16]))
+    t.Height = math.Float32frombits(binary.BigEndian.Uint32(payload[16:20]))
 }
 
 // ====== INSTRUMENT INSTALLATION DATA ======

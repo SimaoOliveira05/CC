@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+// Battery interface
+type Battery interface {
+	GetLevel() uint8
+	IsCharging() bool
+}
+
+// MockBattery simulate a device battery for testing purposes
 type MockBattery struct {
 	level     uint8
 	charging  bool
@@ -12,6 +19,7 @@ type MockBattery struct {
 	mu        sync.Mutex
 }
 
+// NewMockBattery creates a new MockBattery with the specified initial level
 func NewMockBattery(initialLevel uint8) *MockBattery {
 	return &MockBattery{
 		level:     initialLevel,
@@ -20,13 +28,14 @@ func NewMockBattery(initialLevel uint8) *MockBattery {
 	}
 }
 
+// GetLevel returns the current battery level (0-100)
 func (b *MockBattery) GetLevel() uint8 {
-	// Simula descarga gradual baseada em segundos (para testes mais rápidos)
+	// Simulate battery drain over time
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	elapsedSec := time.Since(b.lastCheck).Seconds()
 	if !b.charging && elapsedSec > 0.5 {
-		// Drain rate: 0.5% por segundo (aprox 30% por minuto)
+		// Drain rate: 0.5% per second (approx 30% per minute)
 		drain := uint8(elapsedSec * 0.5)
 		if drain > 0 {
 			if b.level > drain {
@@ -40,14 +49,12 @@ func (b *MockBattery) GetLevel() uint8 {
 	return b.level
 }
 
+// IsCharging returns whether the battery is currently charging
 func (b *MockBattery) IsCharging() bool {
 	return b.charging
 }
 
-func (b *MockBattery) SetCharging(charging bool) {
-	b.charging = charging
-}
-
+// SetLevel sets the battery level (0-100)
 func (b *MockBattery) SetLevel(level uint8) {
 	b.mu.Lock()
 	defer b.mu.Unlock()

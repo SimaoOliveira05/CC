@@ -6,12 +6,12 @@ import (
 	"sync"
 )
 
-// handleACK processa confirmações de entrega
+// handleACK processes delivery acknowledgments and updates the sliding window
 func HandleAck(p ml.Packet, window *Window) {
 	window.Mu.Lock()
 	for i := window.LastAckReceived + 1; i < int16(p.AckNum); i++ {
 		if ch, exists := window.Window[uint32(i)]; exists {
-			ch <- 1 // Sinaliza o ACK recebido
+			ch <- 1 // Signal ACK received
 			delete(window.Window, uint32(i))
 		}
 	}
@@ -19,21 +19,21 @@ func HandleAck(p ml.Packet, window *Window) {
 	window.Mu.Unlock()
 }
 
-// PacketProcessor é a função callback para processar um pacote após ordenação
+// PacketProcessor is the callback function to process a packet after ordering
 type PacketProcessor func(pkt ml.Packet)
 
-// HandleOrderedPacket processa pacotes com ordenação e verificação de checksum
-// Parâmetros:
-//   - pkt: pacote recebido
-//   - expectedSeq: ponteiro para o número de sequência esperado
-//   - buffer: buffer de pacotes fora de ordem
-//   - mu: mutex para proteger acesso ao estado
-//   - conn: conexão UDP
-//   - addr: endereço do remetente
-//   - window: janela de controlo de fluxo
-//   - roverID: ID do rover (0 para MotherShip)
-//   - processor: função callback para processar o pacote
-//   - skipOrdering: se true, processa sem ordenação (ex: ACKs)
+// HandleOrderedPacket processes packets with ordering and checksum verification
+// Parameters:
+//   - pkt: received packet
+//   - expectedSeq: pointer to the expected sequence number
+//   - buffer: buffer for out-of-order packets
+//   - mu: mutex to protect state access
+//   - conn: UDP connection
+//   - addr: sender's address
+//   - window: flow control window
+//   - roverID: rover ID (0 for MotherShip)
+//   - processor: callback function to process the packet
+//   - skipOrdering: if true, process without ordering (e.g., ACKs)
 func HandleOrderedPacket(
 	pkt ml.Packet,
 	expectedSeq *uint16,
@@ -48,10 +48,10 @@ func HandleOrderedPacket(
 	autoAck bool,
 	logf func(level string, msg string, meta any),
 ) {
-	// 1. Verificar checksum ANTES de adquirir lock
+	// Verify checksum before any processing
 	expectedChecksum := ml.Checksum(pkt.Payload)
 	if pkt.Checksum != expectedChecksum {
-		logf("ERROR", "Checksum inválido, pacote descartado", map[string]any{
+		logf("ERROR", "Invalid checksum, packet discarded", map[string]any{
 			"addr":     addr.String(),
 			"expected": expectedChecksum,
 			"received": pkt.Checksum,
@@ -59,13 +59,13 @@ func HandleOrderedPacket(
 		return
 	}
 
-	// 2. Se for para processar sem ordenação (ACKs), processa diretamente
+	// If processing without ordering (ACKs), process directly
 	if skipOrdering {
 		go processor(pkt)
 		return
 	}
 
-	// 3. Lógica de ordenação com janela deslizante
+	// Sliding window ordering logic
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -74,14 +74,14 @@ func HandleOrderedPacket(
 
 	switch {
 	case seq == expected:
-		// Pacote esperado - processa e avança janela
+		// Expected packet - process and advance window
 		go processor(pkt)
 		*expectedSeq++
 		if autoAck {
 			SendAck(conn, addr, seq, window, roverID, logf)
 		}
 
-		// Processa pacotes bufferizados consecutivos
+		// Process consecutive buffered packets
 		for {
 			if bufferedPkt, ok := buffer[*expectedSeq]; ok {
 				delete(buffer, *expectedSeq)
@@ -94,12 +94,12 @@ func HandleOrderedPacket(
 		}
 
 	case seq > expected:
-		// Pacote fora de ordem - bufferiza e envia ACK cumulativo
+		// Out-of-order packet - buffer and send cumulative ACK
 		buffer[seq] = pkt
 		SendAck(conn, addr, expected, window, roverID, logf)
 
 	case seq < expected:
-		// Pacote duplicado - reenvia ACK
+		// Duplicate packet - resend ACK
 		SendAck(conn, addr, seq, window, roverID, logf)
 	}
 }
