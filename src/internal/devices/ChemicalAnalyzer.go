@@ -2,7 +2,7 @@ package devices
 
 import "math/rand"
 
-// Lista completa dos elementos químicos
+// List of chemical elements' symbols
 var ChemicalElementList = []string{
 	"H", "He", 
 	"Li", "Be", "B", "C", "N", "O", "F", "Ne", 
@@ -13,24 +13,26 @@ var ChemicalElementList = []string{
 	"Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og",
 }
 
-
-
-
+// ChemicalAnalyzer interface
 type ChemicalAnalyzer interface {
 	Analyze() []Component
 }
 
+// Component represents a chemical component with its name and percentage
 type Component struct {
 	Name       string
 	Percentage float32
 }
 
+// MockChemicalAnalyzer simulates a chemical analyzer device for testing purposes
 type MockChemicalAnalyzer struct{}
 
+// NewMockChemicalAnalyzer creates a new MockChemicalAnalyzer
 func NewMockChemicalAnalyzer() *MockChemicalAnalyzer {
 	return &MockChemicalAnalyzer{}
 }
 
+// Analyze simulates the analysis of a sample and returns random components
 func (a *MockChemicalAnalyzer) Analyze() []Component {
 	num := rand.Intn(5) + 2
 	comps := make([]Component, num)
