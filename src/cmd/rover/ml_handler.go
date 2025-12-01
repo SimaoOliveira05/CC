@@ -48,7 +48,7 @@ func (rover *Rover) processMission(pkt ml.Packet) {
 	rover.ML.MissionReceivedChan <- true
 	var mission ml.MissionData
 	mission = mission.Decode(pkt.Payload)
-	go rover.generate(mission)
+	go rover.ExecuteMission(mission)
 }
 
 func (rover *Rover) receiver() {
