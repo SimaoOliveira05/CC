@@ -7,101 +7,98 @@ import (
 	"src/internal/core"
 )
 
-
+// ExecuteMission processes a single mission: moves to location, performs task, and sends reports
 func (rover *Rover) ExecuteMission(mission ml.MissionData) {
-
+	// Increment active missions counter
 	rover.IncrementActiveMission()
 	defer rover.DecrementActiveMission()
 
-	fmt.Printf("🎯 Missão %d recebida: TaskType=%d\n", mission.MsgID, mission.TaskType)
+	fmt.Printf("🎯 Mission %d received: TaskType=%d\n", mission.MsgID, mission.TaskType)
 
-	// 1. Move para a localização da missão
-	fmt.Printf("🚀 Movendo para coordenadas (%.4f, %.4f)\n", mission.Coordinate.Latitude, mission.Coordinate.Longitude)
+	// Move to mission location
+	fmt.Printf("🚀 Moving to coordinates (%.4f, %.4f)\n", mission.Coordinate.Latitude, mission.Coordinate.Longitude)
 	if err := core.MoveTo(
 		&rover.RoverBase.CurrentPos,
 		mission.Coordinate,
 		rover.Devices.GPS,
 		rover.Devices.Battery,
 	); err != nil {
-		fmt.Printf("❌ Erro ao mover: %v\n", err)
+		fmt.Printf("❌ Error moving: %v\n", err)
 		return
 	}
-	fmt.Printf("✅ Chegou ao destino. Iniciando tarefa...\n")
+	fmt.Printf("✅ Arrived at destination. Starting task...\n")
 
-	// 2. Executa a tarefa com timer
+	// Execute the task with timer
 	deadline := time.NewTimer(time.Duration(mission.Duration) * time.Second)
 	defer deadline.Stop()
 
 	if mission.UpdateFrequency > 0 {
-		// Modo periódico: enviar reports a cada UpdateFrequency
+		// Periodic mode: send reports every UpdateFrequency
 		ticker := time.NewTicker(time.Duration(mission.UpdateFrequency) * time.Second)
 		defer ticker.Stop()
 
 		for {
 			select {
-
 			case <-deadline.C:
-				// Termina quando Duration expirar
-
+				// Ends when Duration expires
 				rover.sendReport(mission, true)
 				return
 			case <-ticker.C:
-				// Enviar report periódico
+				// Send periodic report
 				rover.sendReport(mission, false)
 			}
 		}
 	} else {
-		// Modo sem updates: apenas espera Duration e envia um report final
+		// No updates mode: just wait for Duration and send a final report
 		<-deadline.C
-		// Termina quando Duration expirar
+		// Ends when Duration expires
 		rover.sendReport(mission, true)
 	}
 
-	// 3. Consome bateria da execução da tarefa
+	// Consume battery for task execution
 	core.ConsumeBattery(rover.Devices.Battery, core.TaskBatteryRate)
 }
 
-
+// manageMissions handles mission requests and execution flow
 func (rover *Rover) manageMissions() {
 	for {
-		// Espera até que não haja missões ativas
+		// Wait until there are no active missions
 		rover.ML.Cond.L.Lock()
 		for rover.GetActiveMissions() != 0 {
-			rover.ML.Cond.Wait() // Espera até todas as missões acabarem
+			rover.ML.Cond.Wait() // Wait until all missions are finished
 		}
 		rover.ML.Cond.L.Unlock()
 
-		// Se não estiver à espera de missões, request de novas missões
+		// If not waiting for missions, request new missions
 		if !rover.ML.Waiting {
 			rover.sendRequest()
 			print("")
 			received := <-rover.ML.MissionReceivedChan
-			if received { //Nave-mãe enviou missões
+			if received { // Mothership sent missions
 				rover.ML.Waiting = true
-			} else {
-				// Nave mãe não tem missões para enviar, esperamos 5 segundos para pedir outra vez
-				fmt.Println("🚫 Sem missões disponíveis.")
+			} else { // Mothership has no missions to send, wait 5 seconds before requesting again
+				fmt.Println("🚫 No missions available.")
 				time.Sleep(5 * time.Second)
 			}
 		}
 	}
 }
 
-// Para alterar a flag:
+// IncrementActiveMission increments the active missions counter
 func (rover *Rover) IncrementActiveMission() {
 	rover.ML.CondMu.Lock()
 	defer rover.ML.CondMu.Unlock()
 	rover.ML.ActiveMissions++
 }
 
-// Para ler a flag:
+// GetActiveMissions returns the number of active missions
 func (rover *Rover) GetActiveMissions() uint8 {
 	rover.ML.CondMu.Lock()
 	defer rover.ML.CondMu.Unlock()
 	return rover.ML.ActiveMissions
 }
 
-// Para decrementar a flag:
+// DecrementActiveMission decrements the active missions counter
 func (rover *Rover) DecrementActiveMission() {
 	rover.ML.CondMu.Lock()
 	defer rover.ML.CondMu.Unlock()

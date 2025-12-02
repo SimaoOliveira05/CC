@@ -1,18 +1,18 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
-	"encoding/json"
 )
 
 // Port configuration variables
 var (
-    API_PORT           string
-    TCP_ID_PORT        string
-    UDP_COMM_PORT      string
-    TCP_TELEMETRY_PORT string
+	API_PORT           string
+	TCP_ID_PORT        string
+	UDP_COMM_PORT      string
+	TCP_TELEMETRY_PORT string
 )
 
 // Config holds the global configuration settings
@@ -42,32 +42,42 @@ func InitConfig(isRover bool, print bool) {
 		UDP_COMM_PORT      int `json:"UDP_COMM_PORT"`
 		TCP_TELEMETRY_PORT int `json:"TCP_TELEMETRY_PORT"`
 	}{}
-	
+
 	// Decode JSON configuration
-	if err:= json.NewDecoder(file).Decode(&conf); err != nil {
+	if err := json.NewDecoder(file).Decode(&conf); err != nil {
 		panic(err)
 	}
 
 	// Assign ports to global variables
-    API_PORT = fmt.Sprintf("%d", conf.API_PORT)
-    TCP_ID_PORT = fmt.Sprintf("%d", conf.TCP_ID_PORT)
-    UDP_COMM_PORT = fmt.Sprintf("%d", conf.UDP_COMM_PORT)
-    TCP_TELEMETRY_PORT = fmt.Sprintf("%d", conf.TCP_TELEMETRY_PORT)
+	API_PORT = fmt.Sprintf("%d", conf.API_PORT)
+	TCP_ID_PORT = fmt.Sprintf("%d", conf.TCP_ID_PORT)
+	UDP_COMM_PORT = fmt.Sprintf("%d", conf.UDP_COMM_PORT)
+	TCP_TELEMETRY_PORT = fmt.Sprintf("%d", conf.TCP_TELEMETRY_PORT)
 
 	if print {
-        PrintConfig()
-    }
+		PrintConfig()
+	}
 }
 
 // PrintConfig prints the current configuration settings
 func PrintConfig() {
-    println("API_PORT:", API_PORT)
-    println("TCP_ID_PORT:", TCP_ID_PORT)
-    println("UDP_COMM_PORT:", UDP_COMM_PORT)
-    println("TCP_TELEMETRY_PORT:", TCP_TELEMETRY_PORT)
+	println("API_PORT:", API_PORT)
+	println("TCP_ID_PORT:", TCP_ID_PORT)
+	println("UDP_COMM_PORT:", UDP_COMM_PORT)
+	println("TCP_TELEMETRY_PORT:", TCP_TELEMETRY_PORT)
 }
 
-// Helper to get the full UDP address of the Mother Ship (fixed port 9999)
+// GetMotherUDPAddr returns the full UDP address for communication
 func GetMotherUDPAddr() string {
-	return fmt.Sprintf("%s:9999", GlobalConfig.MotherIP)
+	return GlobalConfig.MotherIP + ":" + UDP_COMM_PORT
+}
+
+// GetMotherTCPIDAddr returns the full TCP address for ID assignment
+func GetMotherTCPIDAddr() string {
+	return GlobalConfig.MotherIP + ":" + TCP_ID_PORT
+}
+
+// GetMotherTelemetryAddr returns the full TCP address for telemetry
+func GetMotherTelemetryAddr() string {
+	return GlobalConfig.MotherIP + ":" + TCP_TELEMETRY_PORT
 }

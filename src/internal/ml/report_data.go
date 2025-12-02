@@ -266,7 +266,7 @@ type TopoReportData struct {
 
 // EncodePayload serializes the TopoReportData into bytes.
 func (t *TopoReportData) EncodePayload() []byte {
-    payload := make([]byte, 12)
+    payload := make([]byte, 20)
     binary.BigEndian.PutUint64(payload[0:8], math.Float64bits(t.Latitude))
     binary.BigEndian.PutUint64(payload[8:16], math.Float64bits(t.Longitude))
     binary.BigEndian.PutUint32(payload[16:20], math.Float32bits(t.Height))

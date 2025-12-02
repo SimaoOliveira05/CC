@@ -7,9 +7,9 @@ import (
 	pl "src/utils/packetsLogic"
 )
 
-// handlePacket processa cada pacote recebido
+// handlePacket processes each packet on a separate goroutine
 func (rover *Rover) handlePacket(pkt ml.Packet) {
-	// Closure que captura 'rover'
+	// Closure that captures 'rover'
 	processor := func(p ml.Packet) {
 		switch p.MsgType {
 		case ml.MSG_MISSION:
@@ -19,9 +19,9 @@ func (rover *Rover) handlePacket(pkt ml.Packet) {
 			pl.HandleAck(p, rover.ML.Window)
 			rover.ML.MissionReceivedChan <- false
 		case ml.MSG_ACK:
-			pl.HandleAck(p, rover.ML.Window) // ✅ Usa 'p' (parâmetro da closure)
+			pl.HandleAck(p, rover.ML.Window) // Uses 'p' (closure parameter)
 		default:
-			fmt.Printf("⚠️ Tipo de pacote desconhecido: %d\n", p.MsgType)
+			fmt.Printf("⚠️ Unknown packet type: %d\n", p.MsgType)
 		}
 	}
 
@@ -35,15 +35,15 @@ func (rover *Rover) handlePacket(pkt ml.Packet) {
 		rover.ML.Window,
 		rover.ID,
 		processor,
-		pkt.MsgType == ml.MSG_ACK, // ✅ Skip ordering para ACKs
+		pkt.MsgType == ml.MSG_ACK, // Skip ordering for ACKs
 		true,
 		func(level, msg string, meta any) {
-        	fmt.Printf("[%s] %s %+v\n", level, msg, meta)
+        fmt.Printf("[%s] %s %+v\n", level, msg, meta)
     	},
 	)
 }
 
-// processMission extrai e processa a missão
+// processMission extracts and processes the mission
 func (rover *Rover) processMission(pkt ml.Packet) {
 	rover.ML.MissionReceivedChan <- true
 	var mission ml.MissionData
@@ -51,30 +51,32 @@ func (rover *Rover) processMission(pkt ml.Packet) {
 	go rover.ExecuteMission(mission)
 }
 
+// receiver continuously reads UDP packets
 func (rover *Rover) receiver() {
 	buf := make([]byte, 2048)
-	// Loop de recepção
+	// Reception loop
 	for {
 		n, _, err := rover.MLConn.Conn.ReadFromUDP(buf)
 		if err != nil {
-			fmt.Println("Erro ao ler pacote UDP:", err)
+			fmt.Println("Error reading UDP packet:", err)
 			continue
 		}
 
-		// Constrói o pacote a partir dos bytes recebidos e trata-o
+		// Constructs the packet from received bytes and processes it
 		var pkt ml.Packet
 		pkt.Decode(buf[:n])
 		rover.handlePacket(pkt)
 	}
 }
 
-// sendReport serializa e envia um report para a mothership
+// sendReport serializes and sends a report to the mothership
 func (rover *Rover) sendReport(mission ml.MissionData, final bool) {
 	payload := rover.buildReportPayload(mission, final)
 	if payload == nil {
 		return
 	}
 
+	// Increment sequence number and create packet
 	rover.ML.SeqNum++
 	pkt := ml.Packet{
 		RoverId:  rover.ID,
@@ -85,6 +87,7 @@ func (rover *Rover) sendReport(mission ml.MissionData, final bool) {
 		Payload:  payload,
 	}
 
+	// Use PacketManager to send the report packet
 	pl.PacketManager(rover.MLConn.Conn, 
 					rover.MLConn.Addr, 
 					pkt, 
@@ -117,6 +120,26 @@ func (rover *Rover) sendRequest() {
 					})
 }
 
+// buildReportPayload creates a generic report header
+func (rover *Rover) buildReportPayload(mission ml.MissionData, final bool) []byte {
+	header := ml.ReportHeader{
+		TaskType:     mission.TaskType,
+		MissionID:    mission.MsgID,
+		IsLastReport: final,
+	}
+
+	payload := rover.buildPayload(mission)
+
+	report := ml.Report{
+		Header:  header,
+		Payload: payload,
+	}
+
+	return report.Encode()
+}
+
+
+// buildPayload creates the payload for different mission types
 func (rover *Rover) buildPayload(mission ml.MissionData) []byte {
 	var payload []byte
 	switch mission.TaskType {
@@ -184,24 +207,5 @@ func (rover *Rover) buildPayload(mission ml.MissionData) []byte {
 	default:
 		payload = []byte("generic report")
 	}
-
 	return payload
-}
-
-// buildReportPayload creates a generic report payload for any mission type
-func (rover *Rover) buildReportPayload(mission ml.MissionData, final bool) []byte {
-	header := ml.ReportHeader{
-		TaskType:     mission.TaskType,
-		MissionID:    mission.MsgID,
-		IsLastReport: final,
-	}
-
-	payload := rover.buildPayload(mission)
-
-	report := ml.Report{
-		Header:  header,
-		Payload: payload,
-	}
-
-	return report.Encode()
 }

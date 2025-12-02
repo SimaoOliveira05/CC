@@ -7,31 +7,45 @@ import (
 	"time"
 )
 
-func (rover *Rover) telemetrySender(mothershipAddr string) {
-	conn, err := net.Dial("tcp", mothershipAddr+":9998")
+// telemetrySender periodically sends telemetry data to the mothership
+func (rover *Rover) telemetrySender(telemetryAddr string) {
+	// Establish TCP connection to mothership
+	conn, err := net.Dial("tcp", telemetryAddr)
 	if err != nil {
 		fmt.Println("❌ Erro ao conectar ao servidor de telemetria:", err)
 		return
 	}
 	defer conn.Close()
 
-	ticker := time.NewTicker(time.Duration(rover.TS.UpdateFrequency) * time.Second) // Envia a cada X segundos
+	// Set up ticker for periodic sending
+	ticker := time.NewTicker(time.Duration(rover.TS.UpdateFrequency) * time.Second)
 	defer ticker.Stop()
 
+	// Telemetry sending loop
 	for range ticker.C {
 		state := ts.STATE_IDLE
+		// Determine rover state
 		if rover.ML.ActiveMissions > 0 {
 			state = ts.STATE_IN_MISSION
 		}
 
-		telemetry := ts.GenerateTelemetry(rover.ID, uint8(state), rover.CurrentPos, rover.Devices.Battery.GetLevel(), rover.Devices.GPS.GetSpeed())
+		// Generate and send telemetry data
+		telemetry := ts.GenerateTelemetry(rover.ID,
+			uint8(state),
+			rover.CurrentPos,
+			rover.Devices.Battery.GetLevel(),
+			rover.Devices.GPS.GetSpeed())
+
+		// Encode telemetry data
 		data := telemetry.Encode()
 
+		// Send telemetry data
 		_, err := conn.Write(data)
 		if err != nil {
 			fmt.Println("❌ Erro ao enviar telemetria:", err)
 			return
 		}
-		//fmt.Printf("📡 Telemetria enviada: Posição=(%.6f, %.6f), Velocidade=%.2f, Estado=%d, Bateria=%d%%\n", telemetry.Position.Latitude, telemetry.Position.Longitude, telemetry.Speed, telemetry.State, telemetry.Battery)
+		
+		//fmt.Printf("📡 Telemetry sent: Position=(%.6f, %.6f), Speed=%.2f, State=%d, Battery=%d%%\n", telemetry.Position.Latitude, telemetry.Position.Longitude, telemetry.Speed, telemetry.State, telemetry.Battery)
 	}
 }

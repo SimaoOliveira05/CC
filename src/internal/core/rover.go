@@ -14,8 +14,8 @@ import (
 
 // RoverBase is a basic structure used in both ML and TS contexts
 type RoverBase struct {
-	ID          uint8	// Unique Rover ID
-	CurrentPos  utils.Coordinate // Current Coordinates of the Rover
+	ID         uint8            // Unique Rover ID
+	CurrentPos utils.Coordinate // Current Coordinates of the Rover
 }
 
 // RoverMLState holds the state related to MissionLink connection
@@ -26,7 +26,7 @@ type RoverMLState struct {
 	CondMu              sync.Mutex // Mutex for the condition
 	Waiting             bool       // Indicates if the rover is waiting for a mission
 	MissionReceivedChan chan bool  // Channel to signal mission reception
-	SeqNum              uint32 // Sequence number for sending packets
+	SeqNum              uint32     // Sequence number for sending packets
 
 	// Packet and sequence number management
 	ExpectedSeq uint16
@@ -45,8 +45,8 @@ type RoverMLConnection struct {
 
 // RoverTSState holds the state related to TelemetryLink connection
 type RoverInfo struct {
-	State   string // e.g., "Idle", "Moving", "Sampling"
-	Battery uint8  // Battery level percentage
+	State   string  // e.g., "Idle", "Moving", "Sampling"
+	Battery uint8   // Battery level percentage
 	Speed   float32 // Speed in m/s
 }
 
@@ -61,17 +61,17 @@ type Devices struct {
 
 // RoverSystem encapsulates all subsystems of the rover
 type RoverSystem struct {
-	*RoverBase						// Basic rover info				
-	ML         *RoverMLState		// MissionLink state
-	TS         *ts.RoverTSState		// TelemetryLink state
-	MLConn     *RoverMLConnection	// MissionLink connection
-	Devices    *Devices				// Attached devices
+	*RoverBase                    // Basic rover info
+	ML         *RoverMLState      // MissionLink state
+	TS         *ts.RoverTSState   // TelemetryLink state
+	MLConn     *RoverMLConnection // MissionLink connection
+	Devices    *Devices           // Attached devices
 }
 
 // requestID contacts the mothership to request a unique rover ID and update frequency
 func requestID(mothershipAddr string) (uint8, uint, error) {
-	// Make TCP connection to mothership on port 9997
-	conn, err := net.Dial("tcp", mothershipAddr+":9997")
+	// Make TCP connection to mothership
+	conn, err := net.Dial("tcp", mothershipAddr)
 	if err != nil {
 		return 0, 0, fmt.Errorf("error connecting to ID server: %v", err)
 	}
@@ -116,10 +116,9 @@ func initConnection(targetAddr string) (*RoverMLConnection, error) {
 }
 
 // NewRoverSystem creates and initializes a RoverSystem
-func NewRoverSystem(motherUDP string, motherIP string) *RoverSystem {
-	// Request ID (TCP fixed port 9997)
-	// Note: Ensure your requestID function uses port 9997 internally or concatenates it here
-	roverID, updateFrequency, err := requestID(motherIP)
+func NewRoverSystem(motherUDP string, motherTCPID string) *RoverSystem {
+	// Request ID via TCP
+	roverID, updateFrequency, err := requestID(motherTCPID)
 	if err != nil {
 		fmt.Println("❌ Error obtaining ID:", err)
 		return nil

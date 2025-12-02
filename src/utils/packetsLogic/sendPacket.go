@@ -8,6 +8,9 @@ import (
 	"sync"
 )
 
+// Logger is a function type for logging messages
+type Logger func(level, msg string, meta any)
+
 // Window is the sliding window structure to manage sent packets and RTO calculation
 type Window struct {
 	LastAckReceived int16 // Last ACK received number
@@ -84,7 +87,7 @@ func SendPacketUDP(conn *net.UDPConn, addr *net.UDPAddr, packet ml.Packet) error
 }
 
 // PacketManager manages the sending and retransmission of a packet until an ACK is received
-func PacketManager(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *Window, logf func(level string, msg string, meta any)) {
+func PacketManager(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *Window, logf Logger) {
     // ACK packets are sent immediately without retransmission
     if pkt.MsgType == ml.MSG_ACK {
         sendAckPacket(conn, addr, pkt, logf)
@@ -95,8 +98,61 @@ func PacketManager(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *
     manageRetransmission(conn, addr, pkt, window, logf)
 }
 
+// CreateAndSendPacket is a generic helper that creates and sends a packet
+// It handles sequence number increment, packet creation, and sending
+// seqNum can be *uint16 or *uint32
+// seqNumMutex is optional - pass nil if no locking is needed
+func CreateAndSendPacket(
+	conn *net.UDPConn,
+	addr *net.UDPAddr,
+	window *Window,
+	senderID uint8,
+	msgType ml.PacketType,
+	payload []byte,
+	ackNum uint16,
+	seqNum any, // *uint16 or *uint32
+	seqNumMutex *sync.Mutex,
+	logger Logger,
+) {
+	// Lock if mutex is provided
+	if seqNumMutex != nil {
+		seqNumMutex.Lock()
+	}
+
+	// Increment sequence number and get current value
+	var currentSeq uint16
+	switch seq := seqNum.(type) {
+	case *uint32:
+		*seq++
+		currentSeq = uint16(*seq)
+	case *uint16:
+		*seq++
+		currentSeq = *seq
+	default:
+		panic("seqNum must be *uint16 or *uint32")
+	}
+
+	// Create packet
+	pkt := ml.Packet{
+		RoverId:  senderID,
+		MsgType:  msgType,
+		SeqNum:   currentSeq,
+		AckNum:   ackNum,
+		Checksum: 0,
+		Payload:  payload,
+	}
+
+	// Unlock if mutex was provided
+	if seqNumMutex != nil {
+		seqNumMutex.Unlock()
+	}
+
+	// Send packet using PacketManager
+	PacketManager(conn, addr, pkt, window, logger)
+}
+
 // sendAckPacket sends an ACK packet without waiting for acknowledgment
-func sendAckPacket(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, logf func(level string, msg string, meta any)) {
+func sendAckPacket(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, logf Logger) {
     fmt.Printf("📤 ACK sent, AckNum: %d\n", pkt.AckNum)
     if err := SendPacketUDP(conn, addr, pkt); err != nil {
         fmt.Println("❌ Error sending ACK:", err)
@@ -105,7 +161,7 @@ func sendAckPacket(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, logf fun
 }
 
 // manageRetransmission handles sending and retransmitting packets until ACK is received
-func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *Window, logf func(level string, msg string, meta any)) {
+func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *Window, logf Logger) {
     // Register packet in window
     ch := registerPacket(window, pkt.SeqNum)
     defer unregisterPacket(window, pkt.SeqNum)
