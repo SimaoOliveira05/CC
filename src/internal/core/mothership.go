@@ -6,11 +6,11 @@ import (
 	"net"
 
 	"src/internal/api"
+	el "src/internal/eventLogger"
 	"src/internal/ml"
 	"src/internal/ts"
 	pl "src/utils/packetsLogic"
 	"sync"
-	el "src/internal/eventLogger"
 
 	"fmt"
 	"os"
@@ -83,6 +83,7 @@ func loadMissionsFromJSON(filename string, queue chan ml.MissionState) error {
 	// Assign incremental IDs to missions
 	for i := range missions {
 		missions[i].ID = uint16(i + 1) // IDs start from 1
+
 		queue <- missions[i]
 	}
 
@@ -185,12 +186,17 @@ func (ms *MotherShip) setupAPIEndpoints() {
 			// If mission completed and has image chunks, assemble and include base64 image
 			assembled := m.AssembleImage()
 			entry := map[string]interface{}{
-				"id":         m.ID,
-				"state":      m.State,
-				"idRover":    m.IDRover,
-				"reports":    parsedReports,
-				"taskType":   m.TaskType,
-				"coordinate": m.Coordinate,
+				"id":              m.ID,
+				"state":           m.State,
+				"idRover":         m.IDRover,
+				"reports":         parsedReports,
+				"taskType":        m.TaskType,
+				"coordinate":      m.Coordinate,
+				"priority":        m.Priority,
+				"createdAt":       m.CreatedAt,
+				"lastUpdate":      m.LastUpdate,
+				"duration":        m.Duration,
+				"updateFrequency": m.UpdateFrequency,
 			}
 			if len(assembled) > 0 {
 				b64 := base64.StdEncoding.EncodeToString(assembled)
