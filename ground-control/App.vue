@@ -49,6 +49,14 @@
           >
             🗺️ Mapa
           </button>
+          <button 
+            class="tab" 
+            :class="{ active: activeTab === 'logs' }"
+            @click="activeTab = 'logs'"
+          >
+            📝 Logs
+            <span v-if="unreadLogs > 0" class="log-badge">{{ unreadLogs }}</span>
+          </button>
         </div>
 
         <!-- Missions Tab -->
@@ -85,6 +93,11 @@
           <MapView :rovers="sortedRovers" :missions="missions" />
         </section>
 
+        <!-- Logs Tab -->
+        <section v-if="activeTab === 'logs'" class="logs-section">
+          <LogTab :logs="logs" @clear="clearLogs" />
+        </section>
+
         <!-- Mission Detail -->
         <section v-if="selectedMission" class="mission-detail-section">
           <button class="btn-back" @click="selectedMission = null">← Voltar</button>
@@ -96,12 +109,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { Rover, Mission } from './models.js';
 import RoverCard from './components/RoverCard.vue';
 import MissionCard from './components/MissionCard.vue';
 import MissionDetail from './components/MissionDetail.vue';
 import MapView from './components/MapView.vue';
+import LogTab from './components/LogTab.vue';
 
 // Onde defines o URL da API
 // Antes tinhas algo como: const API_URL = "http://localhost:8080";
@@ -124,6 +138,11 @@ const lastUpdate = ref(null);
 const updateInterval = ref(null);
 const ws = ref(null);
 const activeTab = ref('missions');
+const logs = ref([]);
+const unreadLogs = ref(0);
+
+// Limitar número máximo de logs
+const MAX_LOGS = 500;
 
 // Computed: Rovers ordenados por ID
 const sortedRovers = computed(() => {
@@ -147,6 +166,32 @@ const completedMissions = computed(() => {
 const selectMission = (mission) => {
   selectedMission.value = mission;
 };
+
+// Limpar logs
+const clearLogs = () => {
+  logs.value = [];
+  unreadLogs.value = 0;
+};
+
+// Adicionar log
+const addLog = (logEvent) => {
+  logs.value.push(logEvent);
+  // Manter apenas os últimos MAX_LOGS
+  if (logs.value.length > MAX_LOGS) {
+    logs.value = logs.value.slice(-MAX_LOGS);
+  }
+  // Incrementar contador se não estiver na aba de logs
+  if (activeTab.value !== 'logs') {
+    unreadLogs.value++;
+  }
+};
+
+// Reset unread quando muda para aba de logs
+watch(activeTab, (newTab) => {
+  if (newTab === 'logs') {
+    unreadLogs.value = 0;
+  }
+});
 
 // Carregar dados da API
 const loadData = async () => {
@@ -204,6 +249,10 @@ const connectWebSocket = () => {
       // Recarregar dados quando receber update
       if (msg.event === 'snapshot' || msg.event === 'update') {
         loadData();
+      }
+      // Processar eventos de log
+      if (msg.event === 'log' && msg.data) {
+        addLog(msg.data);
       }
     };
 
@@ -427,6 +476,30 @@ body, html {
   color: var(--accent-cyan);
   background: rgba(0, 212, 255, 0.15);
   border-bottom-color: var(--accent-cyan);
+}
+
+.tab {
+  position: relative;
+}
+
+.log-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ff4444;
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* ===== LOGS SECTION ===== */
+.logs-section {
+  animation: fadeIn 0.3s ease-in;
+  height: calc(100vh - 250px);
+  min-height: 400px;
 }
 
 /* ===== MISSIONS SECTION ===== */

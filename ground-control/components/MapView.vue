@@ -59,8 +59,8 @@
               :cx="toX(rover.position)" 
               :cy="toY(rover.position)"
               :r="0.04"
-              fill="#00ff88"
-              stroke="#00ffaa"
+              :fill="getRoverColor(rover.state)"
+              :stroke="getRoverStroke(rover.state)"
               stroke-width="0.015"
               class="rover-marker"
             />
@@ -68,7 +68,7 @@
               :x="toX(rover.position)" 
               :y="toY(rover.position) + 0.015"
               text-anchor="middle"
-              fill="#000"
+              :fill="rover.state === 'Inoperacional' ? '#fff' : '#000'"
               font-size="0.05"
               font-weight="bold"
               class="rover-label"
@@ -84,7 +84,11 @@
     <div class="legend">
       <div class="legend-item">
         <div class="legend-marker rover-marker-legend"></div>
-        <span>Rovers</span>
+        <span>Rovers Ativos</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-marker rover-inop-legend"></div>
+        <span>Rovers INOP</span>
       </div>
       <div class="legend-item">
         <div class="legend-marker mission-pending"></div>
@@ -167,6 +171,18 @@ const getMissionStroke = (state) => {
   if (s === 'in progress' || s === 'in-progress') return '#ff6666';
   if (s === 'moving to' || s === 'moving-to') return '#ffaa00';
   return '#ffcc00'; // pending
+};
+
+const getRoverColor = (state) => {
+  if (!state) return '#00ff88';
+  if (state === 'Inoperacional') return '#ff4444';
+  return '#00ff88'; // ativo
+};
+
+const getRoverStroke = (state) => {
+  if (!state) return '#00ffaa';
+  if (state === 'Inoperacional') return '#ff6666';
+  return '#00ffaa'; // ativo
 };
 </script>
 
@@ -270,6 +286,11 @@ const getMissionStroke = (state) => {
 .rover-marker-legend {
   background: #00ff88;
   border-color: #00ffaa;
+}
+
+.rover-inop-legend {
+  background: #ff4444;
+  border-color: #ff6666;
 }
 
 .mission-pending {
