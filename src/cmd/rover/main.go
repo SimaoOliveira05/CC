@@ -15,8 +15,7 @@ type Rover struct {
 
 
 func main() {
-	config.InitConfig(true) // Lê flag -ms-ip
-	config.PrintConfig()
+	config.InitConfig(true, true) // Read flag -ms-ip and print config
 
 	// 1. Obter endereço da mãe (IP da flag + Porta Fixa 9999)
 	motherUDPAddr := config.GetMotherUDPAddr()
@@ -50,7 +49,7 @@ func (rover *Rover) generate(mission ml.MissionData) {
 	// 1. Move para a localização da missão
 	fmt.Printf("🚀 Movendo para coordenadas (%.4f, %.4f)\n", mission.Coordinate.Latitude, mission.Coordinate.Longitude)
 	if err := core.MoveTo(
-		&rover.CurrentPos,
+		&rover.RoverBase.CurrentPos,
 		mission.Coordinate,
 		rover.Devices.GPS,
 		rover.Devices.Battery,
@@ -90,5 +89,5 @@ func (rover *Rover) generate(mission ml.MissionData) {
 	}
 
 	// 3. Consome bateria da execução da tarefa
-	core.ConsumeBattery(rover.Devices.Battery, uint8(core.TaskBatteryRate))
+	core.ConsumeBattery(rover.Devices.Battery, core.TaskBatteryRate)
 }

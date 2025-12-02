@@ -7,76 +7,85 @@
     </div>
     <div class="map-container">
       <svg class="map-svg" viewBox="-1.2 -1.2 2.4 2.4" preserveAspectRatio="xMidYMid meet">
-        <!-- Boundary circle -->
-        <circle cx="0" cy="0" r="1" 
-          fill="rgba(0, 0, 0, 0.3)" 
-          stroke="#00d4ff" 
-          stroke-width="0.02"
-          stroke-dasharray="0.05,0.02"/>
-        
-        <!-- Grid circles (concentric) -->
-        <g class="grid">
-          <circle v-for="i in 4" :key="'c' + i" 
-            cx="0" cy="0" :r="i * 0.25"
-            fill="none"
-            stroke="rgba(0, 212, 255, 0.1)" 
-            stroke-width="0.005"/>
-          
-          <!-- Axes -->
-          <line x1="-1" y1="0" x2="1" y2="0" stroke="rgba(0, 212, 255, 0.3)" stroke-width="0.01"/>
-          <line x1="0" y1="-1" x2="0" y2="1" stroke="rgba(0, 212, 255, 0.3)" stroke-width="0.01"/>
-        </g>
+          <!-- Euclidean square boundary -->
+          <rect x="-1" y="-1" width="2" height="2"
+            fill="rgba(0, 0, 0, 0.3)"
+            stroke="#0af"
+            stroke-width="0.02" />
 
-        <!-- Mission markers -->
-        <g class="missions">
-          <g v-for="mission in validMissions" :key="'m' + mission.id">
-            <circle 
-              :cx="toX(mission.coordinate)" 
-              :cy="toY(mission.coordinate)"
-              :r="0.03"
-              :fill="getMissionColor(mission.state)"
-              :stroke="getMissionStroke(mission.state)"
-              stroke-width="0.01"
-              class="mission-marker"
-            />
-            <text 
-              :x="toX(mission.coordinate)" 
-              :y="toY(mission.coordinate) - 0.05"
-              text-anchor="middle"
-              fill="#00d4ff"
-              font-size="0.06"
-              class="mission-label"
-            >
-              M{{ mission.id }}
-            </text>
-          </g>
-        </g>
+          <!-- Grid circles (concentric) -->
+          <g class="grid">
+            <!-- Square grid lines -->
+            <line v-for="i in 4" :key="'h' + i"
+              x1="-1" :y1="-1 + i * 0.5" x2="1" :y2="-1 + i * 0.5"
+              stroke="rgba(0, 212, 255, 0.1)" stroke-width="0.005"/>
+            <line v-for="i in 4" :key="'v' + i"
+              :x1="-1 + i * 0.5" y1="-1" :x2="-1 + i * 0.5" y2="1"
+              stroke="rgba(0, 212, 255, 0.1)" stroke-width="0.005"/>
 
-        <!-- Rover markers -->
-        <g class="rovers">
-          <g v-for="rover in validRovers" :key="'r' + rover.id">
-            <circle 
-              :cx="toX(rover.position)" 
-              :cy="toY(rover.position)"
-              :r="0.04"
-              fill="#00ff88"
-              stroke="#00ffaa"
-              stroke-width="0.015"
-              class="rover-marker"
-            />
-            <text 
-              :x="toX(rover.position)" 
-              :y="toY(rover.position) + 0.015"
-              text-anchor="middle"
-              fill="#000"
-              font-size="0.05"
-              font-weight="bold"
-              class="rover-label"
-            >
-              R{{ rover.id }}
-            </text>
+            <!-- Axes -->
+            <line x1="-1" y1="0" x2="1" y2="0" stroke="rgba(0, 212, 255, 0.3)" stroke-width="0.01"/>
+            <line x1="0" y1="-1" x2="0" y2="1" stroke="rgba(0, 212, 255, 0.3)" stroke-width="0.01"/>
           </g>
-        </g>
+
+          <!-- Plot labels first, markers last to avoid overlap -->
+          <g class="labels">
+            <g v-for="mission in validMissions" :key="'ml' + mission.id">
+              <text 
+                :x="toX(mission.coordinate)" 
+                :y="toY(mission.coordinate) - 0.05"
+                text-anchor="middle"
+                fill="#0af"
+                font-size="0.06"
+                font-weight="600"
+                class="mission-label"
+              >
+                M{{ mission.id }}
+              </text>
+            </g>
+            <g v-for="rover in validRovers" :key="'rl' + rover.id">
+              <text 
+                :x="toX(rover.position)" 
+                :y="toY(rover.position) - 0.05"
+                text-anchor="middle"
+                fill="#fff"
+                font-size="0.05"
+                font-weight="700"
+                class="rover-label"
+              >
+                R{{ rover.id }}
+              </text>
+            </g>
+          </g>
+
+          <!-- Plot markers last for visual priority -->
+          <g class="missions">
+            <g v-for="mission in validMissions" :key="'m' + mission.id">
+              <rect 
+                :x="toX(mission.coordinate) - 0.02" 
+                :y="toY(mission.coordinate) - 0.02"
+                width="0.04" height="0.04"
+                :fill="getMissionColor(mission.state)"
+                :stroke="getMissionStroke(mission.state)"
+                stroke-width="0.012"
+                class="mission-marker"
+              />
+            </g>
+          </g>
+
+          <g class="rovers">
+            <g v-for="rover in validRovers" :key="'r' + rover.id">
+              <circle 
+                :cx="toX(rover.position)" 
+                :cy="toY(rover.position)"
+                :r="0.035"
+                fill="#00c853"
+                stroke="#1de9b6"
+                stroke-width="0.02"
+                class="rover-marker"
+              />
+            </g>
+          </g>
       </svg>
     </div>
 
@@ -148,7 +157,8 @@ const toX = (coord) => {
 
 const toY = (coord) => {
   if (!coord) return 0;
-  return -coord.latitude; // latitude é Y (negativo porque SVG Y cresce para baixo)
+  // Invert Y to match screen coordinates (SVG Y grows down)
+  return -coord.latitude; 
 };
 
 const getMissionColor = (state) => {

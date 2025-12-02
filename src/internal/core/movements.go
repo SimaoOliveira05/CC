@@ -8,102 +8,115 @@ import (
 	"time"
 )
 
-// Configuração de movimento
+// Movement configurations constants
 const (
-	MaxSpeed            = 0.1 // unidades/s no espaço [-1,1]
-	MovementBatteryRate = 5.0 // % por unidade de distância
-	TaskBatteryRate     = 2.0 // % por tarefa
+	MaxSpeed            = 0.05 // units/s in the space [-1,1]
+	MovementBatteryRate = 5.0 // % per unit of distance
+	TaskBatteryRate     = 2.0 // % per task
 )
 
-// CalculateDistance calcula distância euclidiana entre duas coordenadas
-// Coordenadas estão em [-1,1] representando um plano cartesiano normalizado
+// CalculateDistance calculates the Euclidean distance between two coordinates
+// Coordinates are in [-1,1] representing a normalized Cartesian plane
 func CalculateDistance(from, to utils.Coordinate) float64 {
 	deltaLat := to.Latitude - from.Latitude
 	deltaLon := to.Longitude - from.Longitude
 
-	// Distância euclidiana simples
 	return math.Sqrt(deltaLat*deltaLat + deltaLon*deltaLon)
 }
 
-// MoveTo move o rover para coordenadas destino, atualizando GPS e consumindo bateria
+// MoveTo moves the rover to target coordinates, updating GPS and consuming battery
 func MoveTo(
-	currentPos *utils.Coordinate,
-	target utils.Coordinate,
-	gps devices.GPS,
-	battery devices.Battery,
+    currentPos *utils.Coordinate,
+    target utils.Coordinate,
+    gps devices.GPS,
+    battery devices.Battery,
 ) error {
-	distance := CalculateDistance(*currentPos, target)
+    // Calculate distance to target
+    distance := CalculateDistance(*currentPos, target)
 
-	if distance < 0.01 { // Já está no destino (menos de 1% do mapa)
-		fmt.Println("✅ Já está no destino")
-		return nil
-	}
+    if distance < 0.01 { // Already at the destination (less than 1% of the map)
+        fmt.Println("✅ Already at the destination")
+        return nil
+    }
 
-	fmt.Printf("🚀 Deslocando %.4f unidades para (%.6f, %.6f)...\n",
-		distance, target.Latitude, target.Longitude)
+    fmt.Printf("🚀 Moving %.4f units to (%.6f, %.6f)...\n",
+        distance, target.Latitude, target.Longitude)
 
-	// Calcula tempo de viagem
-	travelTime := distance / MaxSpeed
-	steps := int(travelTime) + 1
+    // Calculate travel time
+    travelTime := distance / MaxSpeed
+    fmt.Printf("⏳ Estimated travel time: %.2fs\n", travelTime)
 
-	// Move em pequenos passos
-	fmt.Printf("⏳ Tempo estimado de viagem: %.2fs em %d passos\n", travelTime, steps)
-	for i := 0; i < steps; i++ {
-		// Interpola posição
-		progress := float64(i+1) / float64(steps)
-		newPos := utils.Coordinate{
-			Latitude: currentPos.Latitude +
-				(target.Latitude-currentPos.Latitude)*progress,
-			Longitude: currentPos.Longitude +
-				(target.Longitude-currentPos.Longitude)*progress,
+    startTime := time.Now()
+    stepCount := 0
+
+    for {
+        stepCount++
+        distanceToTarget := CalculateDistance(*currentPos, target)
+
+        if distanceToTarget < 0.01 { // Arrived (less than 1% of the map)
+            fmt.Printf("✅ Arrived at destination (remaining distance: %.4f)\n", distanceToTarget)
+            break
+        }
+
+        // Calculate direction vector (normalized)
+        directionLat := (target.Latitude - currentPos.Latitude) / distanceToTarget
+        directionLon := (target.Longitude - currentPos.Longitude) / distanceToTarget
+
+        // Move MaxSpeed units towards target
+        newLat := currentPos.Latitude + directionLat*MaxSpeed
+        newLon := currentPos.Longitude + directionLon*MaxSpeed
+		coords := utils.Coordinate{
+			Latitude:  newLat,
+			Longitude: newLon,
 		}
 
-		*currentPos = newPos
-
-		// Verifica se chegou ao destino (distância < 0.01 unidades)
-		remainingDistance := CalculateDistance(*currentPos, target)
-		if remainingDistance < 0.01 {
-			fmt.Printf("✅ Chegou ao destino antecipadamente (distância restante: %.4f)\n", remainingDistance)
-			break
+        // If overshoot, snap to target
+        if CalculateDistance(coords, target) > distanceToTarget {
+            coords = utils.Coordinate{
+                Latitude:  target.Latitude,
+                Longitude: target.Longitude,
+            }
 		}
 
-		// Atualiza GPS mock
-		if mockGPS, ok := gps.(*devices.MockGPS); ok {
-			mockGPS.SetPosition(newPos)
-			mockGPS.SetSpeed(MaxSpeed)
-		}
+        *currentPos = coords
 
-		// Consome bateria proporcional à distância percorrida neste step
-		stepDistance := distance / float64(steps)
-		batteryDrain := uint8(stepDistance * MovementBatteryRate)
-		ConsumeBattery(battery, batteryDrain)
+        // Update mock GPS
+        if mockGPS, ok := gps.(*devices.MockGPS); ok {
+            mockGPS.SetPosition(*currentPos)
+            mockGPS.SetSpeed(MaxSpeed)
+        }
 
-		// Log a cada 10 passos
-		if i%10 == 0 {
-			fmt.Printf("   Passo %d/%d - Distância restante: %.4f - Posição: (%.4f, %.4f)\n",
-				i+1, steps, remainingDistance, currentPos.Latitude, currentPos.Longitude)
-		}
+        // Consume battery proportional to distance traveled (MaxSpeed per step)
+        batteryDrain := MaxSpeed * MovementBatteryRate
+        ConsumeBattery(battery, batteryDrain)
 
-		time.Sleep(1 * time.Second)
-	}
+        // Log every 10 steps
+        if stepCount%10 == 0 {
+            fmt.Printf("   Step %d - Remaining distance: %.4f - Position: (%.4f, %.4f)\n",
+                stepCount, distanceToTarget, currentPos.Latitude, currentPos.Longitude)
+        }
 
-	// Para no destino
-	if mockGPS, ok := gps.(*devices.MockGPS); ok {
-		mockGPS.SetSpeed(0)
-	}
+        time.Sleep(1 * time.Second)
+    }
 
-	fmt.Printf("✅ Chegou ao destino. Bateria: %d%%\n", battery.GetLevel())
-	return nil
+    elapsed := time.Since(startTime)
+    fmt.Printf("✅ Arrived at destination in %.2fs (estimated %.2fs). Battery: %d%%\n",
+        elapsed.Seconds(), travelTime, battery.GetLevel())
+
+    // Stop at the destination
+    if mockGPS, ok := gps.(*devices.MockGPS); ok {
+        mockGPS.SetSpeed(0)
+    }
+
+    return nil
 }
 
-// ConsumeBattery reduz o nível de bateria
-func ConsumeBattery(battery devices.Battery, amount uint8) {
-	if mockBattery, ok := battery.(*devices.MockBattery); ok {
-		currentLevel := mockBattery.GetLevel()
-		if currentLevel > amount {
-			mockBattery.SetLevel(currentLevel - amount)
-		} else {
-			mockBattery.SetLevel(0)
-		}
-	}
+
+// ConsumeBattery reduces the battery level by the specified amount (now float64 for precision)
+func ConsumeBattery(battery devices.Battery, amount float64) {
+    if mockBattery, ok := battery.(*devices.MockBattery); ok {
+        currentLevel := float64(mockBattery.GetLevel())
+        newLevel := uint8(math.Max(0, currentLevel-amount))
+        mockBattery.SetLevel(newLevel)
+    }
 }

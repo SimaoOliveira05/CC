@@ -1,53 +1,56 @@
 package core
 
-
 import (
+	"fmt"
+	"net"
 	"src/internal/devices"
 	"src/internal/ml"
 	"src/internal/ts"
 	"src/utils"
 	pl "src/utils/packetsLogic"
 	"sync"
-	"net"
-	"fmt"
 	"time"
 )
 
-// Base compartilhada
+// RoverBase is a basic structure used in both ML and TS contexts
 type RoverBase struct {
-	ID          uint8
-	Coordinates utils.Coordinate // Mover de utils para core
+	ID          uint8	// Unique Rover ID
+	CurrentPos  utils.Coordinate // Current Coordinates of the Rover
 }
 
+// RoverMLState holds the state related to MissionLink connection
 type RoverMLState struct {
-	// Gerenciar missões
-	ActiveMissions      uint8      // Número de missões ativas
-	Cond                *sync.Cond // Condição para sincronização de missões
-	CondMu              sync.Mutex // Mutex para a condição
-	Waiting             bool       // Indica se o rover está esperando por uma missão
-	MissionReceivedChan chan bool
-	SeqNum              uint32 // Número de sequência para envio
+	// Mission management
+	ActiveMissions      uint8      // Number of active missions
+	Cond                *sync.Cond // Condition for mission synchronization
+	CondMu              sync.Mutex // Mutex for the condition
+	Waiting             bool       // Indicates if the rover is waiting for a mission
+	MissionReceivedChan chan bool  // Channel to signal mission reception
+	SeqNum              uint32 // Sequence number for sending packets
 
-	// Gerenciamento de pacotes e seqnums
+	// Packet and sequence number management
 	ExpectedSeq uint16
 	Buffer      map[uint16]ml.Packet
 	BufferMu    sync.Mutex
 
-	// Janela deslizante para controle de ACKS e retransmissões
-	Window *pl.Window // Janela deslizante específica deste rover
+	// Sliding window for ACK and retransmission control
+	Window *pl.Window // Sliding window specific to this rover
 }
 
+// RoverMLConnection holds the UDP connection details for MissionLink
 type RoverMLConnection struct {
-	Conn *net.UDPConn // Conexão UDP com a nave-mãe
-	Addr *net.UDPAddr // Endereço da nave-mãe
+	Conn *net.UDPConn // UDP connection with the mothership
+	Addr *net.UDPAddr // Mothership address
 }
 
+// RoverTSState holds the state related to TelemetryLink connection
 type RoverInfo struct {
-	State   string
-	Battery uint8
-	Speed   float32
+	State   string // e.g., "Idle", "Moving", "Sampling"
+	Battery uint8  // Battery level percentage
+	Speed   float32 // Speed in m/s
 }
 
+// Device interfaces and mock implementations would go here
 type Devices struct {
 	GPS              devices.GPS
 	Thermometer      devices.Thermometer
@@ -56,50 +59,55 @@ type Devices struct {
 	ChemicalAnalyzer devices.ChemicalAnalyzer
 }
 
-
+// RoverSystem encapsulates all subsystems of the rover
 type RoverSystem struct {
-	*RoverBase
-	ML         *RoverMLState
-	TS         *ts.RoverTSState
-	MLConn     *RoverMLConnection
-	Devices    *Devices
-	CurrentPos utils.Coordinate
+	*RoverBase						// Basic rover info				
+	ML         *RoverMLState		// MissionLink state
+	TS         *ts.RoverTSState		// TelemetryLink state
+	MLConn     *RoverMLConnection	// MissionLink connection
+	Devices    *Devices				// Attached devices
 }
 
+// requestID contacts the mothership to request a unique rover ID and update frequency
 func requestID(mothershipAddr string) (uint8, uint, error) {
-    conn, err := net.Dial("tcp", mothershipAddr+":9997")
-    if err != nil {
-        return 0, 0, fmt.Errorf("erro ao conectar ao servidor de IDs: %v", err)
-    }
-    defer conn.Close()
+	// Make TCP connection to mothership on port 9997
+	conn, err := net.Dial("tcp", mothershipAddr+":9997")
+	if err != nil {
+		return 0, 0, fmt.Errorf("error connecting to ID server: %v", err)
+	}
+	defer conn.Close()
 
-    buf := make([]byte, 2)
-    conn.SetReadDeadline(time.Now().Add(3 * time.Second))
-    _, err = conn.Read(buf)
-    if err != nil {
-        return 0, 0, fmt.Errorf("timeout ou erro ao receber ID: %v", err)
-    }
+	// Read 2 bytes: 1 for ID and 1 for update frequency
+	buf := make([]byte, 2)
+	conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	_, err = conn.Read(buf)
+	if err != nil {
+		return 0, 0, fmt.Errorf("timeout or error receiving ID: %v", err)
+	}
 
-    id := buf[0]
-    updateFrequency := uint(buf[1])
-    fmt.Printf("✅ ID recebido da nave-mãe: %d (updateFrequency=%d)\n", id, updateFrequency)
-    return id, updateFrequency, nil
+	// Parse ID and update frequency
+	id := buf[0]
+	updateFrequency := uint(buf[1])
+	fmt.Printf("✅ ID received from mothership: %d (updateFrequency=%d)\n", id, updateFrequency)
+
+	return id, updateFrequency, nil
 }
 
-
-// initConnection agora aceita o endereço completo "IP:PORT"
+// initConnection initializes the UDP connection to the mothership for MissionLink
 func initConnection(targetAddr string) (*RoverMLConnection, error) {
+	// Resolve mothership UDP address
 	motherAddr, err := net.ResolveUDPAddr("udp", targetAddr)
 	if err != nil {
 		return nil, err
 	}
 
+	// Create local UDP connection
 	roverConn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 0})
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Printf("✅ Conexão UDP local na porta %d -> Alvo %s\n", roverConn.LocalAddr().(*net.UDPAddr).Port, motherAddr)
+	fmt.Printf("✅ Local UDP connection on port %d -> Target %s\n", roverConn.LocalAddr().(*net.UDPAddr).Port, motherAddr)
 
 	return &RoverMLConnection{
 		Conn: roverConn,
@@ -107,26 +115,31 @@ func initConnection(targetAddr string) (*RoverMLConnection, error) {
 	}, nil
 }
 
-func NewRoverSystem(motherUDP string, motherIP string) *RoverSystem{
-
-
-	// 2. Pedir ID (TCP Porta 9997 fixa)
-	// Nota: Garante que a tua função requestID usa a porta 9997 internamente ou concatena aqui
-	roverID, updateFrequency, err := requestID(motherIP) 
+// NewRoverSystem creates and initializes a RoverSystem
+func NewRoverSystem(motherUDP string, motherIP string) *RoverSystem {
+	// Request ID (TCP fixed port 9997)
+	// Note: Ensure your requestID function uses port 9997 internally or concatenates it here
+	roverID, updateFrequency, err := requestID(motherIP)
 	if err != nil {
-		fmt.Println("❌ Erro ao obter ID:", err)
+		fmt.Println("❌ Error obtaining ID:", err)
 		return nil
 	}
 
-	// 3. Conectar UDP
+	// Connect UDP
 	roverConn, err := initConnection(motherUDP)
 	if err != nil {
 		return nil
 	}
-	
+
+	// Return initialized RoverSystem
 	return &RoverSystem{
 		RoverBase: &RoverBase{
 			ID: roverID,
+			// Start near the center with a tiny id-based offset
+			CurrentPos: utils.Coordinate{
+				Latitude:  0.000 + float64(roverID)*0.001,
+				Longitude: 0.000 + float64(roverID)*0.001,
+			},
 		},
 		ML: &RoverMLState{
 			ActiveMissions:      0,
@@ -147,15 +160,11 @@ func NewRoverSystem(motherUDP string, motherIP string) *RoverSystem{
 		},
 
 		MLConn: roverConn,
-		CurrentPos: utils.Coordinate{
-			Latitude:  1.000 + float64(roverID)*0.001,
-			Longitude: -1.000 + float64(roverID)*0.001,
-		},
 
 		Devices: &Devices{
 			GPS: devices.NewMockGPS(utils.Coordinate{
-				Latitude:  1.000 + float64(roverID)*0.001,
-				Longitude: -1.000 + float64(roverID)*0.001,
+				Latitude:  0.000 + float64(roverID)*0.001,
+				Longitude: 0.000 + float64(roverID)*0.001,
 			}),
 			Thermometer:      devices.NewMockThermometer(),
 			Battery:          devices.NewMockBattery(100),
@@ -164,4 +173,3 @@ func NewRoverSystem(motherUDP string, motherIP string) *RoverSystem{
 		},
 	}
 }
-
