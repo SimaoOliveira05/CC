@@ -1,0 +1,6 @@
+{
+    "API_PORT": 8080,
+    "TCP_ID_PORT": 9997,
+    "UDP_COMM_PORT": 9999,
+    "TCP_TELEMETRY_PORT": 9998
+}

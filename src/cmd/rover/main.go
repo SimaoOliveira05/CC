@@ -12,8 +12,7 @@ type Rover struct {
 
 
 func main() {
-	config.InitConfig(true) // Lê flag -ms-ip
-	config.PrintConfig()
+	config.InitConfig(true, true) // Read flag -ms-ip and print config
 
 	// 1. Obter endereço da mãe (IP da flag + Porta Fixa 9999)
 	motherUDPAddr := config.GetMotherUDPAddr()

@@ -11,20 +11,22 @@ import (
 	"github.com/rs/cors"
 )
 
-// DataProvider é uma função que retorna dados para um endpoint específico
+// DataProvider is a function that provides data for an API endpoint
 type DataProvider func() interface{}
 
+// APIServer represents the API server with REST and WebSocket capabilities.
 type APIServer struct {
 	upgrader  websocket.Upgrader
 	clients   map[*websocket.Conn]bool
 	clientsMu sync.Mutex
 	broadcast chan interface{}
 
-	// Mapa de endpoints para suas funções fornecedoras de dados
+	// Map of endpoints to their data provider functions
 	dataProviders map[string]DataProvider
 	router        *mux.Router
 }
 
+// NewAPIServer creates and initializes a new APIServer instance
 func NewAPIServer() *APIServer {
 	return &APIServer{
 		upgrader: websocket.Upgrader{
@@ -38,7 +40,7 @@ func NewAPIServer() *APIServer {
 	
 }
 
-// RegisterEndpoint registra um endpoint REST com um provider de dados
+// RegisterEndpoint registers a REST endpoint with a data provider
 func (api *APIServer) RegisterEndpoint(path string, method string, provider DataProvider) {
 	api.dataProviders[path] = provider
 	api.router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
@@ -48,11 +50,12 @@ func (api *APIServer) RegisterEndpoint(path string, method string, provider Data
 	}).Methods(method)
 }
 
-// RegisterEndpointWithParams registra um endpoint REST com parâmetros na URL
+// RegisterEndpointWithParams registers a REST endpoint with URL parameters
 func (api *APIServer) RegisterEndpointWithParams(path string, method string, handler http.HandlerFunc) {
 	api.router.HandleFunc(path, handler).Methods(method)
 }
 
+// Start starts the API server on the specified port
 func (api *APIServer) Start(port string) {
 	// WebSocket Endpoint
 	api.router.HandleFunc("/ws/telemetry", api.handleWebSocket)
@@ -68,18 +71,19 @@ func (api *APIServer) Start(port string) {
 	// Broadcaster goroutine
 	go api.broadcaster()
 
-	fmt.Printf("🌐 API Server rodando em http://0.0.0.0:%s\n", port)
+	fmt.Printf("🌐 API Server running at http://0.0.0.0:%s\n", port)
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
-		fmt.Println("❌ Erro ao iniciar API Server:", err)
+		fmt.Println("❌ Error starting API Server:", err)
 	}
 }
 
 // ==================== WEBSOCKET ====================
 
+// handleWebSocket handles WebSocket connections for real-time updates
 func (api *APIServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := api.upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Println("❌ Erro ao upgradar conexão WebSocket:", err)
+		fmt.Println("❌ Error upgrading WebSocket connection:", err)
 		return
 	}
 
@@ -87,15 +91,15 @@ func (api *APIServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	api.clients[conn] = true
 	api.clientsMu.Unlock()
 
-	fmt.Println("🟢 Cliente WebSocket conectado")
+	fmt.Println("🟢 WebSocket client connected")
 
-	// Mantém a conexão aberta e lê mensagens (ping/pong)
+	// Keeps the connection open and reads messages (ping/pong)
 	defer func() {
 		api.clientsMu.Lock()
 		delete(api.clients, conn)
 		api.clientsMu.Unlock()
 		conn.Close()
-		fmt.Println("🔴 Cliente WebSocket desconectado")
+		fmt.Println("🔴 WebSocket client disconnected")
 	}()
 
 	for {
@@ -105,6 +109,7 @@ func (api *APIServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// broadcaster sends messages to all connected WebSocket clients
 func (api *APIServer) broadcaster() {
 	for {
 		msg := <-api.broadcast
@@ -120,7 +125,7 @@ func (api *APIServer) broadcaster() {
 	}
 }
 
-// PublishUpdate envia um update em tempo real para todos os clientes WebSocket conectados
+// PublishUpdate sends a real-time update to all connected WebSocket clients
 func (api *APIServer) PublishUpdate(event string, data interface{}) {
 	api.broadcast <- map[string]interface{}{
 		"event": event,
