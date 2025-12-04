@@ -63,3 +63,52 @@ func (b *MockBattery) SetLevel(level uint8) {
 	}
 	b.level = level
 }
+
+// StartCharging initiates battery charging
+func (b *MockBattery) StartCharging() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.charging = true
+	b.lastCheck = time.Now()
+}
+
+// StopCharging stops battery charging
+func (b *MockBattery) StopCharging() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.charging = false
+	b.lastCheck = time.Now()
+}
+
+// Recharge simulates battery recharging over time
+// Returns true when fully charged
+func (b *MockBattery) Recharge() bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if !b.charging {
+		b.charging = true
+		b.lastCheck = time.Now()
+	}
+
+	elapsedSec := time.Since(b.lastCheck).Seconds()
+	if elapsedSec > 0.5 {
+		// Charge rate: 2% per second (faster than drain)
+		charge := uint8(elapsedSec * 2.0)
+		if charge > 0 {
+			if b.level+charge < 100 {
+				b.level += charge
+			} else {
+				b.level = 100
+			}
+			b.lastCheck = time.Now()
+		}
+	}
+
+	return b.level >= 100
+}
+
+// IsCritical returns true if battery is at critical level (< 5%)
+func (b *MockBattery) IsCritical() bool {
+	return b.GetLevel() < 5
+}

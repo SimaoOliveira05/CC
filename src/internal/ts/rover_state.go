@@ -8,13 +8,24 @@ import (
 
 // RoverTSState holds the telemetry state of a rover.
 type RoverTSState struct {
-	ID              uint8            `json:"id"` // Rover ID
-	State           string           `json:"state"` // e.g., "Idle", "Moving", "Error"
-	Battery         uint8            `json:"battery"` // Battery level percentage
-	Speed           float32          `json:"speed"` // Speed in m/s
-	Position        utils.Coordinate `json:"position"` // Current position
+	ID              uint8            `json:"id"`              // Rover ID
+	State           string           `json:"state"`           // e.g., "Idle", "Moving", "Error"
+	Battery         uint8            `json:"battery"`         // Battery level percentage
+	Speed           float32          `json:"speed"`           // Speed in m/s
+	Position        utils.Coordinate `json:"position"`        // Current position
 	UpdateFrequency uint             `json:"updateFrequency"` // Update frequency in seconds
 	MissedTelemetry int              `json:"missedTelemetry"` // Consecutive telemetry failures count
+	QueuedMissions  QueueInfo        `json:"queuedMissions"`  // Mission queue status
+}
+
+// QueueInfo holds information about the mission queue
+type QueueInfo struct {
+	Priority1Count uint8    `json:"priority1Count"` // Number of priority 1 missions
+	Priority2Count uint8    `json:"priority2Count"` // Number of priority 2 missions
+	Priority3Count uint8    `json:"priority3Count"` // Number of priority 3 missions
+	Priority1IDs   []uint16 `json:"priority1Ids"`   // Mission IDs in priority 1 queue
+	Priority2IDs   []uint16 `json:"priority2Ids"`   // Mission IDs in priority 2 queue
+	Priority3IDs   []uint16 `json:"priority3Ids"`   // Mission IDs in priority 3 queue
 }
 
 // String returns a human-readable representation of the RoverTSState.
@@ -45,7 +56,7 @@ func (rm *RoverManager) AddRover(rover *RoverTSState) {
 }
 
 // UpdateRover updates the telemetry state of an existing rover.
-func (rm *RoverManager) UpdateRover(id uint8, state string, battery uint8, speed float32, position utils.Coordinate, missedTelemetry int) {
+func (rm *RoverManager) UpdateRover(id uint8, state string, battery uint8, speed float32, position utils.Coordinate, missedTelemetry int, queueInfo QueueInfo) {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 	if rover, ok := rm.rovers[id]; ok {
@@ -54,6 +65,7 @@ func (rm *RoverManager) UpdateRover(id uint8, state string, battery uint8, speed
 		rover.Speed = speed
 		rover.Position = position
 		rover.MissedTelemetry = missedTelemetry
+		rover.QueuedMissions = queueInfo
 	} else {
 		// Create rover if it doesn't exist
 		rm.rovers[id] = &RoverTSState{
@@ -63,6 +75,7 @@ func (rm *RoverManager) UpdateRover(id uint8, state string, battery uint8, speed
 			Speed:           speed,
 			Position:        position,
 			MissedTelemetry: missedTelemetry,
+			QueuedMissions:  queueInfo,
 		}
 	}
 }

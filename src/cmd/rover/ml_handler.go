@@ -38,17 +38,36 @@ func (rover *Rover) handlePacket(pkt ml.Packet) {
 		pkt.MsgType == ml.MSG_ACK, // Skip ordering for ACKs
 		true,
 		func(level, msg string, meta any) {
-        fmt.Printf("[%s] %s %+v\n", level, msg, meta)
-    	},
+			fmt.Printf("[%s] %s %+v\n", level, msg, meta)
+		},
 	)
 }
 
-// processMission extracts and processes the mission
+// processMission extracts and enqueues the mission by priority
 func (rover *Rover) processMission(pkt ml.Packet) {
-	rover.ML.MissionReceivedChan <- true
 	var mission ml.MissionData
 	mission = mission.Decode(pkt.Payload)
-	go rover.ExecuteMission(mission)
+
+	// Add mission to appropriate priority queue
+	rover.ML.MissionQueue.Mu.Lock()
+	switch mission.Priority {
+	case 1:
+		rover.ML.MissionQueue.Priority1 = append(rover.ML.MissionQueue.Priority1, mission)
+		fmt.Printf("📥 Mission %d added to Priority 1 queue\n", mission.MsgID)
+	case 2:
+		rover.ML.MissionQueue.Priority2 = append(rover.ML.MissionQueue.Priority2, mission)
+		fmt.Printf("📥 Mission %d added to Priority 2 queue\n", mission.MsgID)
+	case 3:
+		rover.ML.MissionQueue.Priority3 = append(rover.ML.MissionQueue.Priority3, mission)
+		fmt.Printf("📥 Mission %d added to Priority 3 queue\n", mission.MsgID)
+	default:
+		// Default to priority 3 for invalid priorities
+		rover.ML.MissionQueue.Priority3 = append(rover.ML.MissionQueue.Priority3, mission)
+		fmt.Printf("📥 Mission %d added to Priority 3 queue (default)\n", mission.MsgID)
+	}
+	rover.ML.MissionQueue.Mu.Unlock()
+
+	rover.ML.MissionReceivedChan <- true
 }
 
 // receiver continuously reads UDP packets
@@ -76,48 +95,41 @@ func (rover *Rover) sendReport(mission ml.MissionData, final bool) {
 		return
 	}
 
-	// Increment sequence number and create packet
-	rover.ML.SeqNum++
-	pkt := ml.Packet{
-		RoverId:  rover.ID,
-		MsgType:  ml.MSG_REPORT,
-		SeqNum:   uint16(rover.ML.SeqNum),
-		AckNum:   0,
-		Checksum: 0,
-		Payload:  payload,
-	}
-
-	// Use PacketManager to send the report packet
-	pl.PacketManager(rover.MLConn.Conn, 
-					rover.MLConn.Addr, 
-					pkt, 
-					rover.ML.Window,
-					func(level, msg string, meta any) {
-						fmt.Printf("[%s] %s %+v\n", level, msg, meta)
-					})
+	pl.CreateAndSendPacket(
+		rover.MLConn.Conn,
+		rover.MLConn.Addr,
+		rover.ID,
+		ml.MSG_REPORT,
+		&rover.ML.SeqNum,
+		0,
+		payload,
+		rover.ML.Window,
+		nil,
+		func(level, msg string, meta any) {
+			fmt.Printf("[%s] %s %+v\n", level, msg, meta)
+		},
+	)
 }
 
-// sendRequest envia um pedido de missão para a mothership
+// sendRequest sends a request for N missions to the mothership
 func (rover *Rover) sendRequest() {
+	// Payload contains the number of missions requested
+	payload := []byte{rover.ML.MissionQueue.BatchSize}
 
-	rover.ML.SeqNum++
-
-	req := ml.Packet{
-		RoverId:  rover.ID,
-		MsgType:  ml.MSG_REQUEST,
-		SeqNum:   uint16(rover.ML.SeqNum),
-		AckNum:   0,
-		Checksum: 0,
-		Payload:  []byte{},
-	}
-
-	pl.PacketManager(rover.MLConn.Conn, 
-					rover.MLConn.Addr, 
-					req, 
-					rover.ML.Window,	
-					func(level, msg string, meta any) {
-						fmt.Printf("[%s] %s %+v\n", level, msg, meta)
-					})
+	pl.CreateAndSendPacket(
+		rover.MLConn.Conn,
+		rover.MLConn.Addr,
+		rover.ID,
+		ml.MSG_REQUEST,
+		&rover.ML.SeqNum,
+		0,
+		payload,
+		rover.ML.Window,
+		nil,
+		func(level, msg string, meta any) {
+			fmt.Printf("[%s] %s %+v\n", level, msg, meta)
+		},
+	)
 }
 
 // buildReportPayload creates a generic report header
@@ -137,7 +149,6 @@ func (rover *Rover) buildReportPayload(mission ml.MissionData, final bool) []byt
 
 	return report.Encode()
 }
-
 
 // buildPayload creates the payload for different mission types
 func (rover *Rover) buildPayload(mission ml.MissionData) []byte {

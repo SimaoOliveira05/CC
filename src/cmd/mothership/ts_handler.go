@@ -34,9 +34,9 @@ func (ms *MotherShip) telemetryReceiver(port string) {
 func (ms *MotherShip) handleTelemetryConnection(conn net.Conn) {
 	defer conn.Close()
 
-	const defaultUpdateFreq = 2	// seconds
-	const maxMissed = 3			// failures before declaring inoperational
-	
+	const defaultUpdateFreq = 2 // seconds
+	const maxMissed = 3         // failures before declaring inoperational
+
 	// Buffer for incoming data
 	buf := make([]byte, 256)
 
@@ -53,7 +53,7 @@ func (ms *MotherShip) handleTelemetryConnection(conn net.Conn) {
 		n, err := conn.Read(buf)
 		if err != nil {
 			// Failed packet
-			missed++ // increment missed counter 
+			missed++ // increment missed counter
 			if roverID != 0 {
 				ms.handleMissedTelemetry(roverID, missed, maxMissed)
 				if missed >= maxMissed {
@@ -91,12 +91,12 @@ func (ms *MotherShip) handleMissedTelemetry(roverID uint8, missed, maxMissed int
 
 	// Check if rover should be declared inoperational
 	if missed >= maxMissed {
-		ms.RoverInfo.UpdateRover(roverID, "Inoperational", rover.Battery, rover.Speed, rover.Position, missed)
+		ms.RoverInfo.UpdateRover(roverID, "Inoperational", rover.Battery, rover.Speed, rover.Position, missed, rover.QueuedMissions)
 		ms.EventLogger.Log("ERROR", "TS", fmt.Sprintf("Rover %d declared inoperational due to lack of telemetry", roverID), nil)
 		fmt.Printf("❌ Rover %d marked as inoperational\n", roverID)
 	} else {
 		// Partial update without changing the rest
-		ms.RoverInfo.UpdateRover(roverID, rover.State, rover.Battery, rover.Speed, rover.Position, missed)
+		ms.RoverInfo.UpdateRover(roverID, rover.State, rover.Battery, rover.Speed, rover.Position, missed, rover.QueuedMissions)
 	}
 }
 
@@ -107,6 +107,15 @@ func (ms *MotherShip) updateRoverTelemetry(t *ts.TelemetryPacket) {
 		stateText = "In Mission"
 	}
 
+	queueInfo := ts.QueueInfo{
+		Priority1Count: t.QueueP1Count,
+		Priority2Count: t.QueueP2Count,
+		Priority3Count: t.QueueP3Count,
+		Priority1IDs:   []uint16{}, // IDs not sent in telemetry for bandwidth
+		Priority2IDs:   []uint16{},
+		Priority3IDs:   []uint16{},
+	}
+
 	ms.RoverInfo.UpdateRover(
 		t.RoverID,
 		stateText,
@@ -114,6 +123,6 @@ func (ms *MotherShip) updateRoverTelemetry(t *ts.TelemetryPacket) {
 		t.Speed,
 		t.Position,
 		0,
+		queueInfo,
 	)
 }
-

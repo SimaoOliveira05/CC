@@ -31,6 +31,7 @@ func main() {
 	go rover.receiver()
 	go rover.telemetrySender(mothershipTelemetry)
 	go rover.manageMissions()
+	go rover.batteryMonitor() // Monitor battery level continuously
 
 	select {}
 }

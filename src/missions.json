@@ -3,7 +3,7 @@
     "TaskType": 0,
     "Duration": 0,
     "UpdateFrequency": 1,
-    "Priority": 1,
+    "Priority": 3,
     "State": "Pending",
     "Coordinate": {"Latitude": 0.593725, "Longitude": 0.253956}
   },
@@ -11,7 +11,7 @@
     "TaskType": 1,
     "Duration": 20,
     "UpdateFrequency": 5,
-    "Priority": 1,
+    "Priority": 3,
     "State": "Pending",
     "Coordinate": {"Latitude": 0.523456, "Longitude": -0.821234}
   },
@@ -35,7 +35,7 @@
     "TaskType": 4,
     "Duration": 45,
     "UpdateFrequency": 5,
-    "Priority": 3,
+    "Priority": 1,
     "State": "Pending",
     "Coordinate": {"Latitude": 0.912345, "Longitude": -0.725890}
   },

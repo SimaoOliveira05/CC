@@ -39,7 +39,7 @@ func (ms *MotherShip) handlePacket(state *core.RoverState, pkt ml.Packet) {
 		shouldAutoAck,
 		func(level, msg string, meta any) {
 			ms.EventLogger.Log(level, "ML", msg, meta)
-    })
+		})
 }
 
 // receiver continuously reads UDP packets
@@ -83,10 +83,10 @@ func (ms *MotherShip) receiver(port string) {
 
 		ms.Mu.Lock()
 		state, exists := ms.Rovers[roverID]
-		
+
 		// If rover state does not exist, create it
 		if !exists {
-			ms.NewRoverState(roverID, addr, &packet, &state);
+			ms.NewRoverState(roverID, addr, &packet, &state)
 		}
 		ms.Mu.Unlock()
 
@@ -95,16 +95,15 @@ func (ms *MotherShip) receiver(port string) {
 	}
 }
 
-
 // NewRoverState sets up a new RoverState for a newly connected rover
 func (ms *MotherShip) NewRoverState(roverID uint8, addr *net.UDPAddr, packet *ml.Packet, state **core.RoverState) {
 	// Create and initialize RoverState
 	*state = &core.RoverState{
-		Addr:        addr,
-		SeqNum:      0,
-		ExpectedSeq: packet.SeqNum,
-		Buffer:      make(map[uint16]ml.Packet),
-		Window:      pl.NewWindow(),
+		Addr:             addr,
+		SeqNum:           0,
+		ExpectedSeq:      packet.SeqNum,
+		Buffer:           make(map[uint16]ml.Packet),
+		Window:           pl.NewWindow(),
 		NumberOfMissions: 0,
 	}
 
@@ -119,6 +118,14 @@ func (ms *MotherShip) NewRoverState(roverID uint8, addr *net.UDPAddr, packet *ml
 		Battery:  100,
 		Speed:    0,
 		Position: utils.Coordinate{Latitude: 0, Longitude: 0},
+		QueuedMissions: ts.QueueInfo{
+			Priority1Count: 0,
+			Priority2Count: 0,
+			Priority3Count: 0,
+			Priority1IDs:   []uint16{},
+			Priority2IDs:   []uint16{},
+			Priority3IDs:   []uint16{},
+		},
 	})
 
 	// Publish new rover event
@@ -134,7 +141,7 @@ func (ms *MotherShip) NewRoverState(roverID uint8, addr *net.UDPAddr, packet *ml
 func (ms *MotherShip) dispatchPacket(pkt ml.Packet, state *core.RoverState) {
 	switch pkt.MsgType {
 	case ml.MSG_REQUEST:
-		ms.handleMissionRequest(pkt.SeqNum, state)
+		ms.handleMissionRequest(pkt, state, pkt.RoverId)
 	case ml.MSG_ACK:
 		pl.HandleAck(pkt, state.Window)
 	case ml.MSG_REPORT:
@@ -145,32 +152,41 @@ func (ms *MotherShip) dispatchPacket(pkt ml.Packet, state *core.RoverState) {
 }
 
 // handleMissionRequest processes mission requests from the rover
-func (ms *MotherShip) handleMissionRequest(pktSeqNum uint16, state *core.RoverState) {
-	select {
+func (ms *MotherShip) handleMissionRequest(pkt ml.Packet, state *core.RoverState, roverID uint8) {
+	// Extract number of missions requested from payload (default to 1 if empty)
+	numMissionsRequested := uint8(1)
+	if len(pkt.Payload) > 0 {
+		numMissionsRequested = pkt.Payload[0]
+	}
+
+	fmt.Printf("📬 Rover %d requesting %d missions\n", roverID, numMissionsRequested)
+
+	missionsSent := uint8(0)
+
+	for i := uint8(0); i < numMissionsRequested; i++ {
+		select {
 		case missionState := <-ms.MissionQueue:
-			// Find the least loaded rover
-			ms.Mu.Lock()
-			targetRoverID, targetState := ms.findLeastLoadedRover()
-			ms.Mu.Unlock()
 
-			if targetState == nil {
-				// All rovers have 3+ missions, put back in queue
-				fmt.Printf("⚠️ All rovers are overloaded. Mission %d returned to queue.\n", missionState.ID)
-				ms.MissionQueue <- missionState
-
-				// Send NO_MISSION to the requesting rover
-				ms.sendNoMission(state)
-				return
+			// Use pktSeqNum only for the first mission as ACK
+			ackNum := uint16(0)
+			if i == 0 {
+				ackNum = pkt.SeqNum + 1
 			}
 
-			ms.assignMissionToRover(missionState, targetRoverID, targetState, pktSeqNum)
-		
+			ms.assignMissionToRover(missionState, roverID, state, ackNum)
+			missionsSent++
+
 		default:
-			// Empty queue
-			fmt.Printf("⚠️ Mission queue empty. Sending NO_MISSION to %s\n", state.Addr)
-			ms.sendNoMission(state)
+			// Empty queue - no more missions available
+			fmt.Printf("⚠️ Mission queue empty after sending %d/%d missions\n", missionsSent, numMissionsRequested)
+			if missionsSent == 0 {
+				ms.sendNoMission(state)
+			}
 			return
+		}
 	}
+
+	fmt.Printf("✅ Sent %d missions to rover %d\n", missionsSent, roverID)
 }
 
 // assignMissionToRover assigns a mission to the selected rover and sends it
@@ -200,84 +216,53 @@ func (ms *MotherShip) assignMissionToRover(missionState ml.MissionState, roverID
 
 	payload := missionData.Encode()
 
-	targetState.WindowLock.Lock()
-	pkt := ml.Packet{
-		RoverId: 0,
-		MsgType: ml.MSG_MISSION,
-		SeqNum:  targetState.SeqNum,
-		AckNum:  pktSeqNum + 1, // MISSION PACKETS ACTS AS A SYN-ACK
-		Payload: payload,
-	}
-
-	targetState.SeqNum++
-	targetState.WindowLock.Unlock()
-
-	pl.PacketManager(ms.Conn, 
-					targetState.Addr, 
-					pkt, 
-					targetState.Window, 
-					func(level, msg string, meta any) {
-						ms.EventLogger.Log(level, "ML", msg, meta)
-					})
+	pl.CreateAndSendPacket(
+		ms.Conn,
+		targetState.Addr,
+		0,
+		ml.MSG_MISSION,
+		&targetState.SeqNum,
+		pktSeqNum+1, // MISSION PACKETS ACTS AS A SYN-ACK
+		payload,
+		targetState.Window,
+		&targetState.WindowLock,
+		func(level, msg string, meta any) {
+			ms.EventLogger.Log(level, "ML", msg, meta)
+		},
+	)
 
 	fmt.Printf("✅ Mission %d sent to %s\n", missionState.ID, targetState.Addr)
 
 	// Change state to "Moving to" after sending the mission
-	ms.MissionManager.UpdateMissionState(missionState.ID, "Moving to")
+	ms.MissionManager.UpdateMissionState(missionState.ID, "Pending")
 	ms.publishMissionEvents(&missionState, "mission_update")
 }
 
 // publishMissionEvents publishes mission events to the API server
 func (ms *MotherShip) publishMissionEvents(mission *ml.MissionState, eventType string) {
-    if ms.APIServer != nil {
-        ms.APIServer.PublishUpdate(eventType, mission)
-    }
-}
-
-// findLeastLoadedRover finds the rover with the fewest active missions (max 3)
-func (ms *MotherShip) findLeastLoadedRover() (uint8, *core.RoverState) {
-	var bestRoverID uint8
-	var bestState *core.RoverState
-	minMissions := uint8(255) // Initial highest value
-
-	// Iterate through rovers to find the least loaded one
-	for id, state := range ms.Rovers {
-		if state.NumberOfMissions < 3 && state.NumberOfMissions < minMissions {
-			minMissions = state.NumberOfMissions
-			bestRoverID = id
-			bestState = state
-		}
+	if ms.APIServer != nil {
+		ms.APIServer.PublishUpdate(eventType, mission)
 	}
-
-	if bestState == nil {
-		return 0, nil // No available rover found
-	}
-
-	return bestRoverID, bestState
 }
 
 // sendNoMission sends a NO_MISSION packet to a rover
 func (ms *MotherShip) sendNoMission(state *core.RoverState) {
 	fmt.Printf("⚠️ Mission queue empty or rovers overloaded. Sending NO_MISSION to %s\n", state.Addr)
 
-	state.WindowLock.Lock()
-	noMissionPkt := ml.Packet{
-		RoverId: 0,
-		MsgType: ml.MSG_NO_MISSION,
-		SeqNum:  state.SeqNum,
-		AckNum:  0,
-		Payload: []byte{},
-	}
-	state.SeqNum++
-	state.WindowLock.Unlock()
-
-	pl.PacketManager(ms.Conn, 
-					state.Addr, 
-					noMissionPkt, 
-					state.Window,
-					func(level, msg string, meta any) {
-						ms.EventLogger.Log(level, "ML", msg, meta)
-					})
+	pl.CreateAndSendPacket(
+		ms.Conn,
+		state.Addr,
+		0,
+		ml.MSG_NO_MISSION,
+		&state.SeqNum,
+		0,
+		[]byte{},
+		state.Window,
+		&state.WindowLock,
+		func(level, msg string, meta any) {
+			ms.EventLogger.Log(level, "ML", msg, meta)
+		},
+	)
 }
 
 // handleReport processes reports from rovers

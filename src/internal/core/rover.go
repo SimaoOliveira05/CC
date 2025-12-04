@@ -18,15 +18,27 @@ type RoverBase struct {
 	CurrentPos utils.Coordinate // Current Coordinates of the Rover
 }
 
+// MissionQueue manages missions with 3 priority levels
+type MissionQueue struct {
+	Priority1 []ml.MissionData // High priority missions
+	Priority2 []ml.MissionData // Medium priority missions
+	Priority3 []ml.MissionData // Low priority missions
+	Mu        sync.Mutex       // Mutex for queue operations
+	BatchSize uint8            // Number of missions to request at once
+}
+
 // RoverMLState holds the state related to MissionLink connection
 type RoverMLState struct {
 	// Mission management
-	ActiveMissions      uint8      // Number of active missions
-	Cond                *sync.Cond // Condition for mission synchronization
-	CondMu              sync.Mutex // Mutex for the condition
-	Waiting             bool       // Indicates if the rover is waiting for a mission
-	MissionReceivedChan chan bool  // Channel to signal mission reception
-	SeqNum              uint32     // Sequence number for sending packets
+	ActiveMissions      uint8         // Number of active missions
+	Cond                *sync.Cond    // Condition for mission synchronization
+	CondMu              sync.Mutex    // Mutex for the condition
+	Waiting             bool          // Indicates if the rover is waiting for a mission
+	MissionReceivedChan chan bool     // Channel to signal mission reception
+	SeqNum              uint16        // Sequence number for sending packets
+	Suspended           bool          // Indicates if rover is suspended due to low battery
+	SuspendMu           sync.Mutex    // Mutex for suspension state
+	MissionQueue        *MissionQueue // Queue for managing missions by priority
 
 	// Packet and sequence number management
 	ExpectedSeq uint16
@@ -150,6 +162,14 @@ func NewRoverSystem(motherUDP string, motherTCPID string) *RoverSystem {
 			Buffer:              make(map[uint16]ml.Packet),
 			BufferMu:            sync.Mutex{},
 			Window:              pl.NewWindow(),
+			Suspended:           false,
+			SuspendMu:           sync.Mutex{},
+			MissionQueue: &MissionQueue{
+				Priority1: make([]ml.MissionData, 0),
+				Priority2: make([]ml.MissionData, 0),
+				Priority3: make([]ml.MissionData, 0),
+				BatchSize: 3,
+			},
 		},
 		TS: &ts.RoverTSState{
 			State:           "Idle",

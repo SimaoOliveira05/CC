@@ -29,12 +29,22 @@ func (rover *Rover) telemetrySender(telemetryAddr string) {
 			state = ts.STATE_IN_MISSION
 		}
 
+		// Get queue counts
+		rover.ML.MissionQueue.Mu.Lock()
+		queueP1 := uint8(len(rover.ML.MissionQueue.Priority1))
+		queueP2 := uint8(len(rover.ML.MissionQueue.Priority2))
+		queueP3 := uint8(len(rover.ML.MissionQueue.Priority3))
+		rover.ML.MissionQueue.Mu.Unlock()
+
 		// Generate and send telemetry data
 		telemetry := ts.GenerateTelemetry(rover.ID,
 			uint8(state),
 			rover.CurrentPos,
 			rover.Devices.Battery.GetLevel(),
-			rover.Devices.GPS.GetSpeed())
+			rover.Devices.GPS.GetSpeed(),
+			queueP1,
+			queueP2,
+			queueP3)
 
 		// Encode telemetry data
 		data := telemetry.Encode()
@@ -45,7 +55,7 @@ func (rover *Rover) telemetrySender(telemetryAddr string) {
 			fmt.Println("❌ Erro ao enviar telemetria:", err)
 			return
 		}
-		
+
 		//fmt.Printf("📡 Telemetry sent: Position=(%.6f, %.6f), Speed=%.2f, State=%d, Battery=%d%%\n", telemetry.Position.Latitude, telemetry.Position.Longitude, telemetry.Speed, telemetry.State, telemetry.Battery)
 	}
 }

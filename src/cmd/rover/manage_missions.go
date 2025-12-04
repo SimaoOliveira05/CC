@@ -2,14 +2,14 @@ package main
 
 import (
 	"fmt"
-	"time"
-	"src/internal/ml"
 	"src/internal/core"
+	"src/internal/devices"
+	"src/internal/ml"
+	"time"
 )
 
 // ExecuteMission processes a single mission: moves to location, performs task, and sends reports
 func (rover *Rover) ExecuteMission(mission ml.MissionData) {
-	// Increment active missions counter
 	rover.IncrementActiveMission()
 	defer rover.DecrementActiveMission()
 
@@ -28,38 +28,49 @@ func (rover *Rover) ExecuteMission(mission ml.MissionData) {
 	}
 	fmt.Printf("✅ Arrived at destination. Starting task...\n")
 
-	// Execute the task with timer
 	deadline := time.NewTimer(time.Duration(mission.Duration) * time.Second)
 	defer deadline.Stop()
 
+	batteryCheck := time.NewTicker(1 * time.Second)
+	defer batteryCheck.Stop()
+
 	if mission.UpdateFrequency > 0 {
-		// Periodic mode: send reports every UpdateFrequency
 		ticker := time.NewTicker(time.Duration(mission.UpdateFrequency) * time.Second)
 		defer ticker.Stop()
 
 		for {
 			select {
+			case <-batteryCheck.C:
+				if rover.checkBatteryAndAbort(mission.MsgID) {
+					rover.SuspendForLowBattery()
+					fmt.Printf("🔋 Battery recharged. Resuming mission %d...\n", mission.MsgID)
+				}
 			case <-deadline.C:
-				// Ends when Duration expires
 				rover.sendReport(mission, true)
+				core.ConsumeBattery(rover.Devices.Battery, core.TaskBatteryRate)
 				return
 			case <-ticker.C:
-				// Send periodic report
 				rover.sendReport(mission, false)
 			}
 		}
 	} else {
-		// No updates mode: just wait for Duration and send a final report
-		<-deadline.C
-		// Ends when Duration expires
-		rover.sendReport(mission, true)
+		for {
+			select {
+			case <-batteryCheck.C:
+				if rover.checkBatteryAndAbort(mission.MsgID) {
+					rover.SuspendForLowBattery()
+					fmt.Printf("🔋 Battery recharged. Resuming mission %d...\n", mission.MsgID)
+				}
+			case <-deadline.C:
+				rover.sendReport(mission, true)
+				core.ConsumeBattery(rover.Devices.Battery, core.TaskBatteryRate)
+				return
+			}
+		}
 	}
-
-	// Consume battery for task execution
-	core.ConsumeBattery(rover.Devices.Battery, core.TaskBatteryRate)
 }
 
-// manageMissions handles mission requests and execution flow
+// manageMissions handles mission requests and execution flow with priority queue
 func (rover *Rover) manageMissions() {
 	for {
 		// Wait until there are no active missions
@@ -69,17 +80,31 @@ func (rover *Rover) manageMissions() {
 		}
 		rover.ML.Cond.L.Unlock()
 
-		// If not waiting for missions, request new missions
-		if !rover.ML.Waiting {
+		// Check if we need to request new missions
+		if rover.isQueueEmpty() {
+			fmt.Printf("📡 Requesting %d missions from mothership...\n", rover.ML.MissionQueue.BatchSize)
 			rover.sendRequest()
 			print("")
-			received := <-rover.ML.MissionReceivedChan
-			if received { // Mothership sent missions
-				rover.ML.Waiting = true
-			} else { // Mothership has no missions to send, wait 5 seconds before requesting again
-				fmt.Println("🚫 No missions available.")
-				time.Sleep(5 * time.Second)
+
+			// Wait for all missions in the batch to arrive
+			for i := uint8(0); i < rover.ML.MissionQueue.BatchSize; i++ {
+				received := <-rover.ML.MissionReceivedChan
+				if !received {
+					fmt.Println("🚫 No more missions available.")
+					time.Sleep(5 * time.Second)
+					break
+				}
 			}
+		}
+
+		// Process next mission from queue by priority
+		mission, found := rover.dequeueNextMission()
+		if found {
+			// Execute mission synchronously (not as goroutine) to prevent multiple simultaneous missions
+			rover.ExecuteMission(mission)
+		} else {
+			// No missions in queue, wait a bit before checking again
+			time.Sleep(1 * time.Second)
 		}
 	}
 }
@@ -111,4 +136,130 @@ func (rover *Rover) DecrementActiveMission() {
 			rover.ML.Cond.L.Unlock()
 		}
 	}
+}
+
+// IsSuspended checks if the rover is currently suspended
+func (rover *Rover) IsSuspended() bool {
+	rover.ML.SuspendMu.Lock()
+	defer rover.ML.SuspendMu.Unlock()
+	return rover.ML.Suspended
+}
+
+// checkBatteryAndAbort checks if battery is critical and returns true if mission should abort
+func (rover *Rover) checkBatteryAndAbort(missionID uint16) bool {
+	if rover.Devices.Battery.GetLevel() < 5 {
+		fmt.Printf("⚠️ Battery critical during mission! Aborting mission %d...\n", missionID)
+		return true
+	}
+	return false
+}
+
+// SuspendForLowBattery suspends rover operations and recharges battery
+func (rover *Rover) SuspendForLowBattery() {
+	// Set suspended state
+	rover.ML.SuspendMu.Lock()
+	rover.ML.Suspended = true
+	rover.ML.SuspendMu.Unlock()
+
+	fmt.Printf("⏸️  Rover suspended - Battery: %d%%\n", rover.Devices.Battery.GetLevel())
+
+	// Cast to MockBattery to access charging methods
+	mockBattery, ok := rover.Devices.Battery.(*devices.MockBattery)
+	if !ok {
+		fmt.Println("❌ Battery type not supported for charging")
+		return
+	}
+
+	mockBattery.StartCharging()
+
+	// Recharge until battery is at least 80%
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		<-ticker.C
+		mockBattery.Recharge()
+		currentLevel := mockBattery.GetLevel()
+
+		if currentLevel%10 == 0 { // Log every 10%
+			fmt.Printf("🔌 Charging... Battery: %d%%\n", currentLevel)
+		}
+
+		if currentLevel >= 80 {
+			fmt.Printf("✅ Battery recharged to %d%%\n", currentLevel)
+			break
+		}
+	}
+
+	mockBattery.StopCharging()
+
+	// Resume operations
+	rover.ML.SuspendMu.Lock()
+	rover.ML.Suspended = false
+	rover.ML.SuspendMu.Unlock()
+}
+
+// batteryMonitor continuously monitors battery level
+func (rover *Rover) batteryMonitor() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		level := rover.Devices.Battery.GetLevel()
+
+		// Warning at 20%
+		if level <= 20 && level > 5 {
+			fmt.Printf("⚠️  Low battery warning: %d%%\n", level)
+		}
+
+		// Critical at 5% - suspend immediately if not already suspended
+		if level <= 5 && !rover.IsSuspended() {
+			fmt.Printf("🔴 Critical battery level: %d%%\n", level)
+			fmt.Printf("⚠️  Suspending all operations for recharge...\n")
+			go rover.SuspendForLowBattery()
+		}
+	}
+}
+
+// isQueueEmpty checks if all priority queues are empty
+func (rover *Rover) isQueueEmpty() bool {
+	rover.ML.MissionQueue.Mu.Lock()
+	defer rover.ML.MissionQueue.Mu.Unlock()
+
+	return len(rover.ML.MissionQueue.Priority1) == 0 &&
+		len(rover.ML.MissionQueue.Priority2) == 0 &&
+		len(rover.ML.MissionQueue.Priority3) == 0
+}
+
+// dequeueNextMission gets the next mission from highest priority queue
+func (rover *Rover) dequeueNextMission() (ml.MissionData, bool) {
+	rover.ML.MissionQueue.Mu.Lock()
+	defer rover.ML.MissionQueue.Mu.Unlock()
+
+	// Check Priority 1 first
+	if len(rover.ML.MissionQueue.Priority1) > 0 {
+		mission := rover.ML.MissionQueue.Priority1[0]
+		rover.ML.MissionQueue.Priority1 = rover.ML.MissionQueue.Priority1[1:]
+		fmt.Printf("🚀 Dequeued mission %d from Priority 1 queue\n", mission.MsgID)
+		return mission, true
+	}
+
+	// Check Priority 2
+	if len(rover.ML.MissionQueue.Priority2) > 0 {
+		mission := rover.ML.MissionQueue.Priority2[0]
+		rover.ML.MissionQueue.Priority2 = rover.ML.MissionQueue.Priority2[1:]
+		fmt.Printf("🚀 Dequeued mission %d from Priority 2 queue\n", mission.MsgID)
+		return mission, true
+	}
+
+	// Check Priority 3
+	if len(rover.ML.MissionQueue.Priority3) > 0 {
+		mission := rover.ML.MissionQueue.Priority3[0]
+		rover.ML.MissionQueue.Priority3 = rover.ML.MissionQueue.Priority3[1:]
+		fmt.Printf("🚀 Dequeued mission %d from Priority 3 queue\n", mission.MsgID)
+		return mission, true
+	}
+
+	// No missions available
+	return ml.MissionData{}, false
 }

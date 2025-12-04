@@ -25,15 +25,37 @@
         <span class="label">Posição</span>
         <span class="value coordinate">{{ formatPosition(rover.position) }}</span>
       </div>
+
+      <div class="metric">
+        <span class="label">Missões na Fila</span>
+        <div class="queue-info">
+          <span class="queue-badge priority-1">
+            P1: {{ getQueueCount(1) }}
+          </span>
+          <span class="queue-badge priority-2">
+            P2: {{ getQueueCount(2) }}
+          </span>
+          <span class="queue-badge priority-3">
+            P3: {{ getQueueCount(3) }}
+          </span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { watch } from 'vue';
+
 const props = defineProps({
   rover: Object,
   required: true
 });
+
+// Watch for changes in rover data
+watch(() => props.rover, (newVal) => {
+  console.log('Rover updated:', newVal.id, 'queuedMissions:', newVal.queuedMissions);
+}, { deep: true });
 
 const getBatteryColor = () => {
   if (props.rover.battery > 60) return '#00ff88';
@@ -44,6 +66,14 @@ const getBatteryColor = () => {
 const formatPosition = (pos) => {
   if (!pos || pos.latitude === undefined || pos.longitude === undefined) return 'N/A';
   return `(${pos.latitude.toFixed(4)}, ${pos.longitude.toFixed(4)})`;
+};
+
+const getQueueCount = (priority) => {
+  if (!props.rover.queuedMissions) return 0;
+  if (priority === 1) return props.rover.queuedMissions.priority1Count || 0;
+  if (priority === 2) return props.rover.queuedMissions.priority2Count || 0;
+  if (priority === 3) return props.rover.queuedMissions.priority3Count || 0;
+  return 0;
 };
 </script>
 
@@ -127,6 +157,38 @@ const formatPosition = (pos) => {
   font-size: 14px;
   color: #e8eef7;
   font-weight: bold;
+}
+
+.queue-info {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.queue-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: bold;
+  border: 1px solid;
+}
+
+.queue-badge.priority-1 {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+  border-color: #ff4444;
+}
+
+.queue-badge.priority-2 {
+  background: rgba(255, 170, 0, 0.2);
+  color: #ffaa00;
+  border-color: #ffaa00;
+}
+
+.queue-badge.priority-3 {
+  background: rgba(0, 212, 255, 0.2);
+  color: #00d4ff;
+  border-color: #00d4ff;
 }
 
 .battery-bar {

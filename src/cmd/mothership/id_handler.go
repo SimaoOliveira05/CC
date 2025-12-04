@@ -10,8 +10,8 @@ import (
 
 // IDManager manages the assignment of unique IDs to rovers
 type IDManager struct {
-	nextID uint8		// Next available ID to assign
-	mu     sync.Mutex	// Mutex for concurrent access
+	nextID uint8      // Next available ID to assign
+	mu     sync.Mutex // Mutex for concurrent access
 }
 
 // NewIDManager creates and initializes a new IDManager instance
@@ -57,27 +57,35 @@ func (ms *MotherShip) idAssignmentServer(port string) {
 
 // handleIDRequest processes a single ID assignment request
 func (ms *MotherShip) handleIDRequest(conn net.Conn, idManager *IDManager) {
-    defer conn.Close()
+	defer conn.Close()
 
-    id := idManager.GetNextID()
-    var updateFrequency uint = 2 // Default update frequency in seconds
+	id := idManager.GetNextID()
+	var updateFrequency uint = 2 // Default update frequency in seconds
 
 	// Send assigned ID and update frequency to rover
-    buf := []byte{id, byte(updateFrequency)}
-    _, err := conn.Write(buf)
-    if err != nil {
-        ms.EventLogger.Log("ERROR", "IDHandler", fmt.Sprintf("Error sending ID/updateFrequency: %v", err), nil)
-        return
-    }
+	buf := []byte{id, byte(updateFrequency)}
+	_, err := conn.Write(buf)
+	if err != nil {
+		ms.EventLogger.Log("ERROR", "IDHandler", fmt.Sprintf("Error sending ID/updateFrequency: %v", err), nil)
+		return
+	}
 
 	// Log assignment and register rover in RoverInfo manager
-    ms.EventLogger.Log("INFO", "IDHandler", fmt.Sprintf("ID %d assigned to new rover (updateFrequency=%d)", id, updateFrequency), nil)
-    ms.RoverInfo.AddRover(&ts.RoverTSState{
-        ID:       id,
-        State:    "Unknown",
-        Battery:  100,
-        Speed:    0.0,
-        Position: utils.Coordinate{Latitude: 0, Longitude: 0},
-        UpdateFrequency: updateFrequency,
-    })
+	ms.EventLogger.Log("INFO", "IDHandler", fmt.Sprintf("ID %d assigned to new rover (updateFrequency=%d)", id, updateFrequency), nil)
+	ms.RoverInfo.AddRover(&ts.RoverTSState{
+		ID:              id,
+		State:           "Unknown",
+		Battery:         100,
+		Speed:           0.0,
+		Position:        utils.Coordinate{Latitude: 0, Longitude: 0},
+		UpdateFrequency: updateFrequency,
+		QueuedMissions: ts.QueueInfo{
+			Priority1Count: 0,
+			Priority2Count: 0,
+			Priority3Count: 0,
+			Priority1IDs:   []uint16{},
+			Priority2IDs:   []uint16{},
+			Priority3IDs:   []uint16{},
+		},
+	})
 }
