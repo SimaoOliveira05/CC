@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"src/config"
 	"src/internal/ml"
 	pl "src/utils/packetsLogic"
 )
@@ -204,13 +205,13 @@ func (rover *Rover) buildPayload(mission ml.MissionData) []byte {
 	case ml.TASK_INSTALLATION:
 		// Installation can fail depending on battery level and randomness
 		battery := rover.Devices.Battery.GetLevel()
-		successChance := 0.9
-		if battery < 20 {
+		successChance := config.INSTALL_SUCCESS_CHANCE
+		if battery < config.LOW_BATTERY_LEVEL {
 			successChance = 0.7
 		} else if battery < 50 {
 			successChance = 0.8
 		}
-		success := rand.Float32() < float32(successChance)
+		success := rand.Float64() < successChance
 		inst := ml.InstallReportData{
 			Success: success,
 		}

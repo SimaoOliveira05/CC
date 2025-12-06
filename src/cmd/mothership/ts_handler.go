@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"src/config"
 	"src/internal/ts"
 	"time"
 )
@@ -34,20 +35,17 @@ func (ms *MotherShip) telemetryReceiver(port string) {
 func (ms *MotherShip) handleTelemetryConnection(conn net.Conn) {
 	defer conn.Close()
 
-	const defaultUpdateFreq = 2 // seconds
-	const maxMissed = 3         // failures before declaring inoperational
-
 	// Buffer for incoming data
 	buf := make([]byte, 256)
 
 	// Telemetry handling loop
 	var roverID uint8
-	updateFreq := defaultUpdateFreq
+	updateFreq := config.DEFAULT_TELEMETRY_FREQ
 	missed := 0
 
 	for {
-		// Read timeout
-		readTimeout := time.Duration(2*updateFreq) * time.Second
+		// Read timeout (2x update frequency)
+		readTimeout := 2 * updateFreq
 		_ = conn.SetReadDeadline(time.Now().Add(readTimeout))
 
 		n, err := conn.Read(buf)
@@ -55,8 +53,8 @@ func (ms *MotherShip) handleTelemetryConnection(conn net.Conn) {
 			// Failed packet
 			missed++ // increment missed counter
 			if roverID != 0 {
-				ms.handleMissedTelemetry(roverID, missed, maxMissed)
-				if missed >= maxMissed {
+				ms.handleMissedTelemetry(roverID, missed, config.MAX_MISSED_TELEMETRY)
+				if missed >= config.MAX_MISSED_TELEMETRY {
 					return // Rover declared inoperational
 				}
 			}

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"src/config"
 	"src/internal/ts"
 	"src/utils"
 	"sync"
@@ -60,7 +61,8 @@ func (ms *MotherShip) handleIDRequest(conn net.Conn, idManager *IDManager) {
 	defer conn.Close()
 
 	id := idManager.GetNextID()
-	var updateFrequency uint = 2 // Default update frequency in seconds
+	// Get update frequency from config (convert from Duration to seconds)
+	updateFrequency := uint(config.DEFAULT_TELEMETRY_FREQ.Seconds())
 
 	// Send assigned ID and update frequency to rover
 	buf := []byte{id, byte(updateFrequency)}
@@ -75,7 +77,7 @@ func (ms *MotherShip) handleIDRequest(conn net.Conn, idManager *IDManager) {
 	ms.RoverInfo.AddRover(&ts.RoverTSState{
 		ID:              id,
 		State:           "Unknown",
-		Battery:         100,
+		Battery:         config.INITIAL_BATTERY,
 		Speed:           0.0,
 		Position:        utils.Coordinate{Latitude: 0, Longitude: 0},
 		UpdateFrequency: updateFrequency,

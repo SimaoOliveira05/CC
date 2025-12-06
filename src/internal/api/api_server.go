@@ -50,10 +50,6 @@ func (api *APIServer) RegisterEndpoint(path string, method string, provider Data
 	}).Methods(method)
 }
 
-// RegisterEndpointWithParams registers a REST endpoint with URL parameters
-func (api *APIServer) RegisterEndpointWithParams(path string, method string, handler http.HandlerFunc) {
-	api.router.HandleFunc(path, handler).Methods(method)
-}
 
 // Start starts the API server on the specified port
 func (api *APIServer) Start(port string) {

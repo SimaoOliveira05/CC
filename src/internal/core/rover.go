@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"net"
+	"src/config"
 	"src/internal/devices"
 	"src/internal/ml"
 	"src/internal/ts"
@@ -91,7 +92,7 @@ func requestID(mothershipAddr string) (uint8, uint, error) {
 
 	// Read 2 bytes: 1 for ID and 1 for update frequency
 	buf := make([]byte, 2)
-	conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	conn.SetReadDeadline(time.Now().Add(config.TCP_TIMEOUT))
 	_, err = conn.Read(buf)
 	if err != nil {
 		return 0, 0, fmt.Errorf("timeout or error receiving ID: %v", err)
@@ -168,12 +169,12 @@ func NewRoverSystem(motherUDP string, motherTCPID string) *RoverSystem {
 				Priority1: make([]ml.MissionData, 0),
 				Priority2: make([]ml.MissionData, 0),
 				Priority3: make([]ml.MissionData, 0),
-				BatchSize: 3,
+				BatchSize: config.MISSION_BATCH_SIZE,
 			},
 		},
 		TS: &ts.RoverTSState{
 			State:           "Idle",
-			Battery:         100,
+			Battery:         config.INITIAL_BATTERY,
 			Speed:           0.0,
 			UpdateFrequency: updateFrequency,
 		},
@@ -186,7 +187,7 @@ func NewRoverSystem(motherUDP string, motherTCPID string) *RoverSystem {
 				Longitude: 0.000 + float64(roverID)*0.001,
 			}),
 			Thermometer:      devices.NewMockThermometer(),
-			Battery:          devices.NewMockBattery(100),
+			Battery:          devices.NewMockBattery(config.INITIAL_BATTERY),
 			Camera:           devices.NewMockCamera(),
 			ChemicalAnalyzer: devices.NewMockChemicalAnalyzer(),
 		},

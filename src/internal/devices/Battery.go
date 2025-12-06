@@ -1,6 +1,7 @@
 package devices
 
 import (
+	"src/config"
 	"sync"
 	"time"
 )
@@ -35,8 +36,8 @@ func (b *MockBattery) GetLevel() uint8 {
 	defer b.mu.Unlock()
 	elapsedSec := time.Since(b.lastCheck).Seconds()
 	if !b.charging && elapsedSec > 0.5 {
-		// Drain rate: 0.5% per second (approx 30% per minute)
-		drain := uint8(elapsedSec * 0.5)
+		// Drain rate from config
+		drain := uint8(elapsedSec * config.BATTERY_DRAIN_RATE)
 		if drain > 0 {
 			if b.level > drain {
 				b.level -= drain
@@ -93,8 +94,8 @@ func (b *MockBattery) Recharge() bool {
 
 	elapsedSec := time.Since(b.lastCheck).Seconds()
 	if elapsedSec > 0.5 {
-		// Charge rate: 2% per second (faster than drain)
-		charge := uint8(elapsedSec * 2.0)
+		// Charge rate from config
+		charge := uint8(elapsedSec * config.BATTERY_CHARGE_RATE)
 		if charge > 0 {
 			if b.level+charge < 100 {
 				b.level += charge
@@ -108,7 +109,7 @@ func (b *MockBattery) Recharge() bool {
 	return b.level >= 100
 }
 
-// IsCritical returns true if battery is at critical level (< 5%)
+// IsCritical returns true if battery is at critical level
 func (b *MockBattery) IsCritical() bool {
-	return b.GetLevel() < 5
+	return b.GetLevel() < config.CRITICAL_BATTERY_LEVEL
 }

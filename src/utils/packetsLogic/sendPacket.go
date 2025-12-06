@@ -3,6 +3,7 @@ package packetslogic
 import (
 	"fmt"
 	"net"
+	"src/config"
 	"src/internal/ml"
 	"sync"
 	"time"
@@ -22,14 +23,7 @@ type Window struct {
 	RTO    time.Duration
 }
 
-// Constants for RTO calculation and retransmission management
-const (
-	initialRTO     = 1200 * time.Millisecond
-	minRTO         = 200 * time.Millisecond
-	maxRTO         = 5 * time.Second
-	maxRetries     = 5
-	chanBufferSize = 1
-)
+const chanBufferSize = 1
 
 // NewWindow creates and initializes a new Window instance
 func NewWindow() *Window {
@@ -39,7 +33,7 @@ func NewWindow() *Window {
 		Mu:              sync.Mutex{},
 		SRTT:            0,
 		RTTVAR:          0,
-		RTO:             initialRTO, // initial fallback
+		RTO:             config.INITIAL_RTO, // initial fallback from config
 	}
 }
 
@@ -56,12 +50,12 @@ func (w *Window) UpdateRTO(sampleRTT time.Duration) {
 
 	w.RTO = w.SRTT + 4*w.RTTVAR
 
-	// Safety limits
-	if w.RTO < minRTO {
-		w.RTO = minRTO
+	// Safety limits from config
+	if w.RTO < config.MIN_RTO {
+		w.RTO = config.MIN_RTO
 	}
-	if w.RTO > maxRTO {
-		w.RTO = maxRTO
+	if w.RTO > config.MAX_RTO {
+		w.RTO = config.MAX_RTO
 	}
 }
 
@@ -157,7 +151,7 @@ func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, w
 	ch := registerPacket(window, pkt.SeqNum)
 	defer unregisterPacket(window, pkt.SeqNum)
 
-	for retries := 0; retries <= maxRetries; retries++ {
+	for retries := 0; retries <= config.MAX_RETRIES; retries++ {
 		sendTime := time.Now()
 		// Send the packet
 		if err := SendPacketUDP(conn, addr, pkt); err != nil {
@@ -177,7 +171,7 @@ func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, w
 
 		case <-time.After(rto):
 			// Timeout - prepare for retransmission
-			if retries == maxRetries {
+			if retries == config.MAX_RETRIES {
 				handleMaxRetriesReached(pkt.SeqNum, logf)
 				return
 			}
@@ -232,10 +226,10 @@ func handleTimeout(seqNum uint16, retries int, rto time.Duration, logf func(leve
 
 // handleMaxRetriesReached logs failure after max retries
 func handleMaxRetriesReached(seqNum uint16, logf func(level string, msg string, meta any)) {
-	fmt.Printf("❌ Failure to receive ACK for SeqNum %d after %d attempts. Aborting...\n", seqNum, maxRetries)
+	fmt.Printf("❌ Failure to receive ACK for SeqNum %d after %d attempts. Aborting...\n", seqNum, config.MAX_RETRIES)
 	logf("ERROR", "Failure after all attempts", map[string]any{
 		"seq":        seqNum,
-		"maxRetries": maxRetries,
+		"maxRetries": config.MAX_RETRIES,
 	})
 }
 

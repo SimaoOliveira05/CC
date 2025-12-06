@@ -2,6 +2,7 @@ package devices
 
 import (
 	"math/rand"
+	"src/config"
 )
 
 // Camera interface
@@ -20,15 +21,14 @@ func NewMockCamera() *MockCamera {
 // ReadImageChunk simulates reading a chunk of image data
 func (c *MockCamera) ReadImageChunk() []byte {
 	// Simulate reading a chunk of image data by returning random bytes
-	size := 1024
-	chunk := make([]byte, size)
+	chunk := make([]byte, config.CAMERA_CHUNK_SIZE)
 	_, err := rand.Read(chunk)
 	if err != nil {
 		// In case of error, return an empty slice
 		return []byte{}
 	}
 	// Simulate a chance of read failure
-	if rand.Float32() < 0.1 {
+	if rand.Float32() < config.CAMERA_FAIL_CHANCE {
 		return []byte{}
 	}
 	return chunk

@@ -2,15 +2,16 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
+	"net"
+	"os"
+	"src/config"
 	"src/internal/api"
+	el "src/internal/eventLogger"
 	"src/internal/ml"
 	"src/internal/ts"
 	pl "src/utils/packetsLogic"
 	"sync"
-	el "src/internal/eventLogger"
-	"fmt"
-	"os"
-	"net"
 )
 
 // RoverState maintain the state of each rover connected to the mothership
@@ -41,7 +42,7 @@ func NewMotherShip() *MotherShip {
 	ms := &MotherShip{
 		Rovers:         make(map[uint8]*RoverState),
 		MissionManager: ml.NewMissionManager(),
-		MissionQueue:   make(chan ml.MissionState, 100),
+		MissionQueue:   make(chan ml.MissionState, config.MISSION_QUEUE_SIZE),
 		Mu:             sync.Mutex{},
 		RoverInfo:      ts.NewRoverManager(),
 		APIServer:      api.NewAPIServer(),
@@ -55,7 +56,7 @@ func NewMotherShip() *MotherShip {
 	}
 
 	// Initialize event logger
-	ms.EventLogger = el.NewEventLogger(1000, ms.APIServer)
+	ms.EventLogger = el.NewEventLogger(config.EVENT_LOGGER_SIZE, ms.APIServer)
 
 	// Setup API endpoints with mothership data
 	ms.setupAPIEndpoints()

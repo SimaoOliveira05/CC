@@ -101,5 +101,9 @@ func HandleOrderedPacket(
 	case seq < expected:
 		// Duplicate packet - resend ACK
 		SendAck(conn, addr, seq, window, roverID, logf)
+		logf("WARN", "Duplicate packet received, ACK resent", map[string]any{
+			"addr": addr.String(),
+			"seq":  seq,
+		})
 	}
 }

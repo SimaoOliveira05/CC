@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"src/config"
 	"src/internal/core"
 	"src/internal/devices"
 	"src/internal/ml"
@@ -31,7 +32,7 @@ func (rover *Rover) ExecuteMission(mission ml.MissionData) {
 	deadline := time.NewTimer(time.Duration(mission.Duration) * time.Second)
 	defer deadline.Stop()
 
-	batteryCheck := time.NewTicker(1 * time.Second)
+	batteryCheck := time.NewTicker(config.BATTERY_CHECK_INTERVAL)
 	defer batteryCheck.Stop()
 
 	if mission.UpdateFrequency > 0 {
@@ -47,7 +48,7 @@ func (rover *Rover) ExecuteMission(mission ml.MissionData) {
 				}
 			case <-deadline.C:
 				rover.sendReport(mission, true)
-				core.ConsumeBattery(rover.Devices.Battery, core.TaskBatteryRate)
+				core.ConsumeBattery(rover.Devices.Battery, config.TASK_BATTERY_RATE)
 				return
 			case <-ticker.C:
 				rover.sendReport(mission, false)
@@ -63,7 +64,7 @@ func (rover *Rover) ExecuteMission(mission ml.MissionData) {
 				}
 			case <-deadline.C:
 				rover.sendReport(mission, true)
-				core.ConsumeBattery(rover.Devices.Battery, core.TaskBatteryRate)
+				core.ConsumeBattery(rover.Devices.Battery, config.TASK_BATTERY_RATE)
 				return
 			}
 		}
@@ -91,7 +92,7 @@ func (rover *Rover) manageMissions() {
 				received := <-rover.ML.MissionReceivedChan
 				if !received {
 					fmt.Println("🚫 No more missions available.")
-					time.Sleep(5 * time.Second)
+					time.Sleep(config.NO_MISSION_WAIT)
 					break
 				}
 			}
@@ -147,7 +148,7 @@ func (rover *Rover) IsSuspended() bool {
 
 // checkBatteryAndAbort checks if battery is critical and returns true if mission should abort
 func (rover *Rover) checkBatteryAndAbort(missionID uint16) bool {
-	if rover.Devices.Battery.GetLevel() < 5 {
+	if rover.Devices.Battery.GetLevel() < config.CRITICAL_BATTERY_LEVEL {
 		fmt.Printf("⚠️ Battery critical during mission! Aborting mission %d...\n", missionID)
 		return true
 	}
@@ -172,7 +173,7 @@ func (rover *Rover) SuspendForLowBattery() {
 
 	mockBattery.StartCharging()
 
-	// Recharge until battery is at least 80%
+	// Recharge until battery reaches target level
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
@@ -185,7 +186,7 @@ func (rover *Rover) SuspendForLowBattery() {
 			fmt.Printf("🔌 Charging... Battery: %d%%\n", currentLevel)
 		}
 
-		if currentLevel >= 80 {
+		if currentLevel >= config.TARGET_RECHARGE_LEVEL {
 			fmt.Printf("✅ Battery recharged to %d%%\n", currentLevel)
 			break
 		}
@@ -201,19 +202,19 @@ func (rover *Rover) SuspendForLowBattery() {
 
 // batteryMonitor continuously monitors battery level
 func (rover *Rover) batteryMonitor() {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(config.BATTERY_MONITOR_INTERVAL)
 	defer ticker.Stop()
 
 	for range ticker.C {
 		level := rover.Devices.Battery.GetLevel()
 
-		// Warning at 20%
-		if level <= 20 && level > 5 {
+		// Warning at low battery level
+		if level <= config.LOW_BATTERY_LEVEL && level > config.CRITICAL_BATTERY_LEVEL {
 			fmt.Printf("⚠️  Low battery warning: %d%%\n", level)
 		}
 
-		// Critical at 5% - suspend immediately if not already suspended
-		if level <= 5 && !rover.IsSuspended() {
+		// Critical - suspend immediately if not already suspended
+		if level <= config.CRITICAL_BATTERY_LEVEL && !rover.IsSuspended() {
 			fmt.Printf("🔴 Critical battery level: %d%%\n", level)
 			fmt.Printf("⚠️  Suspending all operations for recharge...\n")
 			go rover.SuspendForLowBattery()
