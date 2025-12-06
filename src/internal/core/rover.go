@@ -10,6 +10,7 @@ import (
 	pl "src/utils/packetsLogic"
 	"sync"
 	"time"
+	"src/utils/logger"
 )
 
 // RoverBase is a basic structure used in both ML and TS contexts
@@ -78,6 +79,7 @@ type RoverSystem struct {
 	TS         *ts.RoverTSState   // TelemetryLink state
 	MLConn     *RoverMLConnection // MissionLink connection
 	Devices    *Devices           // Attached devices
+	Logger	   *logger.Logger    // Logger instance
 }
 
 // requestID contacts the mothership to request a unique rover ID and update frequency
@@ -136,11 +138,25 @@ func NewRoverSystem(motherUDP string, motherTCPID string) *RoverSystem {
 		return nil
 	}
 
+	log, err := logger.NewLogger(
+		fmt.Sprintf("rover_%d.log", roverID),
+		logger.DestConsole|logger.DestFile,
+		logger.DEBUG,
+		nil,
+	)
+	if err != nil {
+		fmt.Println("❌ Error initializing logger:", err)
+		return nil
+	}
+
 	// Connect UDP
 	roverConn, err := initConnection(motherUDP)
 	if err != nil {
 		return nil
 	}
+
+	log.Infof("Rover", "Rover %d initialized with update frequency %d", roverID, updateFrequency)
+
 
 	// Return initialized RoverSystem
 	return &RoverSystem{
@@ -190,5 +206,6 @@ func NewRoverSystem(motherUDP string, motherTCPID string) *RoverSystem {
 			Camera:           devices.NewMockCamera(),
 			ChemicalAnalyzer: devices.NewMockChemicalAnalyzer(),
 		},
+		Logger: log,
 	}
 }

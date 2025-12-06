@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"src/internal/core"
 	"src/internal/devices"
 	"src/internal/ml"
@@ -13,20 +12,21 @@ func (rover *Rover) ExecuteMission(mission ml.MissionData) {
 	rover.IncrementActiveMission()
 	defer rover.DecrementActiveMission()
 
-	fmt.Printf("🎯 Mission %d received: TaskType=%d\n", mission.MsgID, mission.TaskType)
+	rover.Logger.Infof("Mission", "Mission %d received: TaskType=%d", mission.MsgID, mission.TaskType)
 
 	// Move to mission location
-	fmt.Printf("🚀 Moving to coordinates (%.4f, %.4f)\n", mission.Coordinate.Latitude, mission.Coordinate.Longitude)
+	rover.Logger.Infof("Movement", "Moving to coordinates (%.4f, %.4f)", mission.Coordinate.Latitude, mission.Coordinate.Longitude)
 	if err := core.MoveTo(
 		&rover.RoverBase.CurrentPos,
 		mission.Coordinate,
 		rover.Devices.GPS,
 		rover.Devices.Battery,
+		rover.Logger,
 	); err != nil {
-		fmt.Printf("❌ Error moving: %v\n", err)
+		rover.Logger.Errorf("Movement", "Error moving: %v", err)
 		return
 	}
-	fmt.Printf("✅ Arrived at destination. Starting task...\n")
+	rover.Logger.Info("Movement", "Arrived at destination. Starting task", nil)
 
 	deadline := time.NewTimer(time.Duration(mission.Duration) * time.Second)
 	defer deadline.Stop()
@@ -43,7 +43,7 @@ func (rover *Rover) ExecuteMission(mission ml.MissionData) {
 			case <-batteryCheck.C:
 				if rover.checkBatteryAndAbort(mission.MsgID) {
 					rover.SuspendForLowBattery()
-					fmt.Printf("🔋 Battery recharged. Resuming mission %d...\n", mission.MsgID)
+					rover.Logger.Infof("Battery", "Battery recharged. Resuming mission %d", mission.MsgID)
 				}
 			case <-deadline.C:
 				rover.sendReport(mission, true)
@@ -59,7 +59,7 @@ func (rover *Rover) ExecuteMission(mission ml.MissionData) {
 			case <-batteryCheck.C:
 				if rover.checkBatteryAndAbort(mission.MsgID) {
 					rover.SuspendForLowBattery()
-					fmt.Printf("🔋 Battery recharged. Resuming mission %d...\n", mission.MsgID)
+					rover.Logger.Infof("Battery", "Battery recharged. Resuming mission %d", mission.MsgID)
 				}
 			case <-deadline.C:
 				rover.sendReport(mission, true)
@@ -82,7 +82,7 @@ func (rover *Rover) manageMissions() {
 
 		// Check if we need to request new missions
 		if rover.isQueueEmpty() {
-			fmt.Printf("📡 Requesting %d missions from mothership...\n", rover.ML.MissionQueue.BatchSize)
+			rover.Logger.Infof("Mission", "Requesting %d missions from mothership", rover.ML.MissionQueue.BatchSize)
 			rover.sendRequest()
 			print("")
 
@@ -90,7 +90,7 @@ func (rover *Rover) manageMissions() {
 			for i := uint8(0); i < rover.ML.MissionQueue.BatchSize; i++ {
 				received := <-rover.ML.MissionReceivedChan
 				if !received {
-					fmt.Println("🚫 No more missions available.")
+					rover.Logger.Info("Mission", "No more missions available", nil)
 					time.Sleep(5 * time.Second)
 					break
 				}
@@ -148,7 +148,7 @@ func (rover *Rover) IsSuspended() bool {
 // checkBatteryAndAbort checks if battery is critical and returns true if mission should abort
 func (rover *Rover) checkBatteryAndAbort(missionID uint16) bool {
 	if rover.Devices.Battery.GetLevel() < 5 {
-		fmt.Printf("⚠️ Battery critical during mission! Aborting mission %d...\n", missionID)
+		rover.Logger.Warnf("Battery", "Battery critical during mission! Aborting mission %d", missionID)
 		return true
 	}
 	return false
@@ -161,12 +161,12 @@ func (rover *Rover) SuspendForLowBattery() {
 	rover.ML.Suspended = true
 	rover.ML.SuspendMu.Unlock()
 
-	fmt.Printf("⏸️  Rover suspended - Battery: %d%%\n", rover.Devices.Battery.GetLevel())
+	rover.Logger.Warnf("Battery", "Rover suspended - Battery: %d%%", rover.Devices.Battery.GetLevel())
 
 	// Cast to MockBattery to access charging methods
 	mockBattery, ok := rover.Devices.Battery.(*devices.MockBattery)
 	if !ok {
-		fmt.Println("❌ Battery type not supported for charging")
+		rover.Logger.Error("Battery", "Battery type not supported for charging", nil)
 		return
 	}
 
@@ -182,11 +182,11 @@ func (rover *Rover) SuspendForLowBattery() {
 		currentLevel := mockBattery.GetLevel()
 
 		if currentLevel%10 == 0 { // Log every 10%
-			fmt.Printf("🔌 Charging... Battery: %d%%\n", currentLevel)
+			rover.Logger.Infof("Battery", "Charging... Battery: %d%%", currentLevel)
 		}
 
 		if currentLevel >= 80 {
-			fmt.Printf("✅ Battery recharged to %d%%\n", currentLevel)
+			rover.Logger.Infof("Battery", "Battery recharged to %d%%", currentLevel)
 			break
 		}
 	}
@@ -209,13 +209,13 @@ func (rover *Rover) batteryMonitor() {
 
 		// Warning at 20%
 		if level <= 20 && level > 5 {
-			fmt.Printf("⚠️  Low battery warning: %d%%\n", level)
+			rover.Logger.Warnf("Battery", "Low battery warning: %d%%", level)
 		}
 
 		// Critical at 5% - suspend immediately if not already suspended
 		if level <= 5 && !rover.IsSuspended() {
-			fmt.Printf("🔴 Critical battery level: %d%%\n", level)
-			fmt.Printf("⚠️  Suspending all operations for recharge...\n")
+			rover.Logger.Errorf("Battery", "Critical battery level: %d%%", level)
+			rover.Logger.Warn("Battery", "Suspending all operations for recharge", nil)
 			go rover.SuspendForLowBattery()
 		}
 	}
@@ -240,7 +240,7 @@ func (rover *Rover) dequeueNextMission() (ml.MissionData, bool) {
 	if len(rover.ML.MissionQueue.Priority1) > 0 {
 		mission := rover.ML.MissionQueue.Priority1[0]
 		rover.ML.MissionQueue.Priority1 = rover.ML.MissionQueue.Priority1[1:]
-		fmt.Printf("🚀 Dequeued mission %d from Priority 1 queue\n", mission.MsgID)
+		rover.Logger.Infof("Mission", "Dequeued mission %d from Priority 1 queue", mission.MsgID)
 		return mission, true
 	}
 
@@ -248,7 +248,7 @@ func (rover *Rover) dequeueNextMission() (ml.MissionData, bool) {
 	if len(rover.ML.MissionQueue.Priority2) > 0 {
 		mission := rover.ML.MissionQueue.Priority2[0]
 		rover.ML.MissionQueue.Priority2 = rover.ML.MissionQueue.Priority2[1:]
-		fmt.Printf("🚀 Dequeued mission %d from Priority 2 queue\n", mission.MsgID)
+		rover.Logger.Infof("Mission", "Dequeued mission %d from Priority 2 queue", mission.MsgID)
 		return mission, true
 	}
 
@@ -256,7 +256,7 @@ func (rover *Rover) dequeueNextMission() (ml.MissionData, bool) {
 	if len(rover.ML.MissionQueue.Priority3) > 0 {
 		mission := rover.ML.MissionQueue.Priority3[0]
 		rover.ML.MissionQueue.Priority3 = rover.ML.MissionQueue.Priority3[1:]
-		fmt.Printf("🚀 Dequeued mission %d from Priority 3 queue\n", mission.MsgID)
+		rover.Logger.Infof("Mission", "Dequeued mission %d from Priority 3 queue", mission.MsgID)
 		return mission, true
 	}
 

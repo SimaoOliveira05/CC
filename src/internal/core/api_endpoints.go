@@ -10,9 +10,6 @@ func (ms *MotherShip) setupAPIEndpoints() {
     // Endpoint: Lists all connected rovers
     ms.APIServer.RegisterEndpoint("/api/rovers", "GET", ms.handleListRovers)
 
-    // Endpoint: Event/log history
-    ms.APIServer.RegisterEndpoint("/logs", "GET", ms.handleGetLogs)
-
     // Endpoint: Lists all missions (with detailed parsing of reports)
     ms.APIServer.RegisterEndpoint("/api/missions", "GET", ms.handleListMissions)
 }
@@ -21,12 +18,6 @@ func (ms *MotherShip) setupAPIEndpoints() {
 // Returns an array of RoverTSState structs.
 func (ms *MotherShip) handleListRovers() interface{} {
     return ms.RoverInfo.ListRovers()
-}
-
-// Handler to get the event/log history.
-// Returns an array of events.
-func (ms *MotherShip) handleGetLogs() interface{} {
-    return ms.EventLogger.GetHistory()
 }
 
 // Handler to list all missions, including parsing of reports.

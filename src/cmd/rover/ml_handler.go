@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 	"src/internal/ml"
 	pl "src/utils/packetsLogic"
@@ -21,7 +20,7 @@ func (rover *Rover) handlePacket(pkt ml.Packet) {
 		case ml.MSG_ACK:
 			pl.HandleAck(p, rover.ML.Window) // Uses 'p' (closure parameter)
 		default:
-			fmt.Printf("⚠️ Unknown packet type: %d\n", p.MsgType)
+			rover.Logger.Warnf("MissionLink", "Unknown packet type: %d", p.MsgType)
 		}
 	}
 
@@ -37,9 +36,7 @@ func (rover *Rover) handlePacket(pkt ml.Packet) {
 		processor,
 		pkt.MsgType == ml.MSG_ACK, // Skip ordering for ACKs
 		true,
-		func(level, msg string, meta any) {
-			fmt.Printf("[%s] %s %+v\n", level, msg, meta)
-		},
+		rover.Logger.CreateLogCallback("PacketHandler"),
 	)
 }
 
@@ -53,17 +50,17 @@ func (rover *Rover) processMission(pkt ml.Packet) {
 	switch mission.Priority {
 	case 1:
 		rover.ML.MissionQueue.Priority1 = append(rover.ML.MissionQueue.Priority1, mission)
-		fmt.Printf("📥 Mission %d added to Priority 1 queue\n", mission.MsgID)
+		rover.Logger.Infof("Mission", "Mission %d added to Priority 1 queue", mission.MsgID)
 	case 2:
 		rover.ML.MissionQueue.Priority2 = append(rover.ML.MissionQueue.Priority2, mission)
-		fmt.Printf("📥 Mission %d added to Priority 2 queue\n", mission.MsgID)
+		rover.Logger.Infof("Mission", "Mission %d added to Priority 2 queue", mission.MsgID)
 	case 3:
 		rover.ML.MissionQueue.Priority3 = append(rover.ML.MissionQueue.Priority3, mission)
-		fmt.Printf("📥 Mission %d added to Priority 3 queue\n", mission.MsgID)
+		rover.Logger.Infof("Mission", "Mission %d added to Priority 3 queue", mission.MsgID)
 	default:
 		// Default to priority 3 for invalid priorities
 		rover.ML.MissionQueue.Priority3 = append(rover.ML.MissionQueue.Priority3, mission)
-		fmt.Printf("📥 Mission %d added to Priority 3 queue (default)\n", mission.MsgID)
+		rover.Logger.Infof("Mission", "Mission %d added to Priority 3 queue (default)", mission.MsgID)
 	}
 	rover.ML.MissionQueue.Mu.Unlock()
 
@@ -77,7 +74,7 @@ func (rover *Rover) receiver() {
 	for {
 		n, _, err := rover.MLConn.Conn.ReadFromUDP(buf)
 		if err != nil {
-			fmt.Println("Error reading UDP packet:", err)
+			rover.Logger.Errorf("MissionLink", "Error reading UDP packet: %v", err)
 			continue
 		}
 
@@ -105,9 +102,7 @@ func (rover *Rover) sendReport(mission ml.MissionData, final bool) {
 		payload,
 		rover.ML.Window,
 		nil,
-		func(level, msg string, meta any) {
-			fmt.Printf("[%s] %s %+v\n", level, msg, meta)
-		},
+		rover.Logger.CreateLogCallback("Report"),
 	)
 }
 
@@ -126,9 +121,7 @@ func (rover *Rover) sendRequest() {
 		payload,
 		rover.ML.Window,
 		nil,
-		func(level, msg string, meta any) {
-			fmt.Printf("[%s] %s %+v\n", level, msg, meta)
-		},
+		rover.Logger.CreateLogCallback("Request"),
 	)
 }
 

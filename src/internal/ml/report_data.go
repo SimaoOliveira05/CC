@@ -8,12 +8,12 @@ import (
 
 const (
     // Task Types for Reports.
-    TASK_IMAGE_CAPTURE     = 0
-    TASK_SAMPLE_COLLECTION = 1
-    TASK_ENV_ANALYSIS      = 2
-    TASK_REPAIR_RESCUE     = 3
-    TASK_TOPO_MAPPING      = 4
-    TASK_INSTALLATION      = 5
+    TASK_IMAGE_CAPTURE      = iota
+    TASK_SAMPLE_COLLECTION
+    TASK_ENV_ANALYSIS
+    TASK_REPAIR_RESCUE
+    TASK_TOPO_MAPPING
+    TASK_INSTALLATION
 
     REPORT_HEADER_SIZE = 4 // 1 (TaskType) + 2 (MissionID) + 1 (IsLastReport)
 )

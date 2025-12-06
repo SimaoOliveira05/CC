@@ -21,7 +21,7 @@ func main() {
 	// Initialize Rover system
 	roverSys := core.NewRoverSystem(mothershipUDPAddr, mothershipTCPID)
 	if roverSys == nil {
-		panic("❌ Failed to initialize Rover System")
+		panic("Failed to initialize Rover System")
 	}
 
 	// Create Rover instance

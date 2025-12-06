@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"src/internal/ts"
 	"src/utils"
@@ -36,19 +35,19 @@ func (ms *MotherShip) idAssignmentServer(port string) {
 	// Start TCP server
 	listener, err := net.Listen("tcp", "0.0.0.0:"+port)
 	if err != nil {
-		ms.EventLogger.Log("ERROR", "IDHandler", fmt.Sprintf("Erro ao iniciar servidor de IDs: %v", err), nil)
+		ms.Logger.Errorf("IDHandler", "Erro ao iniciar servidor de IDs: %v", err)
 		return
 	}
 	defer listener.Close()
 
 	// Log server start
-	ms.EventLogger.Log("INFO", "IDHandler", fmt.Sprintf("Servidor de atribuição de IDs à escuta na porta %s", port), nil)
+	ms.Logger.Infof("IDHandler", "Servidor de atribuição de IDs à escuta na porta %s", port)
 
 	// Accept incoming connections
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			ms.EventLogger.Log("ERROR", "IDHandler", fmt.Sprintf("Erro ao aceitar conexão: %v", err), nil)
+			ms.Logger.Errorf("IDHandler", "Erro ao aceitar conexão: %v", err)
 			continue
 		}
 		go ms.handleIDRequest(conn, idManager)
@@ -66,12 +65,12 @@ func (ms *MotherShip) handleIDRequest(conn net.Conn, idManager *IDManager) {
 	buf := []byte{id, byte(updateFrequency)}
 	_, err := conn.Write(buf)
 	if err != nil {
-		ms.EventLogger.Log("ERROR", "IDHandler", fmt.Sprintf("Error sending ID/updateFrequency: %v", err), nil)
+		ms.Logger.Errorf("IDHandler", "Error sending ID/updateFrequency: %v", err)
 		return
 	}
 
 	// Log assignment and register rover in RoverInfo manager
-	ms.EventLogger.Log("INFO", "IDHandler", fmt.Sprintf("ID %d assigned to new rover (updateFrequency=%d)", id, updateFrequency), nil)
+	ms.Logger.Infof("IDHandler", "ID %d assigned to new rover (updateFrequency=%d)", id, updateFrequency)
 	ms.RoverInfo.AddRover(&ts.RoverTSState{
 		ID:              id,
 		State:           "Unknown",

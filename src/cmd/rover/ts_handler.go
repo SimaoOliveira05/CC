@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"src/internal/ts"
 	"time"
@@ -12,7 +11,7 @@ func (rover *Rover) telemetrySender(telemetryAddr string) {
 	// Establish TCP connection to mothership
 	conn, err := net.Dial("tcp", telemetryAddr)
 	if err != nil {
-		fmt.Println("❌ Erro ao conectar ao servidor de telemetria:", err)
+		rover.Logger.Errorf("Telemetry", "Error connecting to telemetry server: %v", err)
 		return
 	}
 	defer conn.Close()
@@ -52,10 +51,16 @@ func (rover *Rover) telemetrySender(telemetryAddr string) {
 		// Send telemetry data
 		_, err := conn.Write(data)
 		if err != nil {
-			fmt.Println("❌ Erro ao enviar telemetria:", err)
+			rover.Logger.Errorf("Telemetry", "Error sending telemetry: %v", err)
 			return
 		}
 
-		//fmt.Printf("📡 Telemetry sent: Position=(%.6f, %.6f), Speed=%.2f, State=%d, Battery=%d%%\n", telemetry.Position.Latitude, telemetry.Position.Longitude, telemetry.Speed, telemetry.State, telemetry.Battery)
+		rover.Logger.Infof("Telemetry", "📡 Telemetry sent: Position=(%.6f, %.6f), Speed=%.2f, State=%d, Battery=%d%%",
+			telemetry.Position.Latitude,
+			telemetry.Position.Longitude,
+			telemetry.Speed,
+			telemetry.State,
+			telemetry.Battery,
+		)
 	}
 }
