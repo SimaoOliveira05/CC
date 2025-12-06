@@ -37,9 +37,8 @@ func (ms *MotherShip) handlePacket(state *core.RoverState, pkt ml.Packet) {
 		processor,
 		pkt.MsgType == ml.MSG_ACK,
 		shouldAutoAck,
-		func(level, msg string, meta any) {
-			ms.EventLogger.Log(level, "ML", msg, meta)
-		})
+		ms.Logger.CreateLogCallback("ML"),
+	)
 }
 
 // receiver continuously reads UDP packets
@@ -109,7 +108,7 @@ func (ms *MotherShip) NewRoverState(roverID uint8, addr *net.UDPAddr, packet *ml
 
 	// Register the new rover state
 	ms.Rovers[roverID] = *state
-	fmt.Printf("🆕 New rover registered: %d\n", roverID)
+	ms.Logger.Infof("ML", "🆕 New rover registered: %d", roverID)
 
 	// Register rover in RoverInfo manager
 	ms.RoverInfo.AddRover(&ts.RoverTSState{
@@ -147,7 +146,7 @@ func (ms *MotherShip) dispatchPacket(pkt ml.Packet, state *core.RoverState) {
 	case ml.MSG_REPORT:
 		ms.handleReport(pkt, state)
 	default:
-		fmt.Printf("⚠️ Unknown packet type: %d\n", pkt.MsgType)
+		ms.Logger.Warnf("ML", "⚠️ Unknown packet type: %d", pkt.MsgType)
 	}
 }
 
@@ -159,7 +158,7 @@ func (ms *MotherShip) handleMissionRequest(pkt ml.Packet, state *core.RoverState
 		numMissionsRequested = pkt.Payload[0]
 	}
 
-	fmt.Printf("📬 Rover %d requesting %d missions\n", roverID, numMissionsRequested)
+	ms.Logger.Infof("ML", "📬 Rover %d requesting %d missions", roverID, numMissionsRequested)
 
 	missionsSent := uint8(0)
 
@@ -178,7 +177,7 @@ func (ms *MotherShip) handleMissionRequest(pkt ml.Packet, state *core.RoverState
 
 		default:
 			// Empty queue - no more missions available
-			fmt.Printf("⚠️ Mission queue empty after sending %d/%d missions\n", missionsSent, numMissionsRequested)
+			ms.Logger.Warnf("ML", "⚠️ Mission queue empty after sending %d/%d missions", missionsSent, numMissionsRequested)
 			if missionsSent == 0 {
 				ms.sendNoMission(state)
 			}
@@ -186,7 +185,7 @@ func (ms *MotherShip) handleMissionRequest(pkt ml.Packet, state *core.RoverState
 		}
 	}
 
-	fmt.Printf("✅ Sent %d missions to rover %d\n", missionsSent, roverID)
+	ms.Logger.Infof("ML", "✅ Sent %d missions to rover %d", missionsSent, roverID)
 }
 
 // assignMissionToRover assigns a mission to the selected rover and sends it
@@ -226,12 +225,10 @@ func (ms *MotherShip) assignMissionToRover(missionState ml.MissionState, roverID
 		payload,
 		targetState.Window,
 		&targetState.WindowLock,
-		func(level, msg string, meta any) {
-			ms.EventLogger.Log(level, "ML", msg, meta)
-		},
+		ms.Logger.CreateLogCallback("ML"),
 	)
 
-	fmt.Printf("✅ Mission %d sent to %s\n", missionState.ID, targetState.Addr)
+	ms.Logger.Infof("ML", "✅ Mission %d sent to %s", missionState.ID, targetState.Addr)
 
 	// Change state to "Moving to" after sending the mission
 	ms.MissionManager.UpdateMissionState(missionState.ID, "Pending")
@@ -247,7 +244,7 @@ func (ms *MotherShip) publishMissionEvents(mission *ml.MissionState, eventType s
 
 // sendNoMission sends a NO_MISSION packet to a rover
 func (ms *MotherShip) sendNoMission(state *core.RoverState) {
-	fmt.Printf("⚠️ Mission queue empty or rovers overloaded. Sending NO_MISSION to %s\n", state.Addr)
+	ms.Logger.Warnf("ML", "⚠️ Mission queue empty or rovers overloaded. Sending NO_MISSION to %s", state.Addr)
 
 	pl.CreateAndSendPacket(
 		ms.Conn,
@@ -259,31 +256,29 @@ func (ms *MotherShip) sendNoMission(state *core.RoverState) {
 		[]byte{},
 		state.Window,
 		&state.WindowLock,
-		func(level, msg string, meta any) {
-			ms.EventLogger.Log(level, "ML", msg, meta)
-		},
+		ms.Logger.CreateLogCallback("ML"),
 	)
 }
 
 // handleReport processes reports from rovers
 func (ms *MotherShip) handleReport(p ml.Packet, state *core.RoverState) {
-	fmt.Printf("📊 Report received from %s\n", state.Addr)
+	ms.Logger.Debugf("ML", "📊 Report received from %s", state.Addr)
 	if len(p.Payload) < ml.REPORT_HEADER_SIZE {
-		fmt.Println("❌ Empty or incomplete payload")
+		ms.Logger.Errorf("ML", "❌ Empty or incomplete payload")
 		return
 	}
 
 	var report ml.Report
 	if err := report.Decode(p.Payload); err != nil {
-		fmt.Printf("❌ Error deserializing report: %v\n", err)
+		ms.Logger.Errorf("ML", "❌ Error deserializing report: %v", err)
 		return
 	}
 
-	fmt.Printf("✅ Report received: TaskType=%d, MissionID=%d, IsLast=%v, PayloadLen=%d\n",
+	ms.Logger.Infof("ML", "✅ Report received: TaskType=%d, MissionID=%d, IsLast=%v, PayloadLen=%d",
 		report.Header.TaskType, report.Header.MissionID, report.Header.IsLastReport, len(report.Payload))
 
 	if report.Header.IsLastReport {
-		fmt.Printf("🏁 Last report received.\n")
+		ms.Logger.Infof("ML", "🏁 Last report received for mission %d", report.Header.MissionID)
 		ms.Mu.Lock()
 		if state.NumberOfMissions > 0 {
 			state.NumberOfMissions--

@@ -1,11 +1,11 @@
 package core
 
 import (
-	"fmt"
 	"math"
 	"src/config"
 	"src/internal/devices"
 	"src/utils"
+	"src/utils/logger"
 	"time"
 )
 
@@ -24,21 +24,25 @@ func MoveTo(
 	target utils.Coordinate,
 	gps devices.GPS,
 	battery devices.Battery,
+	log *logger.Logger,
 ) error {
 	// Calculate distance to target
 	distance := CalculateDistance(*currentPos, target)
 
-	if distance < config.ARRIVAL_THRESHOLD { // Already at the destination
-		fmt.Println("✅ Already at the destination")
+	if distance < config.ARRIVAL_THRESHOLD { // Already at the destination (less than 1% of the map)
+		log.Info("Movement", "Already at the destination", nil)
 		return nil
 	}
 
-	fmt.Printf("🚀 Moving %.4f units to (%.6f, %.6f)...\n",
-		distance, target.Latitude, target.Longitude)
+	log.Info("Movement", "Starting movement", map[string]interface{}{
+		"distance":  distance,
+		"targetLat": target.Latitude,
+		"targetLon": target.Longitude,
+	})
 
 	// Calculate travel time
 	travelTime := distance / config.MAX_SPEED
-	fmt.Printf("⏳ Estimated travel time: %.2fs\n", travelTime)
+	log.Infof("Movement", "Estimated travel time: %.2fs", travelTime)
 
 	startTime := time.Now()
 	stepCount := 0
@@ -47,8 +51,8 @@ func MoveTo(
 		stepCount++
 		distanceToTarget := CalculateDistance(*currentPos, target)
 
-		if distanceToTarget < config.ARRIVAL_THRESHOLD { // Arrived
-			fmt.Printf("✅ Arrived at destination (remaining distance: %.4f)\n", distanceToTarget)
+		if distanceToTarget < config.ARRIVAL_THRESHOLD { // Arrived (less than 1% of the map)
+			log.Infof("Movement", "Arrived at destination (remaining distance: %.4f)", distanceToTarget)
 			break
 		}
 
@@ -73,6 +77,7 @@ func MoveTo(
 		}
 
 		*currentPos = coords
+		*currentPos = coords
 
 		// Update mock GPS
 		if mockGPS, ok := gps.(*devices.MockGPS); ok {
@@ -86,16 +91,23 @@ func MoveTo(
 
 		// Log every 10 steps
 		if stepCount%10 == 0 {
-			fmt.Printf("   Step %d - Remaining distance: %.4f - Position: (%.4f, %.4f)\n",
-				stepCount, distanceToTarget, currentPos.Latitude, currentPos.Longitude)
+			log.Info("Movement", "Movement progress", map[string]interface{}{
+				"step":              stepCount,
+				"remainingDistance": distanceToTarget,
+				"lat":               currentPos.Latitude,
+				"lon":               currentPos.Longitude,
+			})
 		}
 
 		time.Sleep(1 * time.Second)
 	}
 
 	elapsed := time.Since(startTime)
-	fmt.Printf("✅ Arrived at destination in %.2fs (estimated %.2fs). Battery: %d%%\n",
-		elapsed.Seconds(), travelTime, battery.GetLevel())
+	log.Info("Movement", "Movement completed", map[string]interface{}{
+		"actualTime":    elapsed.Seconds(),
+		"estimatedTime": travelTime,
+		"battery":       battery.GetLevel(),
+	})
 
 	// Stop at the destination
 	if mockGPS, ok := gps.(*devices.MockGPS); ok {

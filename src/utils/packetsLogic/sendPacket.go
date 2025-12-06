@@ -1,7 +1,6 @@
 package packetslogic
 
 import (
-	"fmt"
 	"net"
 	"src/config"
 	"src/internal/ml"
@@ -75,16 +74,13 @@ func SendPacketUDP(conn *net.UDPConn, addr *net.UDPAddr, packet ml.Packet) error
 
 	// Sends the encoded data to the specified address port
 	_, error := conn.WriteToUDP(encodedPacket, addr)
-
-	pktType := ml.PacketType(packet.MsgType).String()
-
-	fmt.Printf("[PACKET-LOGIC] Sent packet of type %s with seq: %d to %s\n", pktType, packet.SeqNum, addr.String())
 	return error
 }
 
 // CreateAndSendPacket creates a packet with auto-incremented SeqNum and sends it
 // This is a generic function that handles both rover and mothership packet sending
 // windowLock can be nil if no locking is needed (e.g., for rover which has its own locking strategy)
+// SeqNum is incremented by the total packet size (header + payload) like TCP
 func CreateAndSendPacket(
 	conn *net.UDPConn,
 	addr *net.UDPAddr,
@@ -112,8 +108,14 @@ func CreateAndSendPacket(
 		Payload:  payload,
 	}
 
-	// Increment SeqNum for next packet
-	*seqNum++
+	// Calculate total packet size (header + payload) for SeqNum increment
+	// PacketHeaderSize is 7 bytes
+	packetSize := ml.PacketHeaderSize + len(payload)
+
+	// Increment SeqNum by packet size (TCP-style)
+	// Use uint32 for calculation to avoid overflow, then cast back
+	newSeq := uint32(*seqNum) + uint32(packetSize)
+	*seqNum = uint16(newSeq) // Automatic wraparound when casting
 
 	// Unlock if mutex was provided
 	if windowLock != nil {
@@ -138,10 +140,15 @@ func PacketManager(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *
 
 // sendAckPacket sends an ACK packet without waiting for acknowledgment
 func sendAckPacket(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, logf Logger) {
-	fmt.Printf("📤 ACK sent, AckNum: %d\n", pkt.AckNum)
 	if err := SendPacketUDP(conn, addr, pkt); err != nil {
-		fmt.Println("❌ Error sending ACK:", err)
-		logf("ERROR", "Failed to send ACK", err)
+		logf("ERROR", "Failed to send ACK", map[string]any{
+			"ackNum": pkt.AckNum,
+			"error":  err,
+		})
+	} else {
+		logf("INFO", "ACK sent", map[string]any{
+			"ackNum": pkt.AckNum,
+		})
 	}
 }
 
@@ -155,9 +162,20 @@ func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, w
 		sendTime := time.Now()
 		// Send the packet
 		if err := SendPacketUDP(conn, addr, pkt); err != nil {
-			fmt.Println("❌ Error sending packet:", err)
-			logf("ERROR", "Failed to send packet", err)
+			logf("ERROR", "Failed to send packet", map[string]any{
+				"seqNum": pkt.SeqNum,
+				"error":  err,
+			})
 			return
+		}
+
+		if retries == 0 {
+			// Log only on first send, not retries
+			pktType := ml.PacketType(pkt.MsgType).String()
+			logf("INFO", "Packet sent", map[string]any{
+				"type":   pktType,
+				"seqNum": pkt.SeqNum,
+			})
 		}
 
 		// get current RTO value
@@ -210,14 +228,13 @@ func handleAckReceived(window *Window, seqNum uint16, rtt time.Duration) {
 	window.UpdateRTO(rtt)
 	newRTO := window.RTO
 	window.Mu.Unlock()
-
-	fmt.Printf("✅ ACK to %d | RTT: %v | New RTO: %v\n", seqNum, rtt, newRTO)
+	// Note: logging handled by caller if needed
+	_ = newRTO // Keep RTO calculation for future use
 }
 
 // handleTimeout logs timeout and prepares for retransmission
 func handleTimeout(seqNum uint16, retries int, rto time.Duration, logf func(level string, msg string, meta any)) {
-	fmt.Printf("⏱️ Timeout waiting for ACK for SeqNum %d. Retransmitting (attempt %d)...\n", seqNum, retries+1)
-	logf("WARN", "Timeout, retransmission", map[string]any{
+	logf("WARN", "Timeout, retransmitting", map[string]any{
 		"seq":   seqNum,
 		"retry": retries + 1,
 		"rto":   rto,
@@ -226,20 +243,20 @@ func handleTimeout(seqNum uint16, retries int, rto time.Duration, logf func(leve
 
 // handleMaxRetriesReached logs failure after max retries
 func handleMaxRetriesReached(seqNum uint16, logf func(level string, msg string, meta any)) {
-	fmt.Printf("❌ Failure to receive ACK for SeqNum %d after %d attempts. Aborting...\n", seqNum, config.MAX_RETRIES)
-	logf("ERROR", "Failure after all attempts", map[string]any{
+	logf("ERROR", "Failed to receive ACK after all attempts", map[string]any{
 		"seq":        seqNum,
 		"maxRetries": config.MAX_RETRIES,
 	})
 }
 
 // SendAck sends an ACK packet for the given ackNum
+// ackNum should be the next expected byte (currentSeqNum + packetSize)
 func SendAck(conn *net.UDPConn, addr *net.UDPAddr, ackNum uint16, window *Window, roverId uint8, logf func(level string, msg string, meta any)) {
 	ackPacket := ml.Packet{
 		RoverId: roverId,
 		MsgType: ml.MSG_ACK,
 		SeqNum:  0,
-		AckNum:  ackNum + 1,
+		AckNum:  ackNum,
 		Payload: []byte{},
 	}
 

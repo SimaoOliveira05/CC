@@ -6,11 +6,11 @@ import (
 
 // Message types.
 const (
-    MSG_MISSION    PacketType = 0
-    MSG_NO_MISSION PacketType = 1
-    MSG_ACK        PacketType = 2
-    MSG_REPORT     PacketType = 3
-    MSG_REQUEST    PacketType = 4
+    MSG_MISSION    PacketType = iota
+    MSG_NO_MISSION
+    MSG_ACK
+    MSG_REPORT
+    MSG_REQUEST
 )
 
 // PacketType represents the type of message

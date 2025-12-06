@@ -7,16 +7,27 @@ import (
 )
 
 // handleACK processes delivery acknowledgments and updates the sliding window
+// ACK numbers represent bytes acknowledged (TCP-style)
 func HandleAck(p ml.Packet, window *Window) {
 	window.Mu.Lock()
-	for i := window.LastAckReceived + 1; i < int16(p.AckNum); i++ {
-		if ch, exists := window.Window[uint32(i)]; exists {
-			ch <- 1 // Signal ACK received
-			delete(window.Window, uint32(i))
+	defer window.Mu.Unlock()
+
+	// Mark all packets with SeqNum < AckNum as acknowledged
+	// In TCP-style, AckNum represents the next byte expected
+	for seqKey, ch := range window.Window {
+		if uint16(seqKey) < p.AckNum {
+			select {
+			case ch <- 1: // Signal ACK received
+			default:
+				// Channel might be full or closed
+			}
+			delete(window.Window, seqKey)
 		}
 	}
-	window.LastAckReceived = int16(p.AckNum - 1)
-	window.Mu.Unlock()
+
+	if int16(p.AckNum-1) > window.LastAckReceived {
+		window.LastAckReceived = int16(p.AckNum - 1)
+	}
 }
 
 // PacketProcessor is the callback function to process a packet after ordering
@@ -72,13 +83,17 @@ func HandleOrderedPacket(
 	seq := pkt.SeqNum
 	expected := *expectedSeq
 
+	// Calculate packet size for next expected SeqNum (TCP-style)
+	packetSize := uint16(ml.PacketHeaderSize + len(pkt.Payload))
+	nextExpected := uint16(uint32(seq) + uint32(packetSize)) // Wraparound via cast
+
 	switch {
 	case seq == expected:
 		// Expected packet - process and advance window
 		go processor(pkt)
-		*expectedSeq++
+		*expectedSeq = nextExpected
 		if autoAck {
-			SendAck(conn, addr, seq, window, roverID, logf)
+			SendAck(conn, addr, nextExpected, window, roverID, logf)
 		}
 
 		// Process consecutive buffered packets
@@ -86,8 +101,10 @@ func HandleOrderedPacket(
 			if bufferedPkt, ok := buffer[*expectedSeq]; ok {
 				delete(buffer, *expectedSeq)
 				go processor(bufferedPkt)
-				SendAck(conn, addr, *expectedSeq, window, roverID, logf)
-				*expectedSeq++
+				bufferedSize := uint16(ml.PacketHeaderSize + len(bufferedPkt.Payload))
+				nextBuffered := uint16(uint32(*expectedSeq) + uint32(bufferedSize)) // Wraparound via cast
+				SendAck(conn, addr, nextBuffered, window, roverID, logf)
+				*expectedSeq = nextBuffered
 			} else {
 				break
 			}
@@ -100,10 +117,6 @@ func HandleOrderedPacket(
 
 	case seq < expected:
 		// Duplicate packet - resend ACK
-		SendAck(conn, addr, seq, window, roverID, logf)
-		logf("WARN", "Duplicate packet received, ACK resent", map[string]any{
-			"addr": addr.String(),
-			"seq":  seq,
-		})
+		SendAck(conn, addr, nextExpected, window, roverID, logf)
 	}
 }

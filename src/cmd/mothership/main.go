@@ -16,14 +16,15 @@ func main() {
 	config.InitConfig(false, true) // Read flag -ms-ip and print config
 
 	fmt.Println("🛰️ Mother Ship starting on default ports...")
+
 	mothership := MotherShip{
 		MotherShip: core.NewMotherShip(),
 	}
 
-	go mothership.APIServer.Start(config.API_PORT)      		// API Ground Control
-	go mothership.idAssignmentServer(config.TCP_ID_PORT)    	// TCP ID Attribution
-	go mothership.receiver(config.UDP_COMM_PORT)              	// UDP Communication
-	go mothership.telemetryReceiver(config.TCP_TELEMETRY_PORT)  // TCP Telemetry
+	go mothership.APIServer.Start(config.API_PORT)             // API Ground Control
+	go mothership.idAssignmentServer(config.TCP_ID_PORT)       // TCP ID Attribution
+	go mothership.receiver(config.UDP_COMM_PORT)               // UDP Communication
+	go mothership.telemetryReceiver(config.TCP_TELEMETRY_PORT) // TCP Telemetry
 
 	select {}
 }

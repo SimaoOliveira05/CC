@@ -7,9 +7,9 @@ import (
 	"os"
 	"src/config"
 	"src/internal/api"
-	el "src/internal/eventLogger"
 	"src/internal/ml"
 	"src/internal/ts"
+	"src/utils/logger"
 	pl "src/utils/packetsLogic"
 	"sync"
 )
@@ -33,8 +33,8 @@ type MotherShip struct {
 	MissionQueue   chan ml.MissionState  // Queue of missions to be assigned
 	Mu             sync.Mutex            // Mutex for concurrent access to Rovers map
 	RoverInfo      *ts.RoverManager      // Manages rover telemetry states
-	EventLogger    *el.EventLogger       // Event logger for the mothership
 	APIServer      *api.APIServer        // API server for handling REST endpoints
+	Logger         *logger.Logger        // Logger for logging events
 }
 
 // NewMotherShip creates and initializes a new MotherShip instance
@@ -48,15 +48,25 @@ func NewMotherShip() *MotherShip {
 		APIServer:      api.NewAPIServer(),
 	}
 
-	// Load initial missions from JSON file
-	err := loadMissionsFromJSON("missions.json", ms.MissionQueue)
+	// Initialize logger with APIServer for WebSocket broadcast
+	log, err := logger.NewLogger(
+		"mothership.log",
+		logger.DestConsole|logger.DestFile|logger.DestFrontend,
+		logger.DEBUG,
+		ms.APIServer, // Pass APIServer for WebSocket broadcast
+	)
 	if err != nil {
-		fmt.Printf("erro ao carregar missões iniciais: %v\n", err)
+		fmt.Println("❌ Error initializing logger:", err)
 		return nil
 	}
+	ms.Logger = log
 
-	// Initialize event logger
-	ms.EventLogger = el.NewEventLogger(config.EVENT_LOGGER_SIZE, ms.APIServer)
+	// Load initial missions from JSON file
+	err = loadMissionsFromJSON("missions.json", ms.MissionQueue)
+	if err != nil {
+		ms.Logger.Errorf("MotherShip", "erro ao carregar missões iniciais: %v", err)
+		return nil
+	}
 
 	// Setup API endpoints with mothership data
 	ms.setupAPIEndpoints()
