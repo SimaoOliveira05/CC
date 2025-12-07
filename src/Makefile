@@ -29,3 +29,4 @@ run-gc:
 
 clean:
 	rm -rf bin/
+	rm -f *.log

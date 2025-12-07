@@ -55,7 +55,7 @@ func (rover *Rover) telemetrySender(telemetryAddr string) {
 			return
 		}
 
-		rover.Logger.Infof("Telemetry", "📡 Telemetry sent: Position=(%.6f, %.6f), Speed=%.2f, State=%d, Battery=%d%%",
+		rover.Logger.Infof("Telemetry", "Telemetry sent: Position=(%.6f, %.6f), Speed=%.2f, State=%d, Battery=%d%%",
 			telemetry.Position.Latitude,
 			telemetry.Position.Longitude,
 			telemetry.Speed,

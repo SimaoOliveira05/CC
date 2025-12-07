@@ -5,6 +5,7 @@ import (
 	"src/config"
 	"src/internal/ml"
 	pl "src/utils/packetsLogic"
+	"time"
 )
 
 // handlePacket processes each packet on a separate goroutine
@@ -87,7 +88,15 @@ func (rover *Rover) receiver() {
 }
 
 // sendReport serializes and sends a report to the mothership
+// For image capture tasks, sends multiple reports (one per chunk)
 func (rover *Rover) sendReport(mission ml.MissionData, final bool) {
+	// Special handling for image capture - send multiple chunks
+	if mission.TaskType == ml.TASK_IMAGE_CAPTURE {
+		rover.sendImageReports(mission, final)
+		return
+	}
+
+	// For other task types, send single report
 	payload := rover.buildReportPayload(mission, final)
 	if payload == nil {
 		return
@@ -105,6 +114,64 @@ func (rover *Rover) sendReport(mission ml.MissionData, final bool) {
 		nil,
 		rover.Logger.CreateLogCallback("Report"),
 	)
+}
+
+// sendImageReports sends multiple image chunk reports
+func (rover *Rover) sendImageReports(mission ml.MissionData, final bool) {
+	totalChunks := rover.Devices.Camera.GetTotalChunks()
+
+	// If no image loaded, send empty report
+	if totalChunks == 0 {
+		rover.Logger.Warnf("Camera", "No image loaded for mission %d", mission.MsgID)
+		return
+	}
+
+	rover.Logger.Infof("Camera", "Sending %d image chunks for mission %d", totalChunks, mission.MsgID)
+
+	// Send each chunk as a separate report
+	for i := 0; i < totalChunks; i++ {
+		isLast := final && (i == totalChunks-1)
+
+		chunk := rover.Devices.Camera.GetChunk(i)
+		img := ml.ImageReportData{
+			ChunkID: uint16(i),
+			Data:    chunk,
+		}
+
+		header := ml.ReportHeader{
+			TaskType:     mission.TaskType,
+			MissionID:    mission.MsgID,
+			IsLastReport: isLast,
+		}
+
+		report := ml.Report{
+			Header:  header,
+			Payload: img.EncodePayload(),
+		}
+
+		payload := report.Encode()
+
+		pl.CreateAndSendPacket(
+			rover.MLConn.Conn,
+			rover.MLConn.Addr,
+			rover.ID,
+			ml.MSG_REPORT,
+			&rover.ML.SeqNum,
+			0,
+			payload,
+			rover.ML.Window,
+			nil,
+			rover.Logger.CreateLogCallback("Report"),
+		)
+
+		rover.Logger.Debugf("Camera", "Sent chunk %d/%d (%d bytes)", i+1, totalChunks, len(chunk))
+
+		// Add small delay between chunks for better visualization
+		if i < totalChunks-1 {
+			delay := time.Duration(50+rand.Intn(100)) * time.Millisecond
+			time.Sleep(delay)
+		}
+	}
 }
 
 // sendRequest sends a request for N missions to the mothership
