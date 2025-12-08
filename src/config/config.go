@@ -74,6 +74,7 @@ var (
 // Config holds the global configuration settings
 type Config struct {
 	MotherIP string
+	TestMode bool // Enable metrics collection for testing
 }
 
 var GlobalConfig Config
@@ -132,6 +133,7 @@ type jsonConfig struct {
 func InitConfig(isRover bool, print bool) {
 	// Default IP is localhost
 	flag.StringVar(&GlobalConfig.MotherIP, "ms-ip", "127.0.0.1", "Mother Ship IP Address")
+	flag.BoolVar(&GlobalConfig.TestMode, "test-mode", false, "Enable metrics collection for testing")
 	flag.Parse()
 
 	// Read config from config.json
@@ -220,4 +222,9 @@ func GetMotherTCPIDAddr() string {
 // GetMotherTelemetryAddr returns the full TCP address for telemetry
 func GetMotherTelemetryAddr() string {
 	return GlobalConfig.MotherIP + ":" + TCP_TELEMETRY_PORT
+}
+
+// IsTestMode returns true if test mode is enabled
+func IsTestMode() bool {
+	return GlobalConfig.TestMode
 }

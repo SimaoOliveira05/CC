@@ -3,13 +3,44 @@
     <div class="logs-header">
       <h2>📝 Logs do Sistema</h2>
       <div class="logs-controls">
+        <div class="filter-group">
+          <span class="filter-label">Filtrar:</span>
+          <button 
+            @click="toggleFilter('all')" 
+            class="filter-btn"
+            :class="{ active: activeFilter === 'all' }"
+          >
+            Todos
+          </button>
+          <button 
+            @click="toggleFilter('info')" 
+            class="filter-btn info"
+            :class="{ active: activeFilter === 'info' }"
+          >
+            ℹ️ Info
+          </button>
+          <button 
+            @click="toggleFilter('warn')" 
+            class="filter-btn warn"
+            :class="{ active: activeFilter === 'warn' }"
+          >
+            ⚠️ Warn
+          </button>
+          <button 
+            @click="toggleFilter('error')" 
+            class="filter-btn error"
+            :class="{ active: activeFilter === 'error' }"
+          >
+            ❌ Error
+          </button>
+        </div>
         <button @click="clearLogs" class="btn-clear">🗑️ Limpar</button>
       </div>
     </div>
     
     <div class="logs-list" ref="logsContainer">
       <div 
-        v-for="(log, index) in props.logs" 
+        v-for="(log, index) in filteredLogs" 
         :key="index" 
         class="log-entry"
         :class="log.level.toLowerCase()"
@@ -21,13 +52,14 @@
         <span v-if="log.meta" class="log-meta">{{ formatMeta(log.meta) }}</span>
       </div>
       
-      <div v-if="props.logs.length === 0" class="empty-logs">
-        <p>Nenhum log disponível</p>
+      <div v-if="filteredLogs.length === 0" class="empty-logs">
+        <p v-if="props.logs.length === 0">Nenhum log disponível</p>
+        <p v-else>Nenhum log encontrado para o filtro "{{ activeFilter }}"</p>
       </div>
     </div>
     
     <div class="logs-footer">
-      <span class="log-count">{{ props.logs.length }} eventos</span>
+      <span class="log-count">{{ filteredLogs.length }} de {{ props.logs.length }} eventos</span>
       <label class="auto-scroll-toggle">
         <input type="checkbox" v-model="autoScroll" />
         Auto-scroll
@@ -37,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch, nextTick, computed } from 'vue';
 
 const props = defineProps({
   logs: {
@@ -50,6 +82,18 @@ const emit = defineEmits(['clear']);
 
 const autoScroll = ref(true);
 const logsContainer = ref(null);
+const activeFilter = ref('all');
+
+const filteredLogs = computed(() => {
+  if (activeFilter.value === 'all') {
+    return props.logs;
+  }
+  return props.logs.filter(log => log.level.toLowerCase() === activeFilter.value);
+});
+
+const toggleFilter = (filter) => {
+  activeFilter.value = filter;
+};
 
 const formatTime = (timestamp) => {
   const date = new Date(timestamp);
@@ -107,8 +151,60 @@ watch(() => props.logs.length, async () => {
 
 .logs-controls {
   display: flex;
-  gap: 10px;
+  gap: 15px;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.filter-label {
+  color: #a8b5c8;
+  font-size: 13px;
+  margin-right: 4px;
+}
+
+.filter-btn {
+  background: rgba(26, 58, 82, 0.5);
+  border: 1px solid rgba(26, 58, 82, 0.8);
+  color: #a8b5c8;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.3s;
+}
+
+.filter-btn:hover {
+  background: rgba(26, 58, 82, 0.8);
+}
+
+.filter-btn.active {
+  background: rgba(0, 212, 255, 0.2);
+  border-color: #00d4ff;
+  color: #00d4ff;
+}
+
+.filter-btn.info.active {
+  background: rgba(0, 255, 136, 0.2);
+  border-color: #00ff88;
+  color: #00ff88;
+}
+
+.filter-btn.warn.active {
+  background: rgba(255, 170, 0, 0.2);
+  border-color: #ffaa00;
+  color: #ffaa00;
+}
+
+.filter-btn.error.active {
+  background: rgba(255, 68, 68, 0.2);
+  border-color: #ff4444;
+  color: #ff4444;
 }
 
 .btn-clear {

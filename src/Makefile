@@ -29,3 +29,17 @@ run-gc:
 
 clean:
 	rm -rf bin/
+	rm -f *.log
+	rm -f *_metrics.json
+
+# --- Test Mode ---
+
+# make test-mothership
+test-mothership:
+	@echo "🧪 Nave Mãe em modo de teste..."
+	./bin/mothership -test-mode
+
+# make test-rover MS_IP=<IP_DA_NAVE_MAE>
+test-rover:
+	@echo "🧪 Rover em modo de teste a conectar a $(MS_IP)..."
+	./bin/rover -ms-ip=$(MS_IP) -test-mode

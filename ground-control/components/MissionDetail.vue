@@ -35,9 +35,23 @@
       </div>
     </div>
 
+    <!-- Assembled Image Section (for image capture missions) -->
+    <div v-if="mission.taskType === 0 && mission.assembledImage" class="assembled-image-section">
+      <h3>🖼️ Imagem Reconstruída</h3>
+      <div class="assembled-image-container">
+        <img :src="`data:image/jpeg;base64,${mission.assembledImage}`" alt="Imagem Reconstruída" />
+        <p class="image-info">{{ mission.reports.length }} chunks recebidos | {{ formatImageSize(mission.assembledImage) }}</p>
+      </div>
+    </div>
+    
+    <!-- Debug info -->
+    <div v-if="mission.taskType === 0 && !mission.assembledImage && mission.reports.length > 0" class="debug-info">
+      ⚠️ Imagem ainda não foi reassembled ({{ mission.reports.length }} chunks recebidos)
+    </div>
+
     <!-- Reports Section -->
     <div class="reports-section">
-      <h3>Reports ({{ mission.reports.length }})</h3>
+      <h3>📦 Reports Individuais ({{ mission.reports.length }})</h3>
 
       <div v-if="mission.reports.length === 0" class="no-reports">
         <p>Nenhum report recebido ainda</p>
@@ -96,6 +110,15 @@ const sanitizeClass = (state) => {
   if (!state) return '';
   // Converter para minúsculas e substituir espaços por hífen
   return state.toLowerCase().replace(/\s+/g, '-');
+};
+
+const formatImageSize = (base64String) => {
+  if (!base64String) return '0 KB';
+  // Base64 string length * 0.75 gives approximate byte size
+  const bytes = base64String.length * 0.75;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(2)} KB`;
+  return `${(kb / 1024).toFixed(2)} MB`;
 };
 
 const getReportComponent = (report) => {
@@ -266,6 +289,55 @@ const getReportComponent = (report) => {
   text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+/* Assembled Image Section */
+.assembled-image-section {
+  margin-top: 30px;
+  margin-bottom: 30px;
+}
+
+.assembled-image-section h3 {
+  color: #00ff88;
+  font-size: 20px;
+  margin-bottom: 20px;
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.assembled-image-container {
+  background: linear-gradient(135deg, #1a3a52 0%, #132d48 100%);
+  border: 2px solid #00ff88;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+}
+
+.assembled-image-container img {
+  max-width: 100%;
+  max-height: 600px;
+  border-radius: 4px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  image-rendering: auto;
+}
+
+.image-info {
+  margin-top: 15px;
+  color: #a8b5c8;
+  font-size: 14px;
+}
+
+.debug-info {
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(255, 170, 0, 0.1);
+  border: 1px solid rgba(255, 170, 0, 0.3);
+  border-radius: 6px;
+  color: #ffaa00;
+  text-align: center;
+  font-size: 13px;
 }
 
 .no-reports {

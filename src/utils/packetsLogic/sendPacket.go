@@ -4,6 +4,7 @@ import (
 	"net"
 	"src/config"
 	"src/internal/ml"
+	"src/utils/metrics"
 	"sync"
 	"time"
 )
@@ -146,6 +147,10 @@ func sendAckPacket(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, logf Log
 			"error":  err,
 		})
 	} else {
+		// Record ACK sent metric
+		if m := metrics.GetGlobalMetrics(); m != nil {
+			m.RecordAckSent()
+		}
 		logf("INFO", "ACK sent", map[string]any{
 			"ackNum": pkt.AckNum,
 		})
@@ -169,6 +174,18 @@ func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, w
 			return
 		}
 
+		// Record packet sent metric
+		if m := metrics.GetGlobalMetrics(); m != nil {
+			pktType := ml.PacketType(pkt.MsgType).String()
+			packetSize := ml.PacketHeaderSize + len(pkt.Payload)
+			m.RecordPacketSent(pktType, packetSize)
+
+			// Record retransmission if not first attempt
+			if retries > 0 {
+				m.RecordRetransmission()
+			}
+		}
+
 		if retries == 0 {
 			// Log only on first send, not retries
 			pktType := ml.PacketType(pkt.MsgType).String()
@@ -183,13 +200,24 @@ func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, w
 
 		select {
 		case <-ch:
-			// ACK received - update RTO and exit
-			handleAckReceived(window, pkt.SeqNum, time.Since(sendTime))
+			// ACK received - update RTO and record metrics
+			rtt := time.Since(sendTime)
+			handleAckReceived(window, pkt.SeqNum, rtt)
+
+			// Record RTT metric
+			if m := metrics.GetGlobalMetrics(); m != nil {
+				m.RecordRTT(rtt)
+				m.RecordAckReceived()
+			}
 			return
 
 		case <-time.After(rto):
 			// Timeout - prepare for retransmission
 			if retries == config.MAX_RETRIES {
+				// Record packet lost metric
+				if m := metrics.GetGlobalMetrics(); m != nil {
+					m.RecordPacketLost()
+				}
 				handleMaxRetriesReached(pkt.SeqNum, logf)
 				return
 			}

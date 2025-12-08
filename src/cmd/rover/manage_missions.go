@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"src/config"
 	"src/internal/core"
 	"src/internal/devices"
@@ -15,6 +14,16 @@ func (rover *Rover) ExecuteMission(mission ml.MissionData) {
 	defer rover.DecrementActiveMission()
 
 	rover.Logger.Infof("Mission", "Mission %d received: TaskType=%d", mission.MsgID, mission.TaskType)
+
+	// For image capture tasks, load the image
+	if mission.TaskType == ml.TASK_IMAGE_CAPTURE {
+		imagePath := "image.jpg" // Default image path
+		if err := rover.Devices.Camera.LoadImage(imagePath); err != nil {
+			rover.Logger.Errorf("Camera", "Failed to load image %s: %v", imagePath, err)
+			return
+		}
+		rover.Logger.Infof("Camera", "Image loaded successfully: %d chunks", rover.Devices.Camera.GetTotalChunks())
+	}
 
 	// Move to mission location
 	rover.Logger.Infof("Movement", "Moving to coordinates (%.4f, %.4f)", mission.Coordinate.Latitude, mission.Coordinate.Longitude)
@@ -211,7 +220,7 @@ func (rover *Rover) batteryMonitor() {
 
 		// Warning at 20%
 		if level <= 20 && level > 5 {
-			fmt.Printf("⚠️  Low battery warning: %d%%\n", level)
+			rover.Logger.Warnf("Battery", "Low battery level: %d%%", level)
 		}
 
 		// Critical - suspend immediately if not already suspended

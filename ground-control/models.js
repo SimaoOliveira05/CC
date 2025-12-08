@@ -11,7 +11,7 @@ export class Rover {
 
 // Classe Mission
 export class Mission {
-  constructor({ id, idRover, taskType, duration, updateFrequency, lastUpdate, createdAt, priority, reports, state, coordinate }) {
+  constructor({ id, idRover, taskType, duration, updateFrequency, lastUpdate, createdAt, priority, reports, state, coordinate, assembledImage }) {
     this.id = id;
     this.idRover = idRover;
     this.taskType = taskType;
@@ -23,6 +23,7 @@ export class Mission {
     this.reports = (reports || []).map(r => this.instantiateReport(r));
     this.state = state;
     this.coordinate = coordinate || { latitude: 0, longitude: 0 };
+    this.assembledImage = assembledImage || null; // Image reassembled from chunks
   }
 
   instantiateReport(data) {

@@ -1,8 +1,13 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"os/signal"
 	"src/config"
 	"src/internal/core"
+	"src/utils/metrics"
+	"syscall"
 )
 
 // Rover struct embedding core.RoverSystem
@@ -12,6 +17,12 @@ type Rover struct {
 
 func main() {
 	config.InitConfig(true, true) // Read flag -ms-ip and print config
+
+	// Initialize metrics if in test mode
+	metrics.InitGlobalMetrics(config.IsTestMode())
+	if config.IsTestMode() {
+		fmt.Println("📊 Test mode enabled - collecting metrics")
+	}
 
 	// Obtain mothership addresses from config
 	mothershipUDPAddr := config.GetMotherUDPAddr()
@@ -23,6 +34,19 @@ func main() {
 	if roverSys == nil {
 		panic("Failed to initialize Rover System")
 	}
+
+	// Setup graceful shutdown to print metrics
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		if config.IsTestMode() && metrics.GlobalMetrics != nil {
+			// Include rover ID in filename
+			filename := fmt.Sprintf("rover_%d_metrics.json", roverSys.ID)
+			metrics.GlobalMetrics.ExportToJSON(filename)
+		}
+		os.Exit(0)
+	}()
 
 	// Create Rover instance
 	rover := Rover{RoverSystem: roverSys}

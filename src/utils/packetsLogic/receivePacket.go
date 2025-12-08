@@ -3,8 +3,21 @@ package packetslogic
 import (
 	"net"
 	"src/internal/ml"
+	"src/utils/metrics"
 	"sync"
 )
+
+// seqLessThan compares sequence numbers considering wraparound (RFC 1982)
+// Returns true if seq1 is "less than" seq2 in circular arithmetic
+func seqLessThan(seq1, seq2 uint16) bool {
+	return int16(seq1-seq2) < 0
+}
+
+// seqGreaterThan compares sequence numbers considering wraparound
+// Returns true if seq1 is "greater than" seq2 in circular arithmetic
+func seqGreaterThan(seq1, seq2 uint16) bool {
+	return int16(seq1-seq2) > 0
+}
 
 // handleACK processes delivery acknowledgments and updates the sliding window
 // ACK numbers represent bytes acknowledged (TCP-style)
@@ -12,10 +25,10 @@ func HandleAck(p ml.Packet, window *Window) {
 	window.Mu.Lock()
 	defer window.Mu.Unlock()
 
-	// Mark all packets with SeqNum < AckNum as acknowledged
+	// Mark all packets with SeqNum < AckNum as acknowledged (considering wraparound)
 	// In TCP-style, AckNum represents the next byte expected
 	for seqKey, ch := range window.Window {
-		if uint16(seqKey) < p.AckNum {
+		if seqLessThan(uint16(seqKey), p.AckNum) {
 			select {
 			case ch <- 1: // Signal ACK received
 			default:
@@ -25,7 +38,8 @@ func HandleAck(p ml.Packet, window *Window) {
 		}
 	}
 
-	if int16(p.AckNum-1) > window.LastAckReceived {
+	// Update LastAckReceived considering wraparound
+	if seqGreaterThan(p.AckNum-1, uint16(window.LastAckReceived)) {
 		window.LastAckReceived = int16(p.AckNum - 1)
 	}
 }
@@ -67,7 +81,17 @@ func HandleOrderedPacket(
 			"expected": expectedChecksum,
 			"received": pkt.Checksum,
 		})
+		// Record metric
+		if m := metrics.GlobalMetrics; m != nil {
+			m.RecordChecksumFailed()
+		}
 		return
+	}
+
+	// Record valid packet received
+	if m := metrics.GlobalMetrics; m != nil {
+		packetSize := ml.PacketHeaderSize + len(pkt.Payload)
+		m.RecordPacketReceived(pkt.MsgType.String(), packetSize)
 	}
 
 	// If processing without ordering (ACKs), process directly
@@ -110,13 +134,21 @@ func HandleOrderedPacket(
 			}
 		}
 
-	case seq > expected:
+	case seqGreaterThan(seq, expected):
 		// Out-of-order packet - buffer and send cumulative ACK
 		buffer[seq] = pkt
 		SendAck(conn, addr, expected, window, roverID, logf)
+		// Record out-of-order metric
+		if m := metrics.GlobalMetrics; m != nil {
+			m.RecordOutOfOrder()
+		}
 
-	case seq < expected:
+	case seqLessThan(seq, expected):
 		// Duplicate packet - resend ACK
 		SendAck(conn, addr, nextExpected, window, roverID, logf)
+		// Record duplicate metric
+		if m := metrics.GlobalMetrics; m != nil {
+			m.RecordDuplicateReceived()
+		}
 	}
 }

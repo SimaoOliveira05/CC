@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"src/config"
 	"src/internal/api"
 	"src/internal/ml"
 	"src/internal/ts"
@@ -42,7 +41,7 @@ func NewMotherShip() *MotherShip {
 	ms := &MotherShip{
 		Rovers:         make(map[uint8]*RoverState),
 		MissionManager: ml.NewMissionManager(),
-		MissionQueue:   make(chan ml.MissionState, config.MISSION_QUEUE_SIZE),
+		MissionQueue:   make(chan ml.MissionState, 100),
 		Mu:             sync.Mutex{},
 		RoverInfo:      ts.NewRoverManager(),
 		APIServer:      api.NewAPIServer(),

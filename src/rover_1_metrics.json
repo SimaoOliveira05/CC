@@ -1,0 +1,30 @@
+{
+  "uptime": "1m23s",
+  "packets_sent": 93,
+  "packets_received": 93,
+  "acks_sent": 2,
+  "acks_received": 93,
+  "checksums_failed": 0,
+  "retransmissions": 0,
+  "packets_lost": 0,
+  "duplicates_received": 0,
+  "out_of_order_received": 0,
+  "bytes_sent": 93714,
+  "bytes_received": 705,
+  "avg_rtt": "601.381ms",
+  "min_rtt": "600.351ms",
+  "max_rtt": "602.421ms",
+  "packet_loss_rate_percent": 0,
+  "retransmission_rate_percent": 0,
+  "duplicate_rate_percent": 0,
+  "throughput_sent_bps": 1129.1177514806593,
+  "throughput_recv_bps": 8.494227274407931,
+  "packet_types_sent": {
+    "MSG_REPORT": 91,
+    "MSG_REQUEST": 2
+  },
+  "packet_types_received": {
+    "MSG_ACK": 91,
+    "MSG_MISSION": 2
+  }
+}
