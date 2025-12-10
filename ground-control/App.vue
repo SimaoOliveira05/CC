@@ -294,39 +294,11 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* ===== VARIABLES ===== */
-:root {
-  --primary-dark: #0a1e3d;
-  --primary-blue: #1e5a96;
-  --accent-cyan: #00d4ff;
-  --accent-green: #00ff88;
-  --accent-orange: #ff6b1f;
-  --text-primary: #e8eef7;
-  --text-secondary: #a8b5c8;
-  --border-color: #1a3a52;
-  --card-bg: #0f2440;
-  --input-bg: #132d48;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body, html {
-  background: linear-gradient(135deg, #0a1e3d 0%, #132d48 100%);
-  color: var(--text-primary);
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-}
-
 /* ===== HEADER ===== */
 .header {
-  background: linear-gradient(90deg, #0a1e3d 0%, #1e5a96 100%);
-  border-bottom: 3px solid var(--accent-cyan);
-  padding: 20px 0;
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 16px 0;
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -341,60 +313,50 @@ body, html {
   align-items: center;
 }
 
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .nasa-badge {
-  font-size: 32px;
+  font-size: 28px;
 }
 
 .logo h1 {
-  font-size: 28px;
-  color: var(--accent-cyan);
-  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .status-indicator {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid var(--accent-cyan);
-  border-radius: 4px;
-  color: var(--accent-green);
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
 }
 
 .last-update {
-  color: var(--accent-cyan);
+  color: var(--text-secondary);
   font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  animation: pulse-text 2s infinite;
-}
-
-@keyframes pulse-text {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
 }
 
 .pulse {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  animation: pulse 2s infinite;
 }
 
 .pulse.connected {
-  background: var(--accent-green);
-  box-shadow: 0 0 10px var(--accent-green);
+  background: var(--accent-success);
 }
 
 .pulse.disconnected {
-  background: #ff4444;
-  box-shadow: 0 0 10px #ff4444;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  background: var(--accent-danger);
 }
 
 /* ===== LAYOUT ===== */
@@ -408,162 +370,140 @@ body, html {
 }
 
 .sidebar {
-  width: 250px;
-  background: rgba(15, 36, 64, 0.8);
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
+  width: 280px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   padding: 20px;
-  backdrop-filter: blur(10px);
 }
 
 .sidebar h2 {
-  color: var(--accent-cyan);
-  margin-bottom: 20px;
-  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
-  font-size: 18px;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .rovers-grid {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px;
 }
 
 .main-content {
   flex: 1;
-  background: rgba(15, 36, 64, 0.8);
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
-  padding: 30px;
-  backdrop-filter: blur(10px);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 24px;
 }
 
 .main-content h2 {
-  color: var(--accent-cyan);
-  margin-bottom: 25px;
-  font-size: 24px;
-  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 /* ===== TABS ===== */
 .tabs {
   display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
-  border-bottom: 2px solid rgba(0, 212, 255, 0.2);
-  padding-bottom: 10px;
+  gap: 4px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0;
 }
 
 .tab {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  padding: 10px 20px;
-  border-radius: 4px 4px 0 0;
+  padding: 10px 16px;
   cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  transition: all 0.3s;
-  border-bottom: 3px solid transparent;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  position: relative;
 }
 
 .tab:hover {
-  color: var(--accent-cyan);
-  background: rgba(0, 212, 255, 0.1);
+  color: var(--text-primary);
 }
 
 .tab.active {
-  color: var(--accent-cyan);
-  background: rgba(0, 212, 255, 0.15);
-  border-bottom-color: var(--accent-cyan);
-}
-
-.tab {
-  position: relative;
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
 }
 
 .log-badge {
   position: absolute;
-  top: -5px;
-  right: -5px;
-  background: #ff4444;
+  top: 4px;
+  right: 4px;
+  background: var(--accent-danger);
   color: white;
-  font-size: 11px;
+  font-size: 10px;
   padding: 2px 6px;
   border-radius: 10px;
-  min-width: 18px;
+  min-width: 16px;
   text-align: center;
 }
 
 /* ===== LOGS SECTION ===== */
 .logs-section {
-  animation: fadeIn 0.3s ease-in;
+  animation: fadeIn 0.2s ease-in;
   height: calc(100vh - 250px);
   min-height: 400px;
 }
 
 /* ===== MISSIONS SECTION ===== */
 .missions-section {
-  animation: fadeIn 0.3s ease-in;
+  animation: fadeIn 0.2s ease-in;
 }
 
 .missions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  gap: 16px;
 }
 
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: 48px 20px;
   color: var(--text-secondary);
 }
 
 .empty-state p {
-  font-size: 18px;
+  font-size: 15px;
 }
 
 /* ===== MISSION DETAIL SECTION ===== */
 .mission-detail-section {
-  animation: slideIn 0.3s ease-out;
+  animation: fadeIn 0.2s ease-in;
 }
 
 .btn-back {
-  background: var(--accent-orange);
-  border: none;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 4px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  margin-bottom: 20px;
-  transition: all 0.3s;
-  font-weight: bold;
+  margin-bottom: 16px;
+  transition: all 0.2s;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .btn-back:hover {
-  background: #ff8844;
-  box-shadow: 0 0 15px rgba(255, 107, 31, 0.5);
+  background: var(--border-color);
 }
 
 /* ===== ANIMATIONS ===== */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* ===== RESPONSIVE ===== */
@@ -579,6 +519,7 @@ body, html {
   .rovers-grid {
     flex-direction: row;
     overflow-x: auto;
+    gap: 12px;
   }
 
   .missions-grid {

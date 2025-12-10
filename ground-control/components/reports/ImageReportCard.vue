@@ -83,84 +83,83 @@ const formatBytes = (bytes) => {
 
 <style scoped>
 .report-card {
-  background: linear-gradient(135deg, #1a3a52 0%, #132d48 100%);
-  border-radius: 8px;
-  padding: 15px;
-  border-left: 4px solid #00d4ff;
-  box-shadow: 0 0 10px rgba(0, 212, 255, 0.1);
-  transition: all 0.3s;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  border-left: 3px solid var(--accent-primary);
+  transition: background 0.2s;
 }
 
 .report-card:hover {
-  box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
-  transform: translateY(-2px);
+  background: var(--bg-hover);
 }
 
 .report-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .report-header h4 {
-  color: #00d4ff;
+  color: var(--accent-primary);
   margin: 0;
-  font-size: 14px;
-  text-shadow: 0 0 5px rgba(0, 212, 255, 0.3);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .last-badge {
-  background: rgba(0, 255, 136, 0.2);
-  color: #00ff88;
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-size: 11px;
-  font-weight: bold;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent-success);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 500;
   text-transform: uppercase;
 }
 
 .report-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .info-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .label {
-  color: #a8b5c8;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 10px;
+  letter-spacing: 0.3px;
 }
 
 .value {
-  color: #e8eef7;
-  font-weight: bold;
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 .status {
   padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 11px;
-  font-weight: bold;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 500;
   text-transform: uppercase;
 }
 
 .status.partial {
-  background: rgba(255, 170, 0, 0.2);
-  color: #ffaa00;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-warning);
 }
 
 .status.complete {
-  background: rgba(0, 255, 136, 0.2);
-  color: #00ff88;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent-success);
 }
 </style>

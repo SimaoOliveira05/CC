@@ -198,62 +198,59 @@ const getRoverStroke = (state) => {
 
 <style scoped>
 .map-view {
-  animation: fadeIn 0.3s ease-in;
+  animation: fadeIn 0.2s ease-in;
 }
 
 .map-view h2 {
-  color: #00d4ff;
-  margin-bottom: 20px;
-  font-size: 24px;
-  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .map-info {
   display: flex;
-  gap: 20px;
-  margin-bottom: 15px;
-  color: #a8b5c8;
-  font-size: 14px;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .map-info span {
-  padding: 5px 10px;
-  background: rgba(0, 212, 255, 0.1);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  padding: 4px 10px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
 }
 
 .map-container {
-  background: linear-gradient(135deg, #0a1929 0%, #132d48 100%);
-  border: 2px solid #00d4ff;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
-  margin-bottom: 20px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 16px;
 }
 
 .map-svg {
   width: 100%;
-  height: 600px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 4px;
+  height: 500px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-sm);
 }
 
 .rover-marker {
   cursor: pointer;
-  transition: all 0.3s;
-  filter: drop-shadow(0 0 5px rgba(0, 255, 136, 0.6));
+  transition: transform 0.2s;
 }
 
 .rover-marker:hover {
-  filter: drop-shadow(0 0 10px rgba(0, 255, 136, 1));
   transform: scale(1.2);
 }
 
 .mission-marker {
   cursor: pointer;
-  transition: all 0.3s;
-  opacity: 0.8;
+  transition: transform 0.2s;
+  opacity: 0.85;
 }
 
 .mission-marker:hover {
@@ -269,66 +266,66 @@ const getRoverStroke = (state) => {
 
 .legend {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   flex-wrap: wrap;
   justify-content: center;
-  padding: 15px;
-  background: rgba(0, 212, 255, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  padding: 12px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #e8eef7;
-  font-size: 14px;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .legend-marker {
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   border: 2px solid;
 }
 
 .rover-marker-legend {
-  background: #00ff88;
-  border-color: #00ffaa;
+  background: var(--accent-success);
+  border-color: var(--accent-success);
 }
 
 .rover-inop-legend {
-  background: #ff4444;
-  border-color: #ff6666;
+  background: var(--accent-danger);
+  border-color: var(--accent-danger);
 }
 
 .mission-pending {
-  background: rgba(255, 170, 0, 0.6);
-  border-color: #ffcc00;
+  background: var(--accent-warning);
+  border-color: var(--accent-warning);
+  border-radius: 2px;
 }
 
 .mission-moving {
-  background: rgba(255, 149, 0, 0.6);
-  border-color: #ffaa00;
+  background: var(--accent-warning);
+  border-color: var(--accent-warning);
+  border-radius: 2px;
 }
 
 .mission-progress {
-  background: rgba(255, 68, 68, 0.6);
-  border-color: #ff6666;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  border-radius: 2px;
 }
 
 .mission-completed {
-  background: rgba(0, 255, 136, 0.6);
-  border-color: #00ffaa;
+  background: var(--accent-success);
+  border-color: var(--accent-success);
+  border-radius: 2px;
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 </style>

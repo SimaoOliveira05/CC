@@ -1,5 +1,5 @@
 <template>
-  <div class="rover-card">
+  <div class="rover-card" :title="`Rover #${rover.id} - ${formatPosition(rover.position)}`">
     <div class="rover-header">
       <span class="rover-id">ROVER #{{ rover.id }}</span>
       <span class="status-badge" :class="rover.state.toLowerCase()">
@@ -79,59 +79,47 @@ const getQueueCount = (priority) => {
 
 <style scoped>
 .rover-card {
-  background: linear-gradient(135deg, #1a3a52 0%, #132d48 100%);
-  border: 2px solid #00d4ff;
-  border-radius: 8px;
-  padding: 15px;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
-}
-
-.rover-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
-  border-color: #00ff88;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  contain: content;
 }
 
 .rover-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .rover-id {
-  font-weight: bold;
-  color: #00d4ff;
+  font-weight: 600;
+  color: var(--text-primary);
   font-size: 13px;
-  text-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
 }
 
 .status-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
   font-size: 11px;
-  font-weight: bold;
+  font-weight: 500;
   text-transform: uppercase;
 }
 
 .status-badge.active {
-  background: rgba(0, 255, 136, 0.2);
-  color: #00ff88;
-  border: 1px solid #00ff88;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent-success);
 }
 
 .status-badge.inactive {
-  background: rgba(100, 100, 100, 0.2);
-  color: #aaa;
-  border: 1px solid #666;
+  background: var(--bg-hover);
+  color: var(--text-muted);
 }
 
 .status-badge.inmission {
-  background: rgba(255, 107, 31, 0.2);
-  color: #ff6b1f;
-  border: 1px solid #ff6b1f;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-warning);
 }
 
 .rover-body {
@@ -143,71 +131,69 @@ const getQueueCount = (priority) => {
 .metric {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 
 .label {
   font-size: 11px;
-  color: #a8b5c8;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .value {
-  font-size: 14px;
-  color: #e8eef7;
-  font-weight: bold;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 .queue-info {
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
 }
 
 .queue-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
   font-size: 10px;
-  font-weight: bold;
-  border: 1px solid;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  min-width: 42px;
+  text-align: center;
 }
 
 .queue-badge.priority-1 {
-  background: rgba(255, 68, 68, 0.2);
-  color: #ff4444;
-  border-color: #ff4444;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-danger);
 }
 
 .queue-badge.priority-2 {
-  background: rgba(255, 170, 0, 0.2);
-  color: #ffaa00;
-  border-color: #ffaa00;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-warning);
 }
 
 .queue-badge.priority-3 {
-  background: rgba(0, 212, 255, 0.2);
-  color: #00d4ff;
-  border-color: #00d4ff;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-primary);
 }
 
 .battery-bar {
-  height: 8px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 4px;
+  height: 6px;
+  background: var(--bg-hover);
+  border-radius: 3px;
   overflow: hidden;
-  border: 1px solid rgba(0, 212, 255, 0.3);
 }
 
 .battery-fill {
   height: 100%;
-  transition: width 0.3s, background 0.3s;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 .coordinate {
-  color: #00d4ff;
-  font-family: 'Courier New', monospace;
+  color: var(--text-secondary);
+  font-family: monospace;
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 </style>

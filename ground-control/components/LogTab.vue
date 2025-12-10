@@ -137,173 +137,173 @@ watch(() => props.logs.length, async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 12px;
 }
 
 .logs-header h2 {
-  color: var(--accent-cyan, #00d4ff);
+  color: var(--text-primary);
   margin: 0;
-  font-size: 24px;
-  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .logs-controls {
   display: flex;
-  gap: 15px;
+  gap: 12px;
   align-items: center;
   flex-wrap: wrap;
 }
 
 .filter-group {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
 .filter-label {
-  color: #a8b5c8;
-  font-size: 13px;
+  color: var(--text-secondary);
+  font-size: 12px;
   margin-right: 4px;
 }
 
 .filter-btn {
-  background: rgba(26, 58, 82, 0.5);
-  border: 1px solid rgba(26, 58, 82, 0.8);
-  color: #a8b5c8;
-  padding: 6px 12px;
-  border-radius: 4px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 12px;
-  transition: all 0.3s;
+  transition: all 0.2s;
 }
 
 .filter-btn:hover {
-  background: rgba(26, 58, 82, 0.8);
+  background: var(--bg-hover);
 }
 
 .filter-btn.active {
-  background: rgba(0, 212, 255, 0.2);
-  border-color: #00d4ff;
-  color: #00d4ff;
+  background: rgba(59, 130, 246, 0.15);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
 }
 
 .filter-btn.info.active {
-  background: rgba(0, 255, 136, 0.2);
-  border-color: #00ff88;
-  color: #00ff88;
+  background: rgba(34, 197, 94, 0.15);
+  border-color: var(--accent-success);
+  color: var(--accent-success);
 }
 
 .filter-btn.warn.active {
-  background: rgba(255, 170, 0, 0.2);
-  border-color: #ffaa00;
-  color: #ffaa00;
+  background: rgba(245, 158, 11, 0.15);
+  border-color: var(--accent-warning);
+  color: var(--accent-warning);
 }
 
 .filter-btn.error.active {
-  background: rgba(255, 68, 68, 0.2);
-  border-color: #ff4444;
-  color: #ff4444;
+  background: rgba(239, 68, 68, 0.15);
+  border-color: var(--accent-danger);
+  color: var(--accent-danger);
 }
 
 .btn-clear {
-  background: rgba(255, 68, 68, 0.2);
-  border: 1px solid #ff4444;
-  color: #ff4444;
-  padding: 8px 16px;
-  border-radius: 4px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--accent-danger);
+  color: var(--accent-danger);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s;
+  font-size: 13px;
+  transition: all 0.2s;
 }
 
 .btn-clear:hover {
-  background: rgba(255, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .logs-list {
   flex: 1;
-  background: rgba(10, 30, 61, 0.6);
-  border: 1px solid rgba(26, 58, 82, 0.8);
-  border-radius: 8px;
-  padding: 15px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px;
   overflow-y: auto;
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 12px;
 }
 
 .log-entry {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 8px 10px;
-  border-radius: 4px;
-  margin-bottom: 4px;
-  transition: background 0.2s;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 2px;
+  transition: background 0.15s;
 }
 
 .log-entry:hover {
-  background: rgba(0, 212, 255, 0.05);
+  background: var(--bg-hover);
 }
 
 .log-entry.info {
-  border-left: 3px solid #00ff88;
+  border-left: 2px solid var(--accent-success);
 }
 
 .log-entry.warn {
-  border-left: 3px solid #ffaa00;
+  border-left: 2px solid var(--accent-warning);
 }
 
 .log-entry.error {
-  border-left: 3px solid #ff4444;
+  border-left: 2px solid var(--accent-danger);
 }
 
 .log-time {
-  color: #a8b5c8;
-  font-size: 12px;
-  min-width: 100px;
+  color: var(--text-muted);
+  font-size: 11px;
+  min-width: 90px;
 }
 
 .log-level {
-  font-weight: bold;
-  min-width: 50px;
+  font-weight: 500;
+  min-width: 44px;
   text-align: center;
-  padding: 2px 6px;
+  padding: 1px 5px;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .log-level.info {
-  background: rgba(0, 255, 136, 0.2);
-  color: #00ff88;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent-success);
 }
 
 .log-level.warn {
-  background: rgba(255, 170, 0, 0.2);
-  color: #ffaa00;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-warning);
 }
 
 .log-level.error {
-  background: rgba(255, 68, 68, 0.2);
-  color: #ff4444;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-danger);
 }
 
 .log-source {
-  color: #00d4ff;
-  min-width: 120px;
-  font-size: 12px;
+  color: var(--accent-primary);
+  min-width: 100px;
+  font-size: 11px;
 }
 
 .log-message {
-  color: #e8eef7;
+  color: var(--text-primary);
   flex: 1;
 }
 
 .log-meta {
-  color: #ff6b1f;
-  font-size: 11px;
-  max-width: 200px;
+  color: var(--accent-warning);
+  font-size: 10px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -311,34 +311,34 @@ watch(() => props.logs.length, async () => {
 
 .empty-logs {
   text-align: center;
-  color: #a8b5c8;
-  padding: 60px 20px;
+  color: var(--text-secondary);
+  padding: 48px 16px;
 }
 
 .logs-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px solid rgba(26, 58, 82, 0.5);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
 }
 
 .log-count {
-  color: #a8b5c8;
-  font-size: 13px;
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .auto-scroll-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #a8b5c8;
-  font-size: 13px;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
   cursor: pointer;
 }
 
 .auto-scroll-toggle input {
-  accent-color: #00d4ff;
+  accent-color: var(--accent-primary);
 }
 </style>
