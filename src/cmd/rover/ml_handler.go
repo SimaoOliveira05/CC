@@ -5,26 +5,30 @@ import (
 	"src/config"
 	"src/internal/ml"
 	pl "src/utils/packetsLogic"
-	"time"
 )
 
 // handlePacket processes each packet on a separate goroutine
 func (rover *Rover) handlePacket(pkt ml.Packet) {
-	// Closure that captures 'rover'
+	// Processor handles business logic ONLY
+	// ACK processing (implicit and explicit) is handled automatically by HandleOrderedPacket
 	processor := func(p ml.Packet) {
 		switch p.MsgType {
 		case ml.MSG_MISSION:
-			pl.HandleAck(p, rover.ML.Window)
+			// Process mission - implicit ACK already handled by HandleOrderedPacket
 			rover.processMission(p)
 		case ml.MSG_NO_MISSION:
-			pl.HandleAck(p, rover.ML.Window)
+			// No mission available - implicit ACK already handled by HandleOrderedPacket
 			rover.ML.MissionReceivedChan <- false
 		case ml.MSG_ACK:
-			pl.HandleAck(p, rover.ML.Window) // Uses 'p' (closure parameter)
+			// Pure ACK - already processed by HandleOrderedPacket, nothing else to do
 		default:
 			rover.Logger.Warnf("MissionLink", "Unknown packet type: %d", p.MsgType)
 		}
 	}
+
+	// Determine packet handling options
+	isPureAck := pkt.MsgType == ml.MSG_ACK
+	shouldAutoAck := !isPureAck // Don't ACK an ACK
 
 	pl.HandleOrderedPacket(
 		pkt,
@@ -36,8 +40,8 @@ func (rover *Rover) handlePacket(pkt ml.Packet) {
 		rover.ML.Window,
 		rover.ID,
 		processor,
-		pkt.MsgType == ml.MSG_ACK, // Skip ordering for ACKs
-		true,
+		isPureAck,     // skipOrdering: only for pure ACKs
+		shouldAutoAck, // autoAck: send ACK for all except ACK packets
 		rover.Logger.CreateLogCallback("PacketHandler"),
 	)
 }
@@ -165,12 +169,6 @@ func (rover *Rover) sendImageReports(mission ml.MissionData, final bool) {
 		)
 
 		rover.Logger.Debugf("Camera", "Sent chunk %d/%d (%d bytes)", i+1, totalChunks, len(chunk))
-
-		// Add small delay between chunks for better visualization
-		if i < totalChunks-1 {
-			delay := time.Duration(50+rand.Intn(100)) * time.Millisecond
-			time.Sleep(delay)
-		}
 	}
 }
 

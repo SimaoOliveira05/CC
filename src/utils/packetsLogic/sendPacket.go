@@ -37,6 +37,24 @@ func NewWindow() *Window {
 	}
 }
 
+// GetPendingCount returns the number of packets waiting for ACK
+func (w *Window) GetPendingCount() int {
+	w.Mu.Lock()
+	defer w.Mu.Unlock()
+	return len(w.Window)
+}
+
+// WaitForWindowSlot blocks until there's room in the sliding window
+// This implements flow control to prevent overwhelming the receiver
+func (w *Window) WaitForWindowSlot() {
+	for {
+		if w.GetPendingCount() < config.MAX_PACKETS_IN_FLIGHT {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
 // UpdateRTO updates the RTO based on a new RTT sample using TCP's algorithm technique
 func (w *Window) UpdateRTO(sampleRTT time.Duration) {
 	if w.SRTT == 0 {
@@ -80,8 +98,7 @@ func SendPacketUDP(conn *net.UDPConn, addr *net.UDPAddr, packet ml.Packet) error
 
 // CreateAndSendPacket creates a packet with auto-incremented SeqNum and sends it
 // This is a generic function that handles both rover and mothership packet sending
-// windowLock can be nil if no locking is needed (e.g., for rover which has its own locking strategy)
-// SeqNum is incremented by the total packet size (header + payload) like TCP
+// SeqNum is incremented by the total payload
 func CreateAndSendPacket(
 	conn *net.UDPConn,
 	addr *net.UDPAddr,
@@ -94,6 +111,11 @@ func CreateAndSendPacket(
 	windowLock *sync.Mutex,
 	logf Logger,
 ) {
+	// Flow control: wait if too many packets are in flight (except for ACKs)
+	if msgType != ml.MSG_ACK {
+		window.WaitForWindowSlot()
+	}
+
 	// Lock if mutex is provided (mothership case)
 	if windowLock != nil {
 		windowLock.Lock()
@@ -109,13 +131,15 @@ func CreateAndSendPacket(
 		Payload:  payload,
 	}
 
-	// Calculate total packet size (header + payload) for SeqNum increment
-	// PacketHeaderSize is 7 bytes
-	packetSize := ml.PacketHeaderSize + len(payload)
+	// Calculate payload size for SeqNum increment (minimum 1 for empty payloads)
+	payloadSize := len(payload)
+	if payloadSize == 0 {
+		payloadSize = 1 // Minimum increment to ensure SeqNum always advances
+	}
 
-	// Increment SeqNum by packet size (TCP-style)
+	// Increment SeqNum by payload size
 	// Use uint32 for calculation to avoid overflow, then cast back
-	newSeq := uint32(*seqNum) + uint32(packetSize)
+	newSeq := uint32(*seqNum) + uint32(payloadSize)
 	*seqNum = uint16(newSeq) // Automatic wraparound when casting
 
 	// Unlock if mutex was provided
@@ -124,7 +148,7 @@ func CreateAndSendPacket(
 	}
 
 	// Send packet using PacketManager
-	PacketManager(conn, addr, pkt, window, logf)
+	go PacketManager(conn, addr, pkt, window, logf)
 }
 
 // PacketManager manages the sending and retransmission of a packet until an ACK is received
@@ -135,7 +159,7 @@ func PacketManager(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *
 		return
 	}
 
-	// For other packets, manage retransmissions with window
+	// For other packets, manage retransmissions with window (non-blocking)
 	manageRetransmission(conn, addr, pkt, window, logf)
 }
 
@@ -158,13 +182,17 @@ func sendAckPacket(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, logf Log
 }
 
 // manageRetransmission handles sending and retransmitting packets until ACK is received
+// Implements Karn's Algorithm: RTT is only measured for packets ACKed on first attempt
+// to avoid ambiguity with retransmissions (we can't know if ACK is for original or retransmit)
 func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *Window, logf Logger) {
 	// Register packet in window
 	ch := registerPacket(window, pkt.SeqNum)
 	defer unregisterPacket(window, pkt.SeqNum)
 
+	// Record send time only once for RTT measurement (Karn's Algorithm)
+	firstSendTime := time.Now()
+
 	for retries := 0; retries <= config.MAX_RETRIES; retries++ {
-		sendTime := time.Now()
 		// Send the packet
 		if err := SendPacketUDP(conn, addr, pkt); err != nil {
 			logf("ERROR", "Failed to send packet", map[string]any{
@@ -200,13 +228,21 @@ func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, w
 
 		select {
 		case <-ch:
-			// ACK received - update RTO and record metrics
-			rtt := time.Since(sendTime)
-			handleAckReceived(window, pkt.SeqNum, rtt)
+			// ACK received
+			// Karn's Algorithm: Only update RTO on first attempt (no retransmissions)
+			// After retransmission, we can't know if ACK is for original or retransmit
+			if retries == 0 {
+				rtt := time.Since(firstSendTime)
+				handleAckReceived(window, rtt)
 
-			// Record RTT metric
+				// Record RTT metric only for clean samples
+				if m := metrics.GetGlobalMetrics(); m != nil {
+					m.RecordRTT(rtt)
+				}
+			}
+
+			// Always record ACK received metric
 			if m := metrics.GetGlobalMetrics(); m != nil {
-				m.RecordRTT(rtt)
 				m.RecordAckReceived()
 			}
 			return
@@ -251,7 +287,7 @@ func getRTO(window *Window) time.Duration {
 }
 
 // handleAckReceived processes a received ACK and updates RTO
-func handleAckReceived(window *Window, seqNum uint16, rtt time.Duration) {
+func handleAckReceived(window *Window, rtt time.Duration) {
 	window.Mu.Lock()
 	window.UpdateRTO(rtt)
 	newRTO := window.RTO
@@ -290,4 +326,14 @@ func SendAck(conn *net.UDPConn, addr *net.UDPAddr, ackNum uint16, window *Window
 
 	// Use PacketManager to handle sending the ACK packet
 	PacketManager(conn, addr, ackPacket, window, logf)
+}
+
+// CalculateAckNum calculates the proper AckNum for a received packet
+// This follows the protocol rule: AckNum = SeqNum + max(PayloadSize, 1)
+func CalculateAckNum(pkt ml.Packet) uint16 {
+	payloadSize := len(pkt.Payload)
+	if payloadSize == 0 {
+		payloadSize = 1 // Minimum increment for empty payloads
+	}
+	return pkt.SeqNum + uint16(payloadSize)
 }

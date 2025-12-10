@@ -12,20 +12,23 @@ import (
 	"time"
 )
 
-// handleTelemetryConnection processes each packet on a separate goroutine
+// handlePacket processes each packet on a separate goroutine
 func (ms *MotherShip) handlePacket(state *core.RoverState, pkt ml.Packet) {
 
-	// Closure that captures 'ms' and 'state'
+	// Processor handles business logic ONLY
+	// ACK processing (implicit and explicit) is handled automatically by HandleOrderedPacket
 	processor := func(p ml.Packet) {
 		ms.dispatchPacket(p, state)
 	}
 
-	// Determine if we should auto-acknowledge
-	// This occurs for all packets except REQUEST
-	shouldAutoAck := pkt.MsgType != ml.MSG_REQUEST
+	// Determine packet handling options
+	isPureAck := pkt.MsgType == ml.MSG_ACK
+	// Don't auto-ACK for REQUEST (response is MSG_MISSION which acts as implicit ACK)
+	// Don't auto-ACK for pure ACK packets
+	shouldAutoAck := pkt.MsgType != ml.MSG_REQUEST && !isPureAck
 
 	// Use the generic ordered packet handler
-	pl.HandleOrderedPacket(
+	go pl.HandleOrderedPacket(
 		pkt,
 		&state.ExpectedSeq,
 		state.Buffer,
@@ -35,8 +38,8 @@ func (ms *MotherShip) handlePacket(state *core.RoverState, pkt ml.Packet) {
 		state.Window,
 		0,
 		processor,
-		pkt.MsgType == ml.MSG_ACK,
-		shouldAutoAck,
+		isPureAck,     // skipOrdering: only for pure ACKs
+		shouldAutoAck, // autoAck: send ACK for REPORT, not for REQUEST or ACK
 		ms.Logger.CreateLogCallback("ML"),
 	)
 }
@@ -137,12 +140,13 @@ func (ms *MotherShip) NewRoverState(roverID uint8, addr *net.UDPAddr, packet *ml
 }
 
 // dispatchPacket forwards the packet to the correct handler based on its type
+// Note: ACK processing (implicit and explicit) is handled automatically by HandleOrderedPacket
 func (ms *MotherShip) dispatchPacket(pkt ml.Packet, state *core.RoverState) {
 	switch pkt.MsgType {
 	case ml.MSG_REQUEST:
 		ms.handleMissionRequest(pkt, state, pkt.RoverId)
 	case ml.MSG_ACK:
-		pl.HandleAck(pkt, state.Window)
+		// Pure ACK - already processed by HandleOrderedPacket, nothing else to do
 	case ml.MSG_REPORT:
 		ms.handleReport(pkt, state)
 	default:
@@ -162,15 +166,17 @@ func (ms *MotherShip) handleMissionRequest(pkt ml.Packet, state *core.RoverState
 
 	missionsSent := uint8(0)
 
+	// Calculate AckNum for the REQUEST packet using protocol helper
+	ackNumForRequest := pl.CalculateAckNum(pkt)
+
 	for i := uint8(0); i < numMissionsRequested; i++ {
+		// Use ackNum only for the first mission/response as implicit ACK for the REQUEST
+		ackNum := uint16(0)
+		if i == 0 {
+			ackNum = ackNumForRequest
+		}
 		select {
 		case missionState := <-ms.MissionQueue:
-
-			// Use pktSeqNum only for the first mission as ACK
-			ackNum := uint16(0)
-			if i == 0 {
-				ackNum = pkt.SeqNum + 1
-			}
 
 			ms.assignMissionToRover(missionState, roverID, state, ackNum)
 			missionsSent++
@@ -179,7 +185,7 @@ func (ms *MotherShip) handleMissionRequest(pkt ml.Packet, state *core.RoverState
 			// Empty queue - no more missions available
 			ms.Logger.Warnf("ML", "⚠️ Mission queue empty after sending %d/%d missions", missionsSent, numMissionsRequested)
 			if missionsSent == 0 {
-				ms.sendNoMission(state)
+				ms.sendNoMission(state, ackNum)
 			}
 			return
 		}
@@ -189,7 +195,7 @@ func (ms *MotherShip) handleMissionRequest(pkt ml.Packet, state *core.RoverState
 }
 
 // assignMissionToRover assigns a mission to the selected rover and sends it
-func (ms *MotherShip) assignMissionToRover(missionState ml.MissionState, roverID uint8, targetState *core.RoverState, pktSeqNum uint16) {
+func (ms *MotherShip) assignMissionToRover(missionState ml.MissionState, roverID uint8, targetState *core.RoverState, ackNum uint16) {
 	// Mission obtained
 	missionState.IDRover = roverID // Assign the rover to the mission
 	missionState.CreatedAt = time.Now()
@@ -221,7 +227,7 @@ func (ms *MotherShip) assignMissionToRover(missionState ml.MissionState, roverID
 		0,
 		ml.MSG_MISSION,
 		&targetState.SeqNum,
-		pktSeqNum+1, // MISSION PACKETS ACTS AS A SYN-ACK
+		ackNum, // Implicit ACK for the REQUEST
 		payload,
 		targetState.Window,
 		&targetState.WindowLock,
@@ -243,7 +249,7 @@ func (ms *MotherShip) publishMissionEvents(mission *ml.MissionState, eventType s
 }
 
 // sendNoMission sends a NO_MISSION packet to a rover
-func (ms *MotherShip) sendNoMission(state *core.RoverState) {
+func (ms *MotherShip) sendNoMission(state *core.RoverState, ackNum uint16) {
 	ms.Logger.Warnf("ML", "⚠️ Mission queue empty or rovers overloaded. Sending NO_MISSION to %s", state.Addr)
 
 	pl.CreateAndSendPacket(
@@ -252,12 +258,13 @@ func (ms *MotherShip) sendNoMission(state *core.RoverState) {
 		0,
 		ml.MSG_NO_MISSION,
 		&state.SeqNum,
-		0,
+		ackNum, // Implicit ACK for the REQUEST
 		[]byte{},
 		state.Window,
 		&state.WindowLock,
 		ms.Logger.CreateLogCallback("ML"),
 	)
+
 }
 
 // handleReport processes reports from rovers

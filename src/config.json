@@ -10,13 +10,14 @@
     "MIN_RTO_MS": 200,
     "MAX_RTO_MS": 5000,
     "MAX_RETRIES": 5,
+    "MAX_PACKETS_IN_FLIGHT": 15,
 
     "_comment_telemetry": "=== TELEMETRY ===",
     "DEFAULT_TELEMETRY_FREQ_SEC": 2,
     "MAX_MISSED_TELEMETRY": 3,
 
     "_comment_rover": "=== ROVER SETTINGS ===",
-    "MISSION_BATCH_SIZE": 1,
+    "MISSION_BATCH_SIZE": 3,
     "TCP_TIMEOUT_SEC": 3,
     "INITIAL_BATTERY": 100,
     "NO_MISSION_WAIT_SEC": 5,

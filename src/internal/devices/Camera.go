@@ -72,7 +72,7 @@ func (c *MockCamera) GetChunk(index int) []byte {
 // ReadImageChunk simulates reading a chunk of image data (for backward compatibility)
 func (c *MockCamera) ReadImageChunk() []byte {
 	// If image is loaded, return first chunk
-	if c.imageData != nil && len(c.imageData) > 0 {
+	if len(c.imageData) > 0 {
 		return c.GetChunk(0)
 	}
 

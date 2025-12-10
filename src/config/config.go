@@ -18,10 +18,11 @@ var (
 
 // ==================== RETRANSMISSION & RTO ====================
 var (
-	INITIAL_RTO time.Duration
-	MIN_RTO     time.Duration
-	MAX_RTO     time.Duration
-	MAX_RETRIES int
+	INITIAL_RTO          time.Duration
+	MIN_RTO              time.Duration
+	MAX_RTO              time.Duration
+	MAX_RETRIES          int
+	MAX_PACKETS_IN_FLIGHT int
 )
 
 // ==================== TELEMETRY ====================
@@ -88,10 +89,11 @@ type jsonConfig struct {
 	TCP_TELEMETRY_PORT int `json:"TCP_TELEMETRY_PORT"`
 
 	// Retransmission
-	INITIAL_RTO_MS int `json:"INITIAL_RTO_MS"`
-	MIN_RTO_MS     int `json:"MIN_RTO_MS"`
-	MAX_RTO_MS     int `json:"MAX_RTO_MS"`
-	MAX_RETRIES    int `json:"MAX_RETRIES"`
+	INITIAL_RTO_MS        int `json:"INITIAL_RTO_MS"`
+	MIN_RTO_MS            int `json:"MIN_RTO_MS"`
+	MAX_RTO_MS            int `json:"MAX_RTO_MS"`
+	MAX_RETRIES           int `json:"MAX_RETRIES"`
+	MAX_PACKETS_IN_FLIGHT int `json:"MAX_PACKETS_IN_FLIGHT"`
 
 	// Telemetry
 	DEFAULT_TELEMETRY_FREQ_SEC int `json:"DEFAULT_TELEMETRY_FREQ_SEC"`
@@ -159,6 +161,7 @@ func InitConfig(isRover bool, print bool) {
 	MIN_RTO = time.Duration(conf.MIN_RTO_MS) * time.Millisecond
 	MAX_RTO = time.Duration(conf.MAX_RTO_MS) * time.Millisecond
 	MAX_RETRIES = conf.MAX_RETRIES
+	MAX_PACKETS_IN_FLIGHT = conf.MAX_PACKETS_IN_FLIGHT
 
 	// Assign Telemetry Settings
 	DEFAULT_TELEMETRY_FREQ = time.Duration(conf.DEFAULT_TELEMETRY_FREQ_SEC) * time.Second

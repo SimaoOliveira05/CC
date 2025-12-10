@@ -22,13 +22,23 @@ func seqGreaterThan(seq1, seq2 uint16) bool {
 // handleACK processes delivery acknowledgments and updates the sliding window
 // ACK numbers represent bytes acknowledged (TCP-style)
 func HandleAck(p ml.Packet, window *Window) {
+	ProcessAckNum(p.AckNum, window)
+}
+
+// ProcessAckNum processes an AckNum and signals waiting goroutines
+// This handles both explicit ACKs and implicit ACKs (e.g., MSG_MISSION responding to MSG_REQUEST)
+func ProcessAckNum(ackNum uint16, window *Window) {
+	if ackNum == 0 {
+		return // No ACK to process
+	}
+
 	window.Mu.Lock()
 	defer window.Mu.Unlock()
 
 	// Mark all packets with SeqNum < AckNum as acknowledged (considering wraparound)
 	// In TCP-style, AckNum represents the next byte expected
 	for seqKey, ch := range window.Window {
-		if seqLessThan(uint16(seqKey), p.AckNum) {
+		if seqLessThan(uint16(seqKey), ackNum) {
 			select {
 			case ch <- 1: // Signal ACK received
 			default:
@@ -39,8 +49,8 @@ func HandleAck(p ml.Packet, window *Window) {
 	}
 
 	// Update LastAckReceived considering wraparound
-	if seqGreaterThan(p.AckNum-1, uint16(window.LastAckReceived)) {
-		window.LastAckReceived = int16(p.AckNum - 1)
+	if seqGreaterThan(ackNum-1, uint16(window.LastAckReceived)) {
+		window.LastAckReceived = int16(ackNum - 1)
 	}
 }
 
@@ -94,7 +104,13 @@ func HandleOrderedPacket(
 		m.RecordPacketReceived(pkt.MsgType.String(), packetSize)
 	}
 
-	// If processing without ordering (ACKs), process directly
+	// ALWAYS process implicit ACK if AckNum > 0
+	// This handles MSG_MISSION/MSG_NO_MISSION acting as ACK for MSG_REQUEST
+	if pkt.AckNum > 0 {
+		ProcessAckNum(pkt.AckNum, window)
+	}
+
+	// If processing without ordering (pure ACKs), we're done after processing AckNum
 	if skipOrdering {
 		go processor(pkt)
 		return
@@ -107,31 +123,48 @@ func HandleOrderedPacket(
 	seq := pkt.SeqNum
 	expected := *expectedSeq
 
-	// Calculate packet size for next expected SeqNum (TCP-style)
-	packetSize := uint16(ml.PacketHeaderSize + len(pkt.Payload))
-	nextExpected := uint16(uint32(seq) + uint32(packetSize)) // Wraparound via cast
+	// Calculate packet size for next expected SeqNum
+	// Use payload size, but minimum 1 to ensure SeqNum always advances
+	payloadSize := len(pkt.Payload)
+	if payloadSize == 0 {
+		payloadSize = 1 // Minimum increment to avoid deadlock with empty payloads
+	}
+	nextExpected := uint16(uint32(seq) + uint32(payloadSize)) // Wraparound via cast
 
 	switch {
 	case seq == expected:
 		// Expected packet - process and advance window
 		go processor(pkt)
 		*expectedSeq = nextExpected
-		if autoAck {
-			SendAck(conn, addr, nextExpected, window, roverID, logf)
-		}
 
-		// Process consecutive buffered packets
+		// Process consecutive buffered packets WITHOUT sending individual ACKs
+		bufferedCount := 0
 		for {
 			if bufferedPkt, ok := buffer[*expectedSeq]; ok {
 				delete(buffer, *expectedSeq)
 				go processor(bufferedPkt)
-				bufferedSize := uint16(ml.PacketHeaderSize + len(bufferedPkt.Payload))
-				nextBuffered := uint16(uint32(*expectedSeq) + uint32(bufferedSize)) // Wraparound via cast
-				SendAck(conn, addr, nextBuffered, window, roverID, logf)
-				*expectedSeq = nextBuffered
+				// Calculate buffered packet size (minimum 1 for empty payloads)
+				bufferedPayloadSize := len(bufferedPkt.Payload)
+				if bufferedPayloadSize == 0 {
+					bufferedPayloadSize = 1
+				}
+				*expectedSeq = uint16(uint32(*expectedSeq) + uint32(bufferedPayloadSize))
+				bufferedCount++
 			} else {
 				break
 			}
+		}
+
+		// Send ONE cumulative ACK at the end (covers all processed packets)
+		if autoAck {
+			if bufferedCount > 0 {
+				logf("INFO", "CUMULATIVE ACK - processed buffered packets", map[string]any{
+					"bufferedCount": bufferedCount,
+					"cumulativeAck": *expectedSeq,
+					"originalSeq":   seq,
+				})
+			}
+			SendAck(conn, addr, *expectedSeq, window, roverID, logf)
 		}
 
 	case seqGreaterThan(seq, expected):
