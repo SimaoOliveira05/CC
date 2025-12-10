@@ -39,112 +39,106 @@ defineProps({
 
 <style scoped>
 .report-card {
-  background: linear-gradient(135deg, #1a3a52 0%, #132d48 100%);
-  border-radius: 8px;
-  padding: 15px;
-  border-left: 4px solid #ff9800;
-  box-shadow: 0 0 10px rgba(255, 152, 0, 0.1);
-  transition: all 0.3s;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  border-left: 3px solid var(--accent-warning);
+  transition: background 0.2s;
 }
 
 .report-card:hover {
-  box-shadow: 0 0 15px rgba(255, 152, 0, 0.3);
-  transform: translateY(-2px);
+  background: var(--bg-hover);
 }
 
 .report-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 152, 0, 0.2);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .report-header h4 {
-  color: #ffa726;
+  color: var(--accent-warning);
   margin: 0;
-  font-size: 14px;
-  text-shadow: 0 0 5px rgba(255, 167, 38, 0.3);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .last-badge {
-  background: rgba(0, 255, 136, 0.2);
-  color: #00ff88;
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-size: 11px;
-  font-weight: bold;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent-success);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 500;
   text-transform: uppercase;
 }
 
 .report-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .coordinates {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
 }
 
 .coord-item {
-  background: rgba(255, 152, 0, 0.05);
-  border: 1px solid rgba(255, 152, 0, 0.2);
-  border-radius: 6px;
-  padding: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 
 .height-info {
-  background: rgba(255, 152, 0, 0.05);
-  border: 1px solid rgba(255, 152, 0, 0.2);
-  border-radius: 6px;
-  padding: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .label {
-  color: #a8b5c8;
-  font-size: 11px;
+  color: var(--text-secondary);
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .value {
-  color: #ffa726;
-  font-weight: bold;
-  font-size: 14px;
-  text-shadow: 0 0 5px rgba(255, 167, 38, 0.3);
+  color: var(--accent-warning);
+  font-weight: 500;
+  font-size: 13px;
 }
 
 .map-link {
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .btn-map {
   display: inline-block;
-  background: linear-gradient(135deg, #ff9800, #ffa726);
+  background: var(--accent-warning);
   color: white;
-  padding: 8px 12px;
-  border-radius: 4px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
   text-decoration: none;
-  font-weight: bold;
-  font-size: 12px;
+  font-weight: 500;
+  font-size: 11px;
   text-align: center;
-  transition: all 0.3s;
-  border: none;
-  cursor: pointer;
+  transition: opacity 0.2s;
 }
 
 .btn-map:hover {
-  background: linear-gradient(135deg, #fb8c00, #ffb74d);
-  box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+  opacity: 0.9;
 }
 </style>

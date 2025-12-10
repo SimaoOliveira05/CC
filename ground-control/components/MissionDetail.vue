@@ -160,210 +160,189 @@ const getReportComponent = (report) => {
 
 <style scoped>
 .mission-detail {
-  animation: slideIn 0.3s ease-out;
+  animation: fadeIn 0.2s ease-in;
 }
 
 .detail-header {
-  background: linear-gradient(135deg, #1a3a52 0%, #132d48 100%);
-  border: 2px solid #00d4ff;
-  border-radius: 8px;
-  padding: 25px;
-  margin-bottom: 30px;
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 24px;
 }
 
 .mission-title {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .mission-title h2 {
-  color: #00d4ff;
-  font-size: 28px;
-  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+  color: var(--text-primary);
+  font-size: 22px;
+  font-weight: 600;
   margin: 0;
 }
 
 .state-badge {
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 500;
   text-transform: uppercase;
 }
 
-/* Pending states */
 .state-badge.pending,
 .state-badge.Pending {
-  background: rgba(255, 170, 0, 0.2);
-  color: #ffaa00;
-  border: 1px solid #ffaa00;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-warning);
 }
 
-/* Moving to states */
 .state-badge.moving-to,
 .state-badge.moving\ to,
 .state-badge.Moving\ to {
-  background: rgba(255, 170, 0, 0.2);
-  color: #ff9500;
-  border: 1px solid #ff9500;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-warning);
 }
 
-/* In Progress states */
 .state-badge.in\ progress,
 .state-badge.In\ Progress,
 .state-badge.inprogress,
 .state-badge.InProgress,
 .state-badge.in-progress {
-  background: rgba(255, 68, 68, 0.2);
-  color: #ff4444;
-  border: 1px solid #ff4444;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-primary);
 }
 
-/* Completed states */
 .state-badge.completed,
 .state-badge.Completed {
-  background: rgba(0, 255, 136, 0.2);
-  color: #00ff88;
-  border: 1px solid #00ff88;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent-success);
 }
 
 .mission-meta {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
 }
 
 .meta-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .meta-label {
-  color: #a8b5c8;
-  font-size: 12px;
+  color: var(--text-secondary);
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .meta-value {
-  color: #e8eef7;
+  color: var(--text-primary);
   font-size: 14px;
-  font-weight: bold;
+  font-weight: 500;
 }
 
 .meta-value.priority {
   display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 13px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  width: fit-content;
 }
 
 .meta-value.priority.p-1 {
-  background: rgba(255, 68, 68, 0.2);
-  color: #ff4444;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-danger);
 }
 
 .meta-value.priority.p-2 {
-  background: rgba(255, 170, 0, 0.2);
-  color: #ffaa00;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-warning);
 }
 
 .meta-value.priority.p-3 {
-  background: rgba(0, 212, 255, 0.2);
-  color: #00d4ff;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-primary);
 }
 
 /* Reports Section */
 .reports-section {
-  margin-top: 30px;
+  margin-top: 24px;
 }
 
 .reports-section h3 {
-  color: #00d4ff;
-  font-size: 20px;
-  margin-bottom: 20px;
-  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
 }
 
 /* Assembled Image Section */
 .assembled-image-section {
-  margin-top: 30px;
-  margin-bottom: 30px;
+  margin-top: 24px;
+  margin-bottom: 24px;
 }
 
 .assembled-image-section h3 {
-  color: #00ff88;
-  font-size: 20px;
-  margin-bottom: 20px;
-  text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  color: var(--accent-success);
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
 }
 
 .assembled-image-container {
-  background: linear-gradient(135deg, #1a3a52 0%, #132d48 100%);
-  border: 2px solid #00ff88;
-  border-radius: 8px;
-  padding: 20px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
   text-align: center;
-  box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
 }
 
 .assembled-image-container img {
   max-width: 100%;
   max-height: 600px;
-  border-radius: 4px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-  image-rendering: auto;
+  border-radius: var(--radius-sm);
 }
 
 .image-info {
-  margin-top: 15px;
-  color: #a8b5c8;
-  font-size: 14px;
+  margin-top: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .debug-info {
-  margin-top: 20px;
-  padding: 15px;
-  background: rgba(255, 170, 0, 0.1);
-  border: 1px solid rgba(255, 170, 0, 0.3);
-  border-radius: 6px;
-  color: #ffaa00;
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-sm);
+  color: var(--accent-warning);
   text-align: center;
   font-size: 13px;
 }
 
 .no-reports {
   text-align: center;
-  padding: 40px 20px;
-  color: #a8b5c8;
-  background: rgba(10, 30, 61, 0.5);
-  border: 2px dashed #1a3a52;
-  border-radius: 8px;
+  padding: 32px 16px;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
 }
 
 .reports-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @media (max-width: 768px) {

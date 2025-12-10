@@ -28,67 +28,55 @@ defineProps({
 
 <style scoped>
 .report-card {
-  background: linear-gradient(135deg, #1a3a52 0%, #132d48 100%);
-  border-radius: 8px;
-  padding: 15px;
-  border-left: 4px solid #ff6b1f;
-  box-shadow: 0 0 10px rgba(255, 107, 31, 0.1);
-  transition: all 0.3s;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  border-left: 3px solid var(--accent-warning);
+  transition: background 0.2s;
 }
 
 .report-card.success {
-  border-left-color: #00ff88;
-  box-shadow: 0 0 10px rgba(0, 255, 136, 0.1);
+  border-left-color: var(--accent-success);
 }
 
 .report-card:hover {
-  box-shadow: 0 0 15px rgba(255, 107, 31, 0.3);
-  transform: translateY(-2px);
-}
-
-.report-card.success:hover {
-  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+  background: var(--bg-hover);
 }
 
 .report-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 107, 31, 0.2);
-}
-
-.report-card.success .report-header {
-  border-bottom-color: rgba(0, 255, 136, 0.2);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .report-header h4 {
-  color: #ff6b1f;
+  color: var(--accent-warning);
   margin: 0;
-  font-size: 14px;
-  text-shadow: 0 0 5px rgba(255, 107, 31, 0.3);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .report-card.success .report-header h4 {
-  color: #00ff88;
-  text-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
+  color: var(--accent-success);
 }
 
 .last-badge {
-  background: rgba(0, 255, 136, 0.2);
-  color: #00ff88;
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-size: 11px;
-  font-weight: bold;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent-success);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 500;
   text-transform: uppercase;
 }
 
 .report-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .info-item,
@@ -96,35 +84,36 @@ defineProps({
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .label {
-  color: #a8b5c8;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 10px;
+  letter-spacing: 0.3px;
 }
 
 .value {
-  color: #e8eef7;
-  font-weight: bold;
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 .status {
-  padding: 4px 8px;
-  border-radius: 3px;
-  font-size: 12px;
-  font-weight: bold;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 500;
   text-transform: uppercase;
 }
 
 .status.repairable {
-  background: rgba(0, 255, 136, 0.2);
-  color: #00ff88;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent-success);
 }
 
 .status.not-repairable {
-  background: rgba(255, 68, 68, 0.2);
-  color: #ff4444;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-danger);
 }
 </style>

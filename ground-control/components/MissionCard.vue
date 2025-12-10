@@ -89,86 +89,75 @@ const sanitizeClass = (state) => {
 
 <style scoped>
 .mission-card {
-  background: linear-gradient(135deg, #1a3a52 0%, #132d48 100%);
-  border: 2px solid #1e5a96;
-  border-radius: 8px;
-  padding: 20px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 0 10px rgba(30, 90, 150, 0.2);
+  transition: border-color 0.2s;
 }
 
 .mission-card:hover {
-  border-color: #00d4ff;
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
-  transform: translateY(-5px);
+  border-color: var(--accent-primary);
 }
 
 .mission-header {
   display: flex;
   justify-content: space-between;
   align-items: start;
-  margin-bottom: 15px;
+  margin-bottom: 14px;
   gap: 10px;
 }
 
 .mission-header h3 {
-  color: #00d4ff;
-  font-size: 18px;
-  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
   margin: 0;
 }
 
 .mission-state {
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 500;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-/* Pending states */
 .mission-state.pending,
 .mission-state.Pending {
-  background: rgba(255, 170, 0, 0.2);
-  color: #ffaa00;
-  border: 1px solid #ffaa00;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-warning);
 }
 
-/* Moving to states */
 .mission-state.moving-to,
 .mission-state.moving\ to,
 .mission-state.Moving\ to {
-  background: rgba(255, 170, 0, 0.2);
-  color: #ff9500;
-  border: 1px solid #ff9500;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-warning);
 }
 
-/* In Progress states */
 .mission-state.in\ progress,
 .mission-state.In\ Progress,
 .mission-state.inprogress,
 .mission-state.InProgress,
 .mission-state.in-progress {
-  background: rgba(255, 68, 68, 0.2);
-  color: #ff4444;
-  border: 1px solid #ff4444;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-primary);
 }
 
-/* Completed states */
 .mission-state.completed,
 .mission-state.Completed {
-  background: rgba(0, 255, 136, 0.2);
-  color: #00ff88;
-  border: 1px solid #00ff88;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent-success);
 }
 
 .mission-info {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
 .info-row {
@@ -179,51 +168,47 @@ const sanitizeClass = (state) => {
 }
 
 .label {
-  color: #a8b5c8;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 11px;
+  letter-spacing: 0.3px;
 }
 
 .value {
-  color: #e8eef7;
-  font-weight: bold;
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 .priority-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: bold;
-  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .priority-1 {
-  background: rgba(255, 68, 68, 0.2);
-  color: #ff4444;
-  border: 1px solid #ff4444;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-danger);
 }
 
 .priority-2 {
-  background: rgba(255, 170, 0, 0.2);
-  color: #ffaa00;
-  border: 1px solid #ffaa00;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-warning);
 }
 
 .priority-3 {
-  background: rgba(0, 212, 255, 0.2);
-  color: #00d4ff;
-  border: 1px solid #00d4ff;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-primary);
 }
 
 .mission-footer {
   text-align: center;
-  padding-top: 15px;
-  border-top: 1px solid rgba(0, 212, 255, 0.2);
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
 }
 
 .click-hint {
   font-size: 12px;
-  color: #a8b5c8;
-  font-style: italic;
+  color: var(--text-muted);
 }
 </style>

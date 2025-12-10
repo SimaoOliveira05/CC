@@ -30,7 +30,7 @@ run-gc:
 clean:
 	rm -rf bin/
 	rm -f *.log
-	rm -f *_metrics.json
+	rm -f *_metrics.json mothership_metrics.json
 
 # --- Test Mode ---
 
