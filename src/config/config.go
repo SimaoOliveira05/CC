@@ -18,11 +18,12 @@ var (
 
 // ==================== RETRANSMISSION & RTO ====================
 var (
-	INITIAL_RTO          time.Duration
-	MIN_RTO              time.Duration
-	MAX_RTO              time.Duration
-	MAX_RETRIES          int
-	MAX_PACKETS_IN_FLIGHT int
+	INITIAL_RTO            time.Duration
+	MIN_RTO                time.Duration
+	MAX_RTO                time.Duration
+	MAX_RETRIES            int
+	MAX_PACKETS_IN_FLIGHT  int
+	FAST_RETRANSMIT_THRESH int // Number of duplicate ACKs to trigger fast retransmit (typically 3)
 )
 
 // ==================== TELEMETRY ====================
@@ -162,6 +163,7 @@ func InitConfig(isRover bool, print bool) {
 	MAX_RTO = time.Duration(conf.MAX_RTO_MS) * time.Millisecond
 	MAX_RETRIES = conf.MAX_RETRIES
 	MAX_PACKETS_IN_FLIGHT = conf.MAX_PACKETS_IN_FLIGHT
+	FAST_RETRANSMIT_THRESH = 3 // Standard TCP value: 3 duplicate ACKs trigger fast retransmit
 
 	// Assign Telemetry Settings
 	DEFAULT_TELEMETRY_FREQ = time.Duration(conf.DEFAULT_TELEMETRY_FREQ_SEC) * time.Second

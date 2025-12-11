@@ -2,6 +2,7 @@ package packetslogic
 
 import (
 	"net"
+	"src/config"
 	"src/internal/ml"
 	"src/utils/metrics"
 	"sync"
@@ -27,6 +28,7 @@ func HandleAck(p ml.Packet, window *Window) {
 
 // ProcessAckNum processes an AckNum and signals waiting goroutines
 // This handles both explicit ACKs and implicit ACKs (e.g., MSG_MISSION responding to MSG_REQUEST)
+// Implements Fast Retransmit: counts duplicate ACKs and triggers retransmit after threshold
 func ProcessAckNum(ackNum uint16, window *Window) {
 	if ackNum == 0 {
 		return // No ACK to process
@@ -35,12 +37,40 @@ func ProcessAckNum(ackNum uint16, window *Window) {
 	window.Mu.Lock()
 	defer window.Mu.Unlock()
 
+	// Check for duplicate ACK (same AckNum as last one)
+	if ackNum == window.LastAckNum && ackNum > 0 {
+		// Increment duplicate ACK counter
+		window.DupAckCount[ackNum]++
+		dupCount := window.DupAckCount[ackNum]
+
+		// Fast Retransmit: trigger after FAST_RETRANSMIT_THRESH duplicate ACKs
+		if dupCount == config.FAST_RETRANSMIT_THRESH {
+			// Find the packet that needs retransmission (the one with SeqNum = AckNum)
+			// AckNum indicates "I expect byte AckNum next", so packet at SeqNum=AckNum is missing
+			if entry, exists := window.Window[uint32(ackNum)]; exists {
+				select {
+				case entry.FastRetransmit <- true:
+					// Signal sent successfully
+				default:
+					// Channel full, fast retransmit already triggered
+				}
+			}
+		}
+		return // Don't process further for duplicate ACKs
+	}
+
+	// New ACK - reset duplicate counter for old AckNum and update LastAckNum
+	if window.LastAckNum > 0 {
+		delete(window.DupAckCount, window.LastAckNum)
+	}
+	window.LastAckNum = ackNum
+
 	// Mark all packets with SeqNum < AckNum as acknowledged (considering wraparound)
 	// In TCP-style, AckNum represents the next byte expected
-	for seqKey, ch := range window.Window {
+	for seqKey, entry := range window.Window {
 		if seqLessThan(uint16(seqKey), ackNum) {
 			select {
-			case ch <- 1: // Signal ACK received
+			case entry.AckChan <- 1: // Signal ACK received
 			default:
 				// Channel might be full or closed
 			}

@@ -12,11 +12,19 @@ import (
 // Logger is a function type for logging messages
 type Logger func(level, msg string, meta any)
 
+// PacketEntry holds the channel and fast retransmit signal for a packet in flight
+type PacketEntry struct {
+	AckChan        chan int8 // Signal when ACK is received
+	FastRetransmit chan bool // Signal for fast retransmit
+}
+
 // Window is the sliding window structure to manage sent packets and RTO calculation
 type Window struct {
-	LastAckReceived int16                  // Last ACK received number
-	Window          map[uint32](chan int8) // Sent packets not yet ACKed
-	Mu              sync.Mutex             // Mutex for concurrent access
+	LastAckReceived int16                   // Last ACK received number
+	Window          map[uint32]*PacketEntry // Sent packets not yet ACKed
+	DupAckCount     map[uint16]int          // Count of duplicate ACKs per AckNum
+	LastAckNum      uint16                  // Last received AckNum (to detect duplicates)
+	Mu              sync.Mutex              // Mutex for concurrent access
 	// Fields for dynamic RTO calculation
 	SRTT   time.Duration
 	RTTVAR time.Duration
@@ -29,7 +37,9 @@ const chanBufferSize = 1
 func NewWindow() *Window {
 	return &Window{
 		LastAckReceived: -1,
-		Window:          make(map[uint32](chan int8)),
+		Window:          make(map[uint32]*PacketEntry),
+		DupAckCount:     make(map[uint16]int),
+		LastAckNum:      0,
 		Mu:              sync.Mutex{},
 		SRTT:            0,
 		RTTVAR:          0,
@@ -183,14 +193,15 @@ func sendAckPacket(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, logf Log
 
 // manageRetransmission handles sending and retransmitting packets until ACK is received
 // Implements Karn's Algorithm: RTT is only measured for packets ACKed on first attempt
-// to avoid ambiguity with retransmissions (we can't know if ACK is for original or retransmit)
+// Implements Fast Retransmit: retransmit immediately after receiving duplicate ACKs
 func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *Window, logf Logger) {
 	// Register packet in window
-	ch := registerPacket(window, pkt.SeqNum)
+	entry := registerPacket(window, pkt.SeqNum)
 	defer unregisterPacket(window, pkt.SeqNum)
 
 	// Record send time only once for RTT measurement (Karn's Algorithm)
 	firstSendTime := time.Now()
+	isFirstAttempt := true
 
 	for retries := 0; retries <= config.MAX_RETRIES; retries++ {
 		// Send the packet
@@ -214,7 +225,7 @@ func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, w
 			}
 		}
 
-		if retries == 0 {
+		if retries == 0 && isFirstAttempt {
 			// Log only on first send, not retries
 			pktType := ml.PacketType(pkt.MsgType).String()
 			logf("INFO", "Packet sent", map[string]any{
@@ -227,11 +238,10 @@ func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, w
 		rto := getRTO(window)
 
 		select {
-		case <-ch:
+		case <-entry.AckChan:
 			// ACK received
 			// Karn's Algorithm: Only update RTO on first attempt (no retransmissions)
-			// After retransmission, we can't know if ACK is for original or retransmit
-			if retries == 0 {
+			if isFirstAttempt {
 				rtt := time.Since(firstSendTime)
 				handleAckReceived(window, rtt)
 
@@ -247,8 +257,22 @@ func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, w
 			}
 			return
 
+		case <-entry.FastRetransmit:
+			// Fast Retransmit triggered - retransmit immediately without waiting for RTO
+			logf("WARN", "Fast Retransmit triggered", map[string]any{
+				"seqNum": pkt.SeqNum,
+			})
+			// Record fast retransmit metric
+			if m := metrics.GetGlobalMetrics(); m != nil {
+				m.RecordRetransmission()
+			}
+			isFirstAttempt = false // Don't update RTO after fast retransmit
+			// Don't increment retries counter for fast retransmit
+			continue
+
 		case <-time.After(rto):
 			// Timeout - prepare for retransmission
+			isFirstAttempt = false
 			if retries == config.MAX_RETRIES {
 				// Record packet lost metric
 				if m := metrics.GetGlobalMetrics(); m != nil {
@@ -263,13 +287,16 @@ func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, w
 }
 
 // registerPacket adds a packet to the window
-func registerPacket(window *Window, seqNum uint16) chan int8 {
+func registerPacket(window *Window, seqNum uint16) *PacketEntry {
 	window.Mu.Lock()
 	defer window.Mu.Unlock()
 
-	ch := make(chan int8, chanBufferSize)
-	window.Window[uint32(seqNum)] = ch
-	return ch
+	entry := &PacketEntry{
+		AckChan:        make(chan int8, chanBufferSize),
+		FastRetransmit: make(chan bool, chanBufferSize),
+	}
+	window.Window[uint32(seqNum)] = entry
+	return entry
 }
 
 // unregisterPacket removes a packet from the window
