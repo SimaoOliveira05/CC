@@ -49,7 +49,7 @@ func NewMotherShip() *MotherShip {
 
 	// Initialize logger with APIServer for WebSocket broadcast
 	log, err := logger.NewLogger(
-		"mothership.log",
+		"../logs/mothership.log",
 		logger.DestConsole|logger.DestFile|logger.DestFrontend,
 		logger.DEBUG,
 		ms.APIServer, // Pass APIServer for WebSocket broadcast
@@ -61,7 +61,7 @@ func NewMotherShip() *MotherShip {
 	ms.Logger = log
 
 	// Load initial missions from JSON file
-	err = loadMissionsFromJSON("missions.json", ms.MissionQueue)
+	err = loadMissionsFromJSON("../assets/missions.json", ms.MissionQueue)
 	if err != nil {
 		ms.Logger.Errorf("MotherShip", "erro ao carregar missões iniciais: %v", err)
 		return nil

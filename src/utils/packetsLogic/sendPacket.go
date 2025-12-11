@@ -192,8 +192,6 @@ func sendAckPacket(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, logf Log
 }
 
 // manageRetransmission handles sending and retransmitting packets until ACK is received
-// Implements Karn's Algorithm: RTT is only measured for packets ACKed on first attempt
-// Implements Fast Retransmit: retransmit immediately after receiving duplicate ACKs
 func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, window *Window, logf Logger) {
 	// Register packet in window
 	entry := registerPacket(window, pkt.SeqNum)
@@ -240,7 +238,6 @@ func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, w
 		select {
 		case <-entry.AckChan:
 			// ACK received
-			// Karn's Algorithm: Only update RTO on first attempt (no retransmissions)
 			if isFirstAttempt {
 				rtt := time.Since(firstSendTime)
 				handleAckReceived(window, rtt)

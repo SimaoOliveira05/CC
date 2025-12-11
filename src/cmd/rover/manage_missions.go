@@ -17,7 +17,7 @@ func (rover *Rover) ExecuteMission(mission ml.MissionData) {
 
 	// For image capture tasks, load the image
 	if mission.TaskType == ml.TASK_IMAGE_CAPTURE {
-		imagePath := "image.jpg" // Default image path
+		imagePath := "../assets/image.jpg" // Image path in assets folder
 		if err := rover.Devices.Camera.LoadImage(imagePath); err != nil {
 			rover.Logger.Errorf("Camera", "Failed to load image %s: %v", imagePath, err)
 			return

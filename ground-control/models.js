@@ -1,11 +1,12 @@
 // Classe Rover
 export class Rover {
-  constructor({ id, state, battery, speed, position }) {
+  constructor({ id, state, battery, speed, position, queuedMissions }) {
     this.id = id;
     this.state = state;
     this.battery = battery;
     this.speed = speed;
     this.position = position || { latitude: 0, longitude: 0 };
+    this.queuedMissions = queuedMissions || { priority1Count: 0, priority2Count: 0, priority3Count: 0 };
   }
 }
 

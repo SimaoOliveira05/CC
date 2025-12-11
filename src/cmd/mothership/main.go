@@ -37,7 +37,7 @@ func main() {
 	go func() {
 		<-sigChan
 		if config.IsTestMode() && metrics.GlobalMetrics != nil {
-			metrics.GlobalMetrics.ExportToJSON("mothership_metrics.json")
+			metrics.GlobalMetrics.ExportToJSON("../metrics/mothership_metrics.json")
 		}
 		os.Exit(0)
 	}()

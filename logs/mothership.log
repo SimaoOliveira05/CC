@@ -1,0 +1,518 @@
+{"timestamp":"2025-12-11T15:31:27.267230701Z","level":"ERROR","component":"IDHandler","message":"Erro ao iniciar servidor de IDs: listen tcp 0.0.0.0:9997: bind: address already in use"}
+{"timestamp":"2025-12-11T15:31:44.968452322Z","level":"INFO","component":"IDHandler","message":"Servidor de atribuição de IDs à escuta na porta 9997"}
+{"timestamp":"2025-12-11T15:31:49.487189546Z","level":"INFO","component":"IDHandler","message":"ID 1 assigned to new rover (updateFrequency=2)"}
+{"timestamp":"2025-12-11T15:31:49.488354555Z","level":"INFO","component":"ML","message":"🆕 New rover registered: 1"}
+{"timestamp":"2025-12-11T15:31:49.488440727Z","level":"INFO","component":"ML","message":"📬 Rover 1 requesting 3 missions"}
+{"timestamp":"2025-12-11T15:31:49.488531638Z","level":"INFO","component":"ML","message":"✅ Mission 1 sent to 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:31:49.488568668Z","level":"INFO","component":"ML","message":"✅ Mission 2 sent to 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:31:49.488598724Z","level":"INFO","component":"ML","message":"✅ Mission 3 sent to 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:31:49.488637487Z","level":"INFO","component":"ML","message":"✅ Sent 3 missions to rover 1"}
+{"timestamp":"2025-12-11T15:31:49.488727145Z","level":"INFO","component":"ML","message":"Packet sent: map[seqNum:54 type:MSG_MISSION]"}
+{"timestamp":"2025-12-11T15:31:49.488820691Z","level":"INFO","component":"ML","message":"Packet sent: map[seqNum:0 type:MSG_MISSION]"}
+{"timestamp":"2025-12-11T15:31:49.488849836Z","level":"INFO","component":"ML","message":"Packet sent: map[seqNum:27 type:MSG_MISSION]"}
+{"timestamp":"2025-12-11T15:32:02.51676732Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:1]"}
+{"timestamp":"2025-12-11T15:32:02.516972015Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:1031]"}
+{"timestamp":"2025-12-11T15:32:02.517040503Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.51711341Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:2061]"}
+{"timestamp":"2025-12-11T15:32:02.517077593Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.517278831Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.517141153Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.517236492Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:2061]"}
+{"timestamp":"2025-12-11T15:32:02.517486722Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:3091]"}
+{"timestamp":"2025-12-11T15:32:02.517519293Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.517653105Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.517611396Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:3091]"}
+{"timestamp":"2025-12-11T15:32:02.517757821Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.517822082Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.517770525Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:1 cumulativeAck:5151 originalSeq:3091]"}
+{"timestamp":"2025-12-11T15:32:02.517776607Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.518020024Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.517933281Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:5151]"}
+{"timestamp":"2025-12-11T15:32:02.518180636Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:5151]"}
+{"timestamp":"2025-12-11T15:32:02.518254645Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:5151]"}
+{"timestamp":"2025-12-11T15:32:02.518314868Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:5151]"}
+{"timestamp":"2025-12-11T15:32:02.518362918Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:5151]"}
+{"timestamp":"2025-12-11T15:32:02.518402383Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.51845398Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.518406761Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.518522158Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.518412762Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.518587701Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.518420627Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.518635932Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.518423442Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:6 cumulativeAck:12361 originalSeq:5151]"}
+{"timestamp":"2025-12-11T15:32:02.518710111Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:12361]"}
+{"timestamp":"2025-12-11T15:32:02.518761257Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:12361]"}
+{"timestamp":"2025-12-11T15:32:02.51880033Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:1 cumulativeAck:14421 originalSeq:12361]"}
+{"timestamp":"2025-12-11T15:32:02.51885326Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:14421]"}
+{"timestamp":"2025-12-11T15:32:02.518901851Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:15451]"}
+{"timestamp":"2025-12-11T15:32:02.51842745Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.518955061Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.518431417Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.519004694Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.518484056Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.51905539Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.5189117Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.51916223Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.518926257Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.519207365Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.518935444Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.519248573Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.518941896Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:16481]"}
+{"timestamp":"2025-12-11T15:32:02.518933982Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.519338482Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.519355103Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:16481]"}
+{"timestamp":"2025-12-11T15:32:02.519425866Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:16481]"}
+{"timestamp":"2025-12-11T15:32:02.519459118Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.519498202Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.519462986Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:2 cumulativeAck:19571 originalSeq:16481]"}
+{"timestamp":"2025-12-11T15:32:02.519544168Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:19571]"}
+{"timestamp":"2025-12-11T15:32:02.519466392Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.519612136Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.519468817Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.519650368Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.519594352Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:19571]"}
+{"timestamp":"2025-12-11T15:32:02.519705581Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:19571]"}
+{"timestamp":"2025-12-11T15:32:02.519738163Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:1 cumulativeAck:21631 originalSeq:19571]"}
+{"timestamp":"2025-12-11T15:32:02.519767919Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:21631]"}
+{"timestamp":"2025-12-11T15:32:02.519795791Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:1 cumulativeAck:23691 originalSeq:21631]"}
+{"timestamp":"2025-12-11T15:32:02.519839593Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:23691]"}
+{"timestamp":"2025-12-11T15:32:02.519879047Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:6181]"}
+{"timestamp":"2025-12-11T15:32:02.519739024Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.519917199Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.519746769Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.519977342Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.519818874Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.520032997Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.519886201Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.520089002Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.529339144Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.529409286Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.529359472Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:24721]"}
+{"timestamp":"2025-12-11T15:32:02.529485138Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:24721]"}
+{"timestamp":"2025-12-11T15:32:02.529535643Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:24721]"}
+{"timestamp":"2025-12-11T15:32:02.529583854Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:24721]"}
+{"timestamp":"2025-12-11T15:32:02.529629008Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:24721]"}
+{"timestamp":"2025-12-11T15:32:02.529670186Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:24721]"}
+{"timestamp":"2025-12-11T15:32:02.529728876Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:24721]"}
+{"timestamp":"2025-12-11T15:32:02.529786154Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:6 cumulativeAck:31931 originalSeq:24721]"}
+{"timestamp":"2025-12-11T15:32:02.529832671Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:31931]"}
+{"timestamp":"2025-12-11T15:32:02.529854542Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.529892494Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.529895078Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.529951865Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.529879489Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:32961]"}
+{"timestamp":"2025-12-11T15:32:02.530036314Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:32961]"}
+{"timestamp":"2025-12-11T15:32:02.529954811Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.530110443Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.529902132Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.530166178Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.529907722Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.530216913Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.529914435Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.530254273Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.529845425Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.530301783Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.529888356Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.5303588Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.530083923Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:32961]"}
+{"timestamp":"2025-12-11T15:32:02.530410998Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:2 cumulativeAck:36051 originalSeq:32961]"}
+{"timestamp":"2025-12-11T15:32:02.530448448Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:36051]"}
+{"timestamp":"2025-12-11T15:32:02.530466883Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.530496028Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.530496739Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:36051]"}
+{"timestamp":"2025-12-11T15:32:02.530556431Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:1 cumulativeAck:38111 originalSeq:36051]"}
+{"timestamp":"2025-12-11T15:32:02.530592128Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:38111]"}
+{"timestamp":"2025-12-11T15:32:02.53062487Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:25751]"}
+{"timestamp":"2025-12-11T15:32:02.530653483Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:38111]"}
+{"timestamp":"2025-12-11T15:32:02.530677038Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:1 cumulativeAck:40171 originalSeq:38111]"}
+{"timestamp":"2025-12-11T15:32:02.530695953Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:40171]"}
+{"timestamp":"2025-12-11T15:32:02.530723765Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:41201]"}
+{"timestamp":"2025-12-11T15:32:02.530748432Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:41201]"}
+{"timestamp":"2025-12-11T15:32:02.530792605Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:42231]"}
+{"timestamp":"2025-12-11T15:32:02.530835355Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:1 cumulativeAck:44291 originalSeq:42231]"}
+{"timestamp":"2025-12-11T15:32:02.530878176Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:44291]"}
+{"timestamp":"2025-12-11T15:32:02.530929913Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:45321]"}
+{"timestamp":"2025-12-11T15:32:02.530975889Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:46351]"}
+{"timestamp":"2025-12-11T15:32:02.531016205Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:47381]"}
+{"timestamp":"2025-12-11T15:32:02.531039058Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.531068644Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.530503351Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.531107507Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.530457395Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.531139316Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531170094Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.53119425Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531220349Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.531250074Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.531268259Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531216111Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.531299608Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531268549Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.531339452Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531255875Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531228584Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.531386962Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531234435Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.531418Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531239855Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.531447165Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531244474Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.531482241Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531186625Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:47381]"}
+{"timestamp":"2025-12-11T15:32:02.531261245Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.531580275Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531555148Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:48411]"}
+{"timestamp":"2025-12-11T15:32:02.531560999Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.531692275Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531658442Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:48411]"}
+{"timestamp":"2025-12-11T15:32:02.531782956Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:49441]"}
+{"timestamp":"2025-12-11T15:32:02.531833821Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.531868336Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531842097Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:50471]"}
+{"timestamp":"2025-12-11T15:32:02.531926415Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:1 cumulativeAck:52531 originalSeq:50471]"}
+{"timestamp":"2025-12-11T15:32:02.531850703Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.532002518Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531972963Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:52531]"}
+{"timestamp":"2025-12-11T15:32:02.531982681Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.532111022Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.531989514Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.532167358Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.532072129Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:52531]"}
+{"timestamp":"2025-12-11T15:32:02.532228313Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:53561]"}
+{"timestamp":"2025-12-11T15:32:02.532246827Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.532298074Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.532281773Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:53561]"}
+{"timestamp":"2025-12-11T15:32:02.532368897Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.532396268Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.532379787Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:54591]"}
+{"timestamp":"2025-12-11T15:32:02.532456451Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:54591]"}
+{"timestamp":"2025-12-11T15:32:02.53251437Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:54591]"}
+{"timestamp":"2025-12-11T15:32:02.532570676Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:54591]"}
+{"timestamp":"2025-12-11T15:32:02.532626501Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:54591]"}
+{"timestamp":"2025-12-11T15:32:02.532674431Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.532725968Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.532691483Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.532780841Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.532697554Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:4 cumulativeAck:59741 originalSeq:54591]"}
+{"timestamp":"2025-12-11T15:32:02.532702223Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.532905365Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.532706171Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.532947093Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.532710048Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.533020381Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.532880258Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:59741]"}
+{"timestamp":"2025-12-11T15:32:02.533070826Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.533091134Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.533114077Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.533098879Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.533169752Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.533082798Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.533219736Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.533107665Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.53308349Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:3 cumulativeAck:63861 originalSeq:59741]"}
+{"timestamp":"2025-12-11T15:32:02.533278406Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:63861]"}
+{"timestamp":"2025-12-11T15:32:02.533339561Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:55621]"}
+{"timestamp":"2025-12-11T15:32:02.541776384Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:64891]"}
+{"timestamp":"2025-12-11T15:32:02.541831768Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.541878767Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.541885309Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:64891]"}
+{"timestamp":"2025-12-11T15:32:02.541968585Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:64891]"}
+{"timestamp":"2025-12-11T15:32:02.542027707Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.542073212Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.542032976Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:1 cumulativeAck:1415 originalSeq:64891]"}
+{"timestamp":"2025-12-11T15:32:02.542042064Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.542152511Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.542125631Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:1415]"}
+{"timestamp":"2025-12-11T15:32:02.542233483Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:1415]"}
+{"timestamp":"2025-12-11T15:32:02.542288026Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.542315818Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.542297934Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.542380029Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.54231178Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:2 cumulativeAck:4505 originalSeq:1415]"}
+{"timestamp":"2025-12-11T15:32:02.542320737Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.542476249Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.542441945Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:4505]"}
+{"timestamp":"2025-12-11T15:32:02.542548545Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:5535]"}
+{"timestamp":"2025-12-11T15:32:02.542584363Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.54262041Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.542591015Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:6565]"}
+{"timestamp":"2025-12-11T15:32:02.542598619Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.542698327Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.542728984Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.542693027Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:7595]"}
+{"timestamp":"2025-12-11T15:32:02.542702986Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.542777305Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:7595]"}
+{"timestamp":"2025-12-11T15:32:02.5428275Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.542853629Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.542836216Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:1 cumulativeAck:9655 originalSeq:7595]"}
+{"timestamp":"2025-12-11T15:32:02.542841907Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.542921677Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.54290246Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:9655]"}
+{"timestamp":"2025-12-11T15:32:02.542986659Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.543008029Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.54299279Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:10685]"}
+{"timestamp":"2025-12-11T15:32:02.543050098Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:11715]"}
+{"timestamp":"2025-12-11T15:32:02.543078812Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:12745]"}
+{"timestamp":"2025-12-11T15:32:02.543091606Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.543126341Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.54310444Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:13775]"}
+{"timestamp":"2025-12-11T15:32:02.543108998Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.543210189Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.543214407Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:14805]"}
+{"timestamp":"2025-12-11T15:32:02.543201282Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.543305127Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.543079323Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.543339722Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.543264Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:15835]"}
+{"timestamp":"2025-12-11T15:32:02.543272586Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.543393573Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.543396128Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:16865]"}
+{"timestamp":"2025-12-11T15:32:02.543378435Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.543467863Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.543442675Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:16865]"}
+{"timestamp":"2025-12-11T15:32:02.543555307Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:17895]"}
+{"timestamp":"2025-12-11T15:32:02.543581146Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.54361557Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.54363679Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.54362051Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.543605762Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.543701422Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.543597286Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:1 cumulativeAck:19955 originalSeq:17895]"}
+{"timestamp":"2025-12-11T15:32:02.543752518Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:19955]"}
+{"timestamp":"2025-12-11T15:32:02.543822118Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:20985]"}
+{"timestamp":"2025-12-11T15:32:02.543827649Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.543882712Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.5438709Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:22015]"}
+{"timestamp":"2025-12-11T15:32:02.543877132Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.54395599Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.553452996Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:22015]"}
+{"timestamp":"2025-12-11T15:32:02.55357221Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:23045]"}
+{"timestamp":"2025-12-11T15:32:02.55362539Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.553686364Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.553653753Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:23045]"}
+{"timestamp":"2025-12-11T15:32:02.553788366Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:23045]"}
+{"timestamp":"2025-12-11T15:32:02.553855232Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:23045]"}
+{"timestamp":"2025-12-11T15:32:02.553933148Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.553977301Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.553940462Z","level":"INFO","component":"ML","message":"CUMULATIVE ACK - processed buffered packets: map[bufferedCount:4 cumulativeAck:27526 originalSeq:23045]"}
+{"timestamp":"2025-12-11T15:32:02.553938959Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.554085895Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.553948677Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.554149164Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=true, PayloadLen=357"}
+{"timestamp":"2025-12-11T15:32:02.554165034Z","level":"INFO","component":"ML","message":"🏁 Last report received for mission 1"}
+{"timestamp":"2025-12-11T15:32:02.553953717Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.554528747Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.553954117Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:02.554574804Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=0, MissionID=1, IsLast=false, PayloadLen=1026"}
+{"timestamp":"2025-12-11T15:32:02.554058333Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27526]"}
+{"timestamp":"2025-12-11T15:32:02.554645547Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:24075]"}
+{"timestamp":"2025-12-11T15:32:34.603785919Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:34.603972068Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:34.603799886Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27554]"}
+{"timestamp":"2025-12-11T15:32:35.603177425Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:35.603273184Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:35.603203463Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27582]"}
+{"timestamp":"2025-12-11T15:32:36.606555584Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:36.606675088Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:36.606572616Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27610]"}
+{"timestamp":"2025-12-11T15:32:37.604020227Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:37.604173614Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:37.604049502Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27638]"}
+{"timestamp":"2025-12-11T15:32:38.606448765Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27666]"}
+{"timestamp":"2025-12-11T15:32:38.606482699Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:38.60669702Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:39.603967189Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27694]"}
+{"timestamp":"2025-12-11T15:32:39.604025288Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:39.604126528Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:40.606446773Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:40.606619317Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:40.606487359Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27722]"}
+{"timestamp":"2025-12-11T15:32:41.604012787Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27750]"}
+{"timestamp":"2025-12-11T15:32:41.604046069Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:41.604199847Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:42.606305821Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:42.606438751Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:42.606352188Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27778]"}
+{"timestamp":"2025-12-11T15:32:43.60317083Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:43.603355777Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:43.603210294Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27806]"}
+{"timestamp":"2025-12-11T15:32:44.603758298Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:44.603887951Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:44.603788535Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27834]"}
+{"timestamp":"2025-12-11T15:32:45.60323343Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:45.603355609Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:45.603285528Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27862]"}
+{"timestamp":"2025-12-11T15:32:46.606240213Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27890]"}
+{"timestamp":"2025-12-11T15:32:46.606285127Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:46.606480484Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:47.603933966Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:47.604054873Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:47.603935679Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27918]"}
+{"timestamp":"2025-12-11T15:32:48.606265704Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27946]"}
+{"timestamp":"2025-12-11T15:32:48.606274861Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:48.606541991Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:49.604076746Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:49.604210277Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:49.604085463Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:27974]"}
+{"timestamp":"2025-12-11T15:32:50.606366044Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28002]"}
+{"timestamp":"2025-12-11T15:32:50.606399186Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:50.606571259Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:51.604400716Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:51.604601853Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:51.60446696Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28030]"}
+{"timestamp":"2025-12-11T15:32:52.606343374Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:52.606570439Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:52.60637368Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28058]"}
+{"timestamp":"2025-12-11T15:32:53.603886975Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:53.604040763Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:53.603917181Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28086]"}
+{"timestamp":"2025-12-11T15:32:54.603974675Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28114]"}
+{"timestamp":"2025-12-11T15:32:54.604062951Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:54.60418541Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:55.6039578Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:55.604085699Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:55.603960765Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28142]"}
+{"timestamp":"2025-12-11T15:32:56.606278997Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:56.606529146Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:56.606305537Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28170]"}
+{"timestamp":"2025-12-11T15:32:57.603497269Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:57.60360486Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:57.603528036Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28198]"}
+{"timestamp":"2025-12-11T15:32:58.607087886Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:58.607296407Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:58.607133822Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28226]"}
+{"timestamp":"2025-12-11T15:32:59.6039928Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:32:59.60422234Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:32:59.604033807Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28254]"}
+{"timestamp":"2025-12-11T15:33:00.603208215Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:00.603343709Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:00.603247208Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28282]"}
+{"timestamp":"2025-12-11T15:33:01.603859302Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:01.603969568Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:01.603897644Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28310]"}
+{"timestamp":"2025-12-11T15:33:02.606302177Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28338]"}
+{"timestamp":"2025-12-11T15:33:02.60631425Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:02.606541917Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:03.603994076Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:03.604155619Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:03.604041565Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28366]"}
+{"timestamp":"2025-12-11T15:33:04.603252162Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28394]"}
+{"timestamp":"2025-12-11T15:33:04.603252152Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:04.603386283Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:05.603155136Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28422]"}
+{"timestamp":"2025-12-11T15:33:05.603155917Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:05.603304946Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:06.606401838Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:06.606512145Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:06.606415574Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28450]"}
+{"timestamp":"2025-12-11T15:33:07.603918218Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:07.604055386Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:07.603933277Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28478]"}
+{"timestamp":"2025-12-11T15:33:08.606235969Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:08.606432368Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:08.606283468Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28506]"}
+{"timestamp":"2025-12-11T15:33:09.603832981Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:09.603963455Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:09.603863488Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28534]"}
+{"timestamp":"2025-12-11T15:33:10.60624037Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:10.606391363Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:10.606269575Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28562]"}
+{"timestamp":"2025-12-11T15:33:11.60325541Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:11.603399019Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:11.603301697Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28590]"}
+{"timestamp":"2025-12-11T15:33:12.6062663Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28618]"}
+{"timestamp":"2025-12-11T15:33:12.606311886Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:12.606477366Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:13.603886796Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28646]"}
+{"timestamp":"2025-12-11T15:33:13.603926881Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:13.604062455Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:14.603871524Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:14.604019792Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:14.603946374Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28674]"}
+{"timestamp":"2025-12-11T15:33:15.603956359Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28702]"}
+{"timestamp":"2025-12-11T15:33:15.603985013Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:15.604140805Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:16.606091998Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:16.606203688Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:16.606116815Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28730]"}
+{"timestamp":"2025-12-11T15:33:17.603351417Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:17.603527056Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:17.603419384Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28758]"}
+{"timestamp":"2025-12-11T15:33:18.606307675Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:18.606491349Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:18.606331149Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28786]"}
+{"timestamp":"2025-12-11T15:33:19.603983554Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:19.604131982Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:19.604016876Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28814]"}
+{"timestamp":"2025-12-11T15:33:20.606355366Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:20.606479829Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:20.606412002Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28842]"}
+{"timestamp":"2025-12-11T15:33:21.603922592Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:21.604063285Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:21.603957076Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28870]"}
+{"timestamp":"2025-12-11T15:33:22.606251704Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:22.606439145Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:22.606311205Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28898]"}
+{"timestamp":"2025-12-11T15:33:23.603948522Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:23.60409684Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:23.603976054Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28926]"}
+{"timestamp":"2025-12-11T15:33:24.603968576Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28954]"}
+{"timestamp":"2025-12-11T15:33:24.604009483Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:24.604116604Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:25.603164906Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:25.603310168Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:25.603191766Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:28982]"}
+{"timestamp":"2025-12-11T15:33:26.606179723Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:26.606371562Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:26.606280041Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29010]"}
+{"timestamp":"2025-12-11T15:33:27.603952764Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:27.604106983Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:27.603988201Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29038]"}
+{"timestamp":"2025-12-11T15:33:28.606291535Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29066]"}
+{"timestamp":"2025-12-11T15:33:28.606364902Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:28.606499535Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:29.603905458Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29094]"}
+{"timestamp":"2025-12-11T15:33:29.603914144Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:29.604064185Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:30.606107612Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29122]"}
+{"timestamp":"2025-12-11T15:33:30.606111039Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:30.60622385Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:31.603349388Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:31.603472549Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:31.603399772Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29150]"}
+{"timestamp":"2025-12-11T15:33:32.606249891Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29178]"}
+{"timestamp":"2025-12-11T15:33:32.606272133Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:32.606427955Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:33.603325194Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29206]"}
+{"timestamp":"2025-12-11T15:33:33.603340693Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:33.603494582Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:34.603345248Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:34.603482876Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:34.603396444Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29234]"}
+{"timestamp":"2025-12-11T15:33:35.603964445Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:35.6040685Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:35.603973191Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29262]"}
+{"timestamp":"2025-12-11T15:33:36.60636992Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29290]"}
+{"timestamp":"2025-12-11T15:33:36.606386501Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:36.606576688Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:37.603951563Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:37.604106985Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:37.603961211Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29318]"}
+{"timestamp":"2025-12-11T15:33:38.606436628Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:38.606575929Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:38.60646985Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29346]"}
+{"timestamp":"2025-12-11T15:33:39.604229727Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:39.604424261Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:39.604261787Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29374]"}
+{"timestamp":"2025-12-11T15:33:40.606095881Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:40.606177615Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:40.606122682Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29402]"}
+{"timestamp":"2025-12-11T15:33:41.603197594Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:33:41.603284317Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=false, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:33:41.60324884Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29430]"}
+{"timestamp":"2025-12-11T15:34:38.607607922Z","level":"DEBUG","component":"ML","message":"📊 Report received from 127.0.0.1:59686"}
+{"timestamp":"2025-12-11T15:34:38.607909087Z","level":"INFO","component":"ML","message":"✅ Report received: TaskType=2, MissionID=3, IsLast=true, PayloadLen=24"}
+{"timestamp":"2025-12-11T15:34:38.607981192Z","level":"INFO","component":"ML","message":"🏁 Last report received for mission 3"}
+{"timestamp":"2025-12-11T15:34:38.607654499Z","level":"INFO","component":"ML","message":"ACK sent: map[ackNum:29458]"}
+{"timestamp":"2025-12-11T15:35:05.578890567Z","level":"ERROR","component":"TS","message":"Rover 1 declared inoperational due to lack of telemetry"}

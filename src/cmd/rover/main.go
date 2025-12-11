@@ -42,7 +42,7 @@ func main() {
 		<-sigChan
 		if config.IsTestMode() && metrics.GlobalMetrics != nil {
 			// Include rover ID in filename
-			filename := fmt.Sprintf("rover_%d_metrics.json", roverSys.ID)
+			filename := fmt.Sprintf("../metrics/rover_%d_metrics.json", roverSys.ID)
 			metrics.GlobalMetrics.ExportToJSON(filename)
 		}
 		os.Exit(0)
