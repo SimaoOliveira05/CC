@@ -16,9 +16,9 @@ import (
 // RoverState maintain the state of each rover connected to the mothership
 type RoverState struct {
 	Addr             *net.UDPAddr         // Address of the rover
-	SeqNum           uint16               // Sequence number for sending packets to the rover (ML)
-	ExpectedSeq      uint16               // Expected sequence number for receiving packets from the rover (ML)
-	Buffer           map[uint16]ml.Packet // Buffer for out-of-order packets (ML)
+	SeqNum           uint32               // Sequence number for sending packets to the rover (ML)
+	ExpectedSeq      uint32            // Expected sequence number for receiving packets from the rover (ML)
+	Buffer           map[uint32]ml.Packet // Buffer for out-of-order packets (ML)
 	WindowLock       sync.Mutex           // Mutex for sliding window operations
 	Window           *pl.Window           // Sliding window specific to this rover
 	NumberOfMissions uint8                // Number of missions rover is currently handling
@@ -103,12 +103,12 @@ func loadMissionsFromJSON(filename string, queue chan ml.MissionState) error {
 }
 
 // NewRoverState cria e inicializa um novo estado de rover para a MotherShip
-func NewRoverState(addr *net.UDPAddr, seqNum uint16) *RoverState {
+func NewRoverState(addr *net.UDPAddr, seqNum uint32) *RoverState {
 	return &RoverState{
 		Addr:             addr,
 		SeqNum:           seqNum,
 		ExpectedSeq:      seqNum,
-		Buffer:           make(map[uint16]ml.Packet),
+		Buffer:           make(map[uint32]ml.Packet),
 		WindowLock:       sync.Mutex{},
 		Window:           pl.NewWindow(),
 		NumberOfMissions: 0,

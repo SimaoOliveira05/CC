@@ -104,7 +104,7 @@ func (ms *MotherShip) NewRoverState(roverID uint8, addr *net.UDPAddr, packet *ml
 		Addr:             addr,
 		SeqNum:           0,
 		ExpectedSeq:      packet.SeqNum,
-		Buffer:           make(map[uint16]ml.Packet),
+		Buffer:           make(map[uint32]ml.Packet),
 		Window:           pl.NewWindow(),
 		NumberOfMissions: 0,
 	}
@@ -171,7 +171,7 @@ func (ms *MotherShip) handleMissionRequest(pkt ml.Packet, state *core.RoverState
 
 	for i := uint8(0); i < numMissionsRequested; i++ {
 		// Use ackNum only for the first mission/response as implicit ACK for the REQUEST
-		ackNum := uint16(0)
+		ackNum := uint32(0)
 		if i == 0 {
 			ackNum = ackNumForRequest
 		}
@@ -195,7 +195,7 @@ func (ms *MotherShip) handleMissionRequest(pkt ml.Packet, state *core.RoverState
 }
 
 // assignMissionToRover assigns a mission to the selected rover and sends it
-func (ms *MotherShip) assignMissionToRover(missionState ml.MissionState, roverID uint8, targetState *core.RoverState, ackNum uint16) {
+func (ms *MotherShip) assignMissionToRover(missionState ml.MissionState, roverID uint8, targetState *core.RoverState, ackNum uint32) {
 	// Mission obtained
 	missionState.IDRover = roverID // Assign the rover to the mission
 	missionState.CreatedAt = time.Now()
@@ -249,7 +249,7 @@ func (ms *MotherShip) publishMissionEvents(mission *ml.MissionState, eventType s
 }
 
 // sendNoMission sends a NO_MISSION packet to a rover
-func (ms *MotherShip) sendNoMission(state *core.RoverState, ackNum uint16) {
+func (ms *MotherShip) sendNoMission(state *core.RoverState, ackNum uint32) {
 	ms.Logger.Warnf("ML", "⚠️ Mission queue empty or rovers overloaded. Sending NO_MISSION to %s", state.Addr)
 
 	pl.CreateAndSendPacket(

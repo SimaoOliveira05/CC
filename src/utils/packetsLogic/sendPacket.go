@@ -20,10 +20,10 @@ type PacketEntry struct {
 
 // Window is the sliding window structure to manage sent packets and RTO calculation
 type Window struct {
-	LastAckReceived int16                   // Last ACK received number
+	LastAckReceived int32                  // Last ACK received number
 	Window          map[uint32]*PacketEntry // Sent packets not yet ACKed
-	DupAckCount     map[uint16]int          // Count of duplicate ACKs per AckNum
-	LastAckNum      uint16                  // Last received AckNum (to detect duplicates)
+	DupAckCount     map[uint32]int          // Count of duplicate ACKs per AckNum
+	LastAckNum      uint32                  // Last received AckNum (to detect duplicates)
 	Mu              sync.Mutex              // Mutex for concurrent access
 	// Fields for dynamic RTO calculation
 	SRTT   time.Duration
@@ -38,7 +38,7 @@ func NewWindow() *Window {
 	return &Window{
 		LastAckReceived: -1,
 		Window:          make(map[uint32]*PacketEntry),
-		DupAckCount:     make(map[uint16]int),
+		DupAckCount:     make(map[uint32]int),
 		LastAckNum:      0,
 		Mu:              sync.Mutex{},
 		SRTT:            0,
@@ -114,8 +114,8 @@ func CreateAndSendPacket(
 	addr *net.UDPAddr,
 	roverID uint8,
 	msgType ml.PacketType,
-	seqNum *uint16,
-	ackNum uint16,
+	seqNum *uint32,
+	ackNum uint32,
 	payload []byte,
 	window *Window,
 	windowLock *sync.Mutex,
@@ -150,7 +150,7 @@ func CreateAndSendPacket(
 	// Increment SeqNum by payload size
 	// Use uint32 for calculation to avoid overflow, then cast back
 	newSeq := uint32(*seqNum) + uint32(payloadSize)
-	*seqNum = uint16(newSeq) // Automatic wraparound when casting
+	*seqNum = uint32(newSeq) // Automatic wraparound when casting
 
 	// Unlock if mutex was provided
 	if windowLock != nil {
@@ -284,7 +284,7 @@ func manageRetransmission(conn *net.UDPConn, addr *net.UDPAddr, pkt ml.Packet, w
 }
 
 // registerPacket adds a packet to the window
-func registerPacket(window *Window, seqNum uint16) *PacketEntry {
+func registerPacket(window *Window, seqNum uint32) *PacketEntry {
 	window.Mu.Lock()
 	defer window.Mu.Unlock()
 
@@ -297,7 +297,7 @@ func registerPacket(window *Window, seqNum uint16) *PacketEntry {
 }
 
 // unregisterPacket removes a packet from the window
-func unregisterPacket(window *Window, seqNum uint16) {
+func unregisterPacket(window *Window, seqNum uint32) {
 	window.Mu.Lock()
 	defer window.Mu.Unlock()
 	delete(window.Window, uint32(seqNum))
@@ -321,7 +321,7 @@ func handleAckReceived(window *Window, rtt time.Duration) {
 }
 
 // handleTimeout logs timeout and prepares for retransmission
-func handleTimeout(seqNum uint16, retries int, rto time.Duration, logf func(level string, msg string, meta any)) {
+func handleTimeout(seqNum uint32, retries int, rto time.Duration, logf func(level string, msg string, meta any)) {
 	logf("WARN", "Timeout, retransmitting", map[string]any{
 		"seq":   seqNum,
 		"retry": retries + 1,
@@ -330,7 +330,7 @@ func handleTimeout(seqNum uint16, retries int, rto time.Duration, logf func(leve
 }
 
 // handleMaxRetriesReached logs failure after max retries
-func handleMaxRetriesReached(seqNum uint16, logf func(level string, msg string, meta any)) {
+func handleMaxRetriesReached(seqNum uint32, logf func(level string, msg string, meta any)) {
 	logf("ERROR", "Failed to receive ACK after all attempts", map[string]any{
 		"seq":        seqNum,
 		"maxRetries": config.MAX_RETRIES,
@@ -339,7 +339,7 @@ func handleMaxRetriesReached(seqNum uint16, logf func(level string, msg string, 
 
 // SendAck sends an ACK packet for the given ackNum
 // ackNum should be the next expected byte (currentSeqNum + packetSize)
-func SendAck(conn *net.UDPConn, addr *net.UDPAddr, ackNum uint16, window *Window, roverId uint8, logf func(level string, msg string, meta any)) {
+func SendAck(conn *net.UDPConn, addr *net.UDPAddr, ackNum uint32, window *Window, roverId uint8, logf func(level string, msg string, meta any)) {
 	ackPacket := ml.Packet{
 		RoverId: roverId,
 		MsgType: ml.MSG_ACK,
@@ -354,10 +354,12 @@ func SendAck(conn *net.UDPConn, addr *net.UDPAddr, ackNum uint16, window *Window
 
 // CalculateAckNum calculates the proper AckNum for a received packet
 // This follows the protocol rule: AckNum = SeqNum + max(PayloadSize, 1)
-func CalculateAckNum(pkt ml.Packet) uint16 {
+func CalculateAckNum(pkt ml.Packet) uint32 {
 	payloadSize := len(pkt.Payload)
 	if payloadSize == 0 {
 		payloadSize = 1 // Minimum increment for empty payloads
 	}
-	return pkt.SeqNum + uint16(payloadSize)
+	return pkt.SeqNum + uint32(payloadSize)
 }
+
+

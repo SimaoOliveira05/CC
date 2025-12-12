@@ -10,13 +10,13 @@ import (
 
 // seqLessThan compares sequence numbers considering wraparound (RFC 1982)
 // Returns true if seq1 is "less than" seq2 in circular arithmetic
-func seqLessThan(seq1, seq2 uint16) bool {
+func seqLessThan(seq1, seq2 uint32) bool {
 	return int16(seq1-seq2) < 0
 }
 
 // seqGreaterThan compares sequence numbers considering wraparound
 // Returns true if seq1 is "greater than" seq2 in circular arithmetic
-func seqGreaterThan(seq1, seq2 uint16) bool {
+func seqGreaterThan(seq1, seq2 uint32) bool {
 	return int16(seq1-seq2) > 0
 }
 
@@ -29,7 +29,7 @@ func HandleAck(p ml.Packet, window *Window) {
 // ProcessAckNum processes an AckNum and signals waiting goroutines
 // This handles both explicit ACKs and implicit ACKs (e.g., MSG_MISSION responding to MSG_REQUEST)
 // Implements Fast Retransmit: counts duplicate ACKs and triggers retransmit after threshold
-func ProcessAckNum(ackNum uint16, window *Window) {
+func ProcessAckNum(ackNum uint32, window *Window) {
 	if ackNum == 0 {
 		return // No ACK to process
 	}
@@ -68,7 +68,7 @@ func ProcessAckNum(ackNum uint16, window *Window) {
 	// Mark all packets with SeqNum < AckNum as acknowledged (considering wraparound)
 	// In TCP-style, AckNum represents the next byte expected
 	for seqKey, entry := range window.Window {
-		if seqLessThan(uint16(seqKey), ackNum) {
+		if seqLessThan(uint32(seqKey), ackNum) {
 			select {
 			case entry.AckChan <- 1: // Signal ACK received
 			default:
@@ -79,8 +79,8 @@ func ProcessAckNum(ackNum uint16, window *Window) {
 	}
 
 	// Update LastAckReceived considering wraparound
-	if seqGreaterThan(ackNum-1, uint16(window.LastAckReceived)) {
-		window.LastAckReceived = int16(ackNum - 1)
+	if seqGreaterThan(ackNum-1, uint32(window.LastAckReceived)) {
+		window.LastAckReceived = int32(ackNum - 1)
 	}
 }
 
@@ -101,8 +101,8 @@ type PacketProcessor func(pkt ml.Packet)
 //   - skipOrdering: if true, process without ordering (e.g., ACKs)
 func HandleOrderedPacket(
 	pkt ml.Packet,
-	expectedSeq *uint16,
-	buffer map[uint16]ml.Packet,
+	expectedSeq *uint32,
+	buffer map[uint32]ml.Packet,
 	mu *sync.Mutex,
 	conn *net.UDPConn,
 	addr *net.UDPAddr,
@@ -159,7 +159,7 @@ func HandleOrderedPacket(
 	if payloadSize == 0 {
 		payloadSize = 1 // Minimum increment to avoid deadlock with empty payloads
 	}
-	nextExpected := uint16(uint32(seq) + uint32(payloadSize)) // Wraparound via cast
+	nextExpected := uint32(uint32(seq) + uint32(payloadSize)) // Wraparound via cast
 
 	switch {
 	case seq == expected:
@@ -178,7 +178,7 @@ func HandleOrderedPacket(
 				if bufferedPayloadSize == 0 {
 					bufferedPayloadSize = 1
 				}
-				*expectedSeq = uint16(uint32(*expectedSeq) + uint32(bufferedPayloadSize))
+				*expectedSeq = uint32(*expectedSeq) + uint32(bufferedPayloadSize)
 				bufferedCount++
 			} else {
 				break

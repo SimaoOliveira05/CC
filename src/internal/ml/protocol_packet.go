@@ -20,8 +20,8 @@ type PacketType uint8
 type Packet struct {
 	RoverId  uint8
 	MsgType  PacketType
-	SeqNum   uint16
-	AckNum   uint16
+	SeqNum   uint32
+	AckNum   uint32
 	Checksum uint8
 	Payload  []byte
 }
@@ -45,7 +45,7 @@ func (pt PacketType) String() string {
 }
 
 // PacketHeaderSize is the size of the packet header in bytes.
-const PacketHeaderSize = 7 // 1 (RoverId) + 1 (MsgType) + 2 (SeqNum) + 2 (AckNum) + 1 (Checksum) - Payload é variável
+const PacketHeaderSize = 11 // 1 (RoverId) + 1 (MsgType) + 4 (SeqNum) + 4 (AckNum) + 1 (Checksum) - Payload é variável
 
 
 // Enconde serializes the packet into bytes.
@@ -56,10 +56,10 @@ func (p *Packet) Encode() []byte {
     
     data[0] = p.RoverId
     data[1] = uint8(p.MsgType)
-    binary.BigEndian.PutUint16(data[2:], p.SeqNum)
-    binary.BigEndian.PutUint16(data[4:], p.AckNum)
-    data[6] = p.Checksum
-    copy(data[7:], p.Payload)
+    binary.BigEndian.PutUint32(data[2:6], p.SeqNum)
+    binary.BigEndian.PutUint32(data[6:10], p.AckNum)
+    data[10] = p.Checksum
+    copy(data[PacketHeaderSize:], p.Payload)
     
     return data
 }
@@ -68,13 +68,13 @@ func (p *Packet) Encode() []byte {
 func (p *Packet) Decode(data []byte) {  
     p.RoverId = data[0]
     p.MsgType = PacketType(data[1])
-    p.SeqNum = binary.BigEndian.Uint16(data[2:])
-    p.AckNum = binary.BigEndian.Uint16(data[4:])
-    p.Checksum = data[6]
+    p.SeqNum = binary.BigEndian.Uint32(data[2:6])
+    p.AckNum = binary.BigEndian.Uint32(data[6:10])
+    p.Checksum = data[10]
     
     if len(data) > PacketHeaderSize {
         p.Payload = make([]byte, len(data)-PacketHeaderSize)
-        copy(p.Payload, data[7:])
+        copy(p.Payload, data[PacketHeaderSize:])
     }
 }
 

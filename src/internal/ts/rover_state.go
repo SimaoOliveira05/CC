@@ -1,7 +1,6 @@
 package ts
 
 import (
-	"fmt"
 	"src/utils"
 	"sync"
 )
@@ -28,10 +27,6 @@ type QueueInfo struct {
 	Priority3IDs   []uint16 `json:"priority3Ids"`   // Mission IDs in priority 3 queue
 }
 
-// String returns a human-readable representation of the RoverTSState.
-func (r *RoverTSState) String() string {
-	return fmt.Sprintf("Rover %d | State: %s | Battery: %d%% | Speed: %.2f m/s", r.ID, r.State, r.Battery, r.Speed)
-}
 
 // RoverManager manages multiple rovers' telemetry states.
 type RoverManager struct {
@@ -103,18 +98,4 @@ func (rm *RoverManager) ListRovers() []*RoverTSState {
 		list = append(list, rover)
 	}
 	return list
-}
-
-// String returns a human-readable representation of all rovers managed.
-func (rm *RoverManager) String() string {
-	rm.mu.Lock()
-	defer rm.mu.Unlock()
-	if len(rm.rovers) == 0 {
-		return "No rovers registered."
-	}
-	result := "--- Rovers State ---\n"
-	for _, rover := range rm.rovers {
-		result += rover.String() + "\n"
-	}
-	return result
 }

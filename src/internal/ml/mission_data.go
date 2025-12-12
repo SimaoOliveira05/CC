@@ -2,7 +2,6 @@ package ml
 
 import (
 	"encoding/binary"
-	"fmt"
 	"src/utils"
 	"math"
 )
@@ -51,28 +50,3 @@ func (d *MissionData) Decode(data []byte) MissionData {
     }
 }
 
-// taskTypeName converts a task type id into a human-readable string.
-func taskTypeName(t uint8) string {
-	switch t {
-	case TASK_IMAGE_CAPTURE:
-		return "Image_Capture"
-	case TASK_SAMPLE_COLLECTION:
-		return "Object_Sample"
-	case TASK_ENV_ANALYSIS:
-		return "Environmental_Analysis"
-	case TASK_REPAIR_RESCUE:
-		return "Rescue"
-	case TASK_TOPO_MAPPING:
-		return "Mapping"
-	case TASK_INSTALLATION:
-		return "Object_Installation"
-	default:
-		return "Unknown"
-	}
-}
-
-// String returns a human-readable representation of the MissionData.
-func (d MissionData) String() string {
-	return fmt.Sprintf("Data{MsgID:%d, Coordinate:%s, TaskType:%s(%d), Duration:%d, UpdateFreq:%d, Priority:%d}",
-		d.MsgID, d.Coordinate.String(), taskTypeName(d.TaskType), d.TaskType, d.Duration, d.UpdateFrequency, d.Priority)
-}

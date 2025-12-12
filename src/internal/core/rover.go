@@ -37,14 +37,14 @@ type RoverMLState struct {
 	CondMu              sync.Mutex    // Mutex for the condition
 	Waiting             bool          // Indicates if the rover is waiting for a mission
 	MissionReceivedChan chan bool     // Channel to signal mission reception
-	SeqNum              uint16        // Sequence number for sending packets
+	SeqNum              uint32        // Sequence number for sending packets
 	Suspended           bool          // Indicates if rover is suspended due to low battery
 	SuspendMu           sync.Mutex    // Mutex for suspension state
 	MissionQueue        *MissionQueue // Queue for managing missions by priority
 
 	// Packet and sequence number management
-	ExpectedSeq uint16
-	Buffer      map[uint16]ml.Packet
+	ExpectedSeq uint32
+	Buffer      map[uint32]ml.Packet
 	BufferMu    sync.Mutex
 
 	// Sliding window for ACK and retransmission control
@@ -175,7 +175,7 @@ func NewRoverSystem(motherUDP string, motherTCPID string) *RoverSystem {
 			ExpectedSeq:         0,
 			Waiting:             false,
 			MissionReceivedChan: make(chan bool, 1),
-			Buffer:              make(map[uint16]ml.Packet),
+			Buffer:              make(map[uint32]ml.Packet),
 			BufferMu:            sync.Mutex{},
 			Window:              pl.NewWindow(),
 			Suspended:           false,
