@@ -16,11 +16,11 @@ build:
 
 # --- Run ---
 
-run-mothership: build
+run-mothership:
 	@echo "Nave Mae (IP Local / 0.0.0.0)"
 	cd $(SRC_DIR) && ./bin/mothership
 
-run-rover: build
+run-rover:
 	@echo "Rover a conectar a $(MS_IP)..."
 	cd $(SRC_DIR) && ./bin/rover -ms-ip=$(MS_IP)
 
@@ -30,11 +30,11 @@ run-gc:
 
 # --- Test Mode ---
 
-test-mothership: build
+test-mothership:
 	@echo "Nave Mae em modo de teste..."
 	cd $(SRC_DIR) && ./bin/mothership -test-mode
 
-test-rover: build
+test-rover:
 	@echo "Rover em modo de teste a conectar a $(MS_IP)..."
 	cd $(SRC_DIR) && ./bin/rover -ms-ip=$(MS_IP) -test-mode
 

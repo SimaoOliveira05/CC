@@ -8,13 +8,36 @@ import (
 
 // telemetrySender periodically sends telemetry data to the mothership
 func (rover *Rover) telemetrySender(telemetryAddr string) {
-	// Establish TCP connection to mothership
-	conn, err := net.Dial("tcp", telemetryAddr)
-	if err != nil {
-		rover.Logger.Errorf("Telemetry", "Error connecting to telemetry server: %v", err)
-		return
+	var conn net.Conn
+	var err error
+
+	// Function to establish/re-establish connection
+	connect := func() bool {
+		if conn != nil {
+			conn.Close()
+		}
+		conn, err = net.Dial("tcp", telemetryAddr)
+		if err != nil {
+			rover.Logger.Errorf("Telemetry", "Error connecting to telemetry server: %v", err)
+			return false
+		}
+		rover.Logger.Info("Telemetry", "Connected to telemetry server", nil)
+		return true
 	}
-	defer conn.Close()
+
+	// Initial connection
+	if !connect() {
+		// Wait and retry initial connection
+		time.Sleep(5 * time.Second)
+		if !connect() {
+			rover.Logger.Error("Telemetry", "Failed to establish initial connection, will retry in loop", nil)
+		}
+	}
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+	}()
 
 	// Set up ticker for periodic sending
 	ticker := time.NewTicker(time.Duration(rover.TS.UpdateFrequency) * time.Second)
@@ -48,11 +71,20 @@ func (rover *Rover) telemetrySender(telemetryAddr string) {
 		// Encode telemetry data
 		data := telemetry.Encode()
 
-		// Send telemetry data
+		// Try to send telemetry data
+		if conn == nil {
+			// No connection, try to reconnect
+			if !connect() {
+				continue // Skip this tick, try again next time
+			}
+		}
+
 		_, err := conn.Write(data)
 		if err != nil {
 			rover.Logger.Errorf("Telemetry", "Error sending telemetry: %v", err)
-			return
+			// Try to reconnect
+			connect()
+			continue // Skip this tick, try again next time
 		}
 
 		rover.Logger.Infof("Telemetry", "Telemetry sent: Position=(%.6f, %.6f), Speed=%.2f, State=%d, Battery=%d%%",

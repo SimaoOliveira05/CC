@@ -161,13 +161,6 @@ func (m *MLMetrics) RecordOutOfOrder() {
 	atomic.AddUint64(&m.OutOfOrderReceived, 1)
 }
 
-// RecordBufferedPacket records a packet being buffered
-func (m *MLMetrics) RecordBufferedPacket() {
-	if !m.enabled {
-		return
-	}
-	atomic.AddUint64(&m.BufferedPackets, 1)
-}
 
 // RecordRTT records a Round-Trip Time sample
 func (m *MLMetrics) RecordRTT(rtt time.Duration) {

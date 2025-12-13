@@ -20,11 +20,7 @@ func seqGreaterThan(seq1, seq2 uint32) bool {
 	return int16(seq1-seq2) > 0
 }
 
-// handleACK processes delivery acknowledgments and updates the sliding window
-// ACK numbers represent bytes acknowledged (TCP-style)
-func HandleAck(p ml.Packet, window *Window) {
-	ProcessAckNum(p.AckNum, window)
-}
+
 
 // ProcessAckNum processes an AckNum and signals waiting goroutines
 // This handles both explicit ACKs and implicit ACKs (e.g., MSG_MISSION responding to MSG_REQUEST)
