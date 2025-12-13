@@ -11,6 +11,7 @@ ASSETS_DIR = assets
 
 build:
 	@echo "A compilar..."
+	mkdir -p logs metrics
 	cd $(SRC_DIR) && go build -o bin/mothership ./cmd/mothership
 	cd $(SRC_DIR) && go build -o bin/rover ./cmd/rover
 
