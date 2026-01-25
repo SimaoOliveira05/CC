@@ -2,6 +2,16 @@
 
 Sistema de comunicacao para gestao de missoes entre uma nave-mae e rovers em ambiente distribuido.
 
+# Grade
+**⭐ Grade: ?? / 20 ⭐**
+
+## Authors
+
+- *Gabriel Dantas* -> [@gabil88](https://github.com/gabil88)
+- *José Fernandes* -> [@JoseLourencoFernandes](https://github.com/JoseLourencoFernandes)
+- *Simão Oliveira* -> [@SimaoOliveira05](https://github.com/SimaoOliveira05)
+
+
 ## Requisitos
 
 - Go 1.21+
