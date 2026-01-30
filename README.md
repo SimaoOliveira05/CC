@@ -2,16 +2,25 @@
 
 Distributed communication system between a mothership and multiple rovers, developed for a Computer Communications course. The project uses both TCP and UDP, with a custom reliable and secure protocol implemented on top of UDP to ensure message integrity and delivery.
 
-<table>
+<table align="center">
   <tr>
-    <td><img src="img1.png" width="300"/></td>
-    <td><img src="img2.png" width="300"/></td>
+    <td align="center">
+      <img src="assets/MainScreen.png" width="250"/>
+    </td>
+    <td align="center">
+      <img src="assets/Map.png" width="250"/>
+    </td>
   </tr>
   <tr>
-    <td><img src="img3.png" width="300"/></td>
-    <td><img src="img4.png" width="300"/></td>
+    <td align="center">
+      <img src="assets/Missions.png" width="250"/>
+    </td>
+    <td align="center">
+      <img src="assets/LogsGC.png" width="250"/>
+    </td>
   </tr>
 </table>
+
 
 
 
