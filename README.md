@@ -1,9 +1,8 @@
-# NasUM - Sistema de Comunicacao Nave-Mae / Rovers
+# CC
 
 Sistema de comunicacao para gestao de missoes entre uma nave-mae e rovers em ambiente distribuido.
 
-# Grade
-**⭐ Grade: ?? / 20 ⭐**
+**Grade:** 20 / 20 ⭐
 
 ## Authors
 
@@ -18,74 +17,37 @@ Sistema de comunicacao para gestao de missoes entre uma nave-mae e rovers em amb
 - Node.js 18+ (para o Ground Control)
 - npm
 
-## Estrutura
-
-```
-nasUM/
-├── src/              # Backend (Go) - Nave-Mae e Rovers
-├── ground-control/   # Frontend (Vue.js) - Dashboard
-├── assets/           # Imagens e dados de teste
-├── logs/             # Ficheiros de log
-└── metrics/          # Metricas de execucao (modo teste)
-```
-
-## Compilacao
+## Building
 
 ```bash
 make build
 ```
 
-## Execucao
+## Executing
 
-### 1. Iniciar a Nave-Mae
+### 1. Mothership
 
 ```bash
 make run-mothership
 ```
 
-### 2. Iniciar um Rover
+### 2. Rover
 
-Numa maquina diferente ou terminal separado:
-
-```bash
-make run-rover MS_IP=<IP_DA_NAVE_MAE>
-```
-
-Exemplo com nave-mae local:
+In a different machine or terminall from mothership
 
 ```bash
-make run-rover MS_IP=127.0.0.1
+make run-rover MS_IP=<MOTHERSHIP-IP>
 ```
 
-### 3. Iniciar o Ground Control (Dashboard)
+### 3. Ground Control (Dashboard)
 
 ```bash
-make run-gc MS_IP=<IP_DA_NAVE_MAE>
+make run-gc MS_IP=<MOTHERSHIP-IP>
 ```
 
-Aceder em http://localhost:5173
-
-## Modo de Teste (com metricas)
+## Test Mode (with metrics)
 
 ```bash
 make test-mothership
-make test-rover MS_IP=<IP_DA_NAVE_MAE>
+make test-rover MS_IP=<MOTHERSHIP-IP>
 ```
-
-As metricas sao exportadas para ficheiros JSON ao terminar (Ctrl+C).
-
-## Configuracao
-
-O ficheiro `src/config.json` contem os parametros configuraveis:
-- Portas de rede
-- Timeouts e retransmissoes
-- Parametros de bateria e movimento
-- Configuracoes dos dispositivos
-
-## Limpeza
-
-```bash
-make clean
-```
-
-Remove binarios, logs e ficheiros de metricas.
