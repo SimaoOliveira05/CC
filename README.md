@@ -23,8 +23,9 @@ Distributed communication system between a mothership and multiple rovers, devel
 
 
 
+## Grade
 
-**Grade:** 20 / 20 ⭐
+**Final Grade:** 20 / 20 ⭐
 
 ## Authors
 
