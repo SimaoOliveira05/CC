@@ -5,18 +5,18 @@ Distributed communication system between a mothership and multiple rovers, devel
 <table align="center">
   <tr>
     <td align="center">
-      <img src="assets/MainScreen.png" width="500"/>
+      <img src="assets/MainScreen.png" width="750"/>
     </td>
     <td align="center">
-      <img src="assets/Map.png" width="500"/>
+      <img src="assets/Map.png" width="750"/>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="assets/Missions.png" width="500"/>
+      <img src="assets/Missions.png" width="750"/>
     </td>
     <td align="center">
-      <img src="assets/LogsGC.png" width="500"/>
+      <img src="assets/LogsGC.png" width="750"/>
     </td>
   </tr>
 </table>
