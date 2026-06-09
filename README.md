@@ -1,4 +1,4 @@
-# CC
+# NasUM
 
 Distributed communication system between a mothership and multiple rovers, developed for a Computer Communications course. The project uses both TCP and UDP, with a custom reliable and secure protocol implemented on top of UDP to ensure message integrity and delivery.
 
